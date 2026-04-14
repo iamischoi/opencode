@@ -382,10 +382,13 @@ export const McpLogoutCommand = cmd({
 
 async function resolveConfigPath(baseDir: string, global = false) {
   // Check for existing config files (prefer .jsonc over .json, check .opencode/ subdirectory too)
-  const candidates = [path.join(baseDir, "opencode.json"), path.join(baseDir, "opencode.jsonc")]
+  const candidates = [path.join(baseDir, "shlifecode.json"), path.join(baseDir, "shlifecode.jsonc")]
 
   if (!global) {
-    candidates.push(path.join(baseDir, ".opencode", "opencode.json"), path.join(baseDir, ".opencode", "opencode.jsonc"))
+    candidates.push(
+      path.join(baseDir, ".shlifecode", "shlifecode.json"),
+      path.join(baseDir, ".shlifecode", "shlifecode.jsonc"),
+    )
   }
 
   for (const candidate of candidates) {
@@ -394,7 +397,7 @@ async function resolveConfigPath(baseDir: string, global = false) {
     }
   }
 
-  // Default to opencode.json if none exist
+  // Default to shlifecode.json if none exist
   return candidates[0]
 }
 

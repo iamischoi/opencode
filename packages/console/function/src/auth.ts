@@ -17,6 +17,7 @@ import { WorkspaceTable } from "@opencode-ai/console-core/schema/workspace.sql.j
 import { UserTable } from "@opencode-ai/console-core/schema/user.sql.js"
 import { AuthTable } from "@opencode-ai/console-core/schema/auth.sql.js"
 import { Identifier } from "@opencode-ai/console-core/identifier.js"
+import { external } from "@opencode-ai/console-core/flag.js"
 
 type Env = {
   AuthStorage: KVNamespace
@@ -40,6 +41,7 @@ const MY_THEME: Theme = {
 
 export default {
   async fetch(request: Request, env: Env, ctx: ExecutionContext) {
+    if (!external) return new Response("external access disabled", { status: 503 })
     const result = await issuer({
       theme: MY_THEME,
       providers: {

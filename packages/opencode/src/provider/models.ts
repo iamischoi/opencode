@@ -136,7 +136,7 @@ export namespace ModelsDev {
       .then((m) => m.snapshot as Record<string, unknown>)
       .catch(() => undefined)
     if (snapshot) return snapshot
-    if (Flag.OPENCODE_DISABLE_MODELS_FETCH) return {}
+    if (Flag.OPENCODE_DISABLE_MODELS_FETCH || Flag.OPENCODE_DISABLE_EXTERNAL_ACCESS) return {}
     return Flock.withLock(`models-dev:${filepath}`, async () => {
       const result = await Filesystem.readJson(Flag.OPENCODE_MODELS_PATH ?? filepath).catch(() => {})
       if (result) return result

@@ -354,10 +354,10 @@ export namespace LLM {
       headers: {
         ...(input.model.providerID.startsWith("opencode")
           ? {
-              "x-opencode-project": Instance.project.id,
-              "x-opencode-session": input.sessionID,
-              "x-opencode-request": input.user.id,
-              "x-opencode-client": Flag.OPENCODE_CLIENT,
+              "x-shlifecode-project": Instance.project.id,
+              "x-shlifecode-session": input.sessionID,
+              "x-shlifecode-request": input.user.id,
+              "x-shlifecode-client": Flag.OPENCODE_CLIENT,
             }
           : {
               "x-session-affinity": input.sessionID,

@@ -1,0 +1,9 @@
+node_modules
+.git
+.github
+.opencode
+.zed
+tests
+docs
+*.log
+.DS_Store

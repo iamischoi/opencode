@@ -25,9 +25,20 @@ import { ModelID, ProviderID } from "@/provider/schema"
 import { errors } from "../error"
 import { lazy } from "../../util/lazy"
 import { Bus } from "../../bus"
+import { Provider } from "../../provider/provider"
 import { NamedError } from "@opencode-ai/util/error"
 
 const log = Log.create({ service: "server" })
+
+function modelHeader(req: { header: (name: string) => string | undefined }) {
+  return req.header("x-shlifecode-model") || undefined
+}
+
+function parsedModel(req: { header: (name: string) => string | undefined }) {
+  const value = modelHeader(req)
+  if (!value) return
+  return Provider.parseModel(value)
+}
 
 export const SessionRoutes = lazy(() =>
   new Hono()
@@ -848,7 +859,8 @@ export const SessionRoutes = lazy(() =>
         return stream(c, async (stream) => {
           const sessionID = c.req.valid("param").sessionID
           const body = c.req.valid("json")
-          const msg = await SessionPrompt.prompt({ ...body, sessionID })
+          const model = body.model ?? parsedModel(c.req)
+          const msg = await SessionPrompt.prompt({ ...body, sessionID, model })
           stream.write(JSON.stringify(msg))
         })
       },
@@ -877,7 +889,8 @@ export const SessionRoutes = lazy(() =>
       async (c) => {
         const sessionID = c.req.valid("param").sessionID
         const body = c.req.valid("json")
-        SessionPrompt.prompt({ ...body, sessionID }).catch((err) => {
+        const model = body.model ?? parsedModel(c.req)
+        SessionPrompt.prompt({ ...body, sessionID, model }).catch((err) => {
           log.error("prompt_async failed", { sessionID, error: err })
           Bus.publish(Session.Event.Error, {
             sessionID,
@@ -921,7 +934,8 @@ export const SessionRoutes = lazy(() =>
       async (c) => {
         const sessionID = c.req.valid("param").sessionID
         const body = c.req.valid("json")
-        const msg = await SessionPrompt.command({ ...body, sessionID })
+        const model = body.model ?? modelHeader(c.req)
+        const msg = await SessionPrompt.command({ ...body, sessionID, model })
         return c.json(msg)
       },
     )
@@ -953,7 +967,8 @@ export const SessionRoutes = lazy(() =>
       async (c) => {
         const sessionID = c.req.valid("param").sessionID
         const body = c.req.valid("json")
-        const msg = await SessionPrompt.shell({ ...body, sessionID })
+        const model = body.model ?? parsedModel(c.req)
+        const msg = await SessionPrompt.shell({ ...body, sessionID, model })
         return c.json(msg)
       },
     )

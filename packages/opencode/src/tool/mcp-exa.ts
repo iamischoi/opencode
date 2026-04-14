@@ -1,5 +1,6 @@
 import { Duration, Effect, Schema } from "effect"
 import { HttpClient, HttpClientRequest } from "effect/unstable/http"
+import { Flag } from "@/flag/flag"
 
 const URL = "https://mcp.exa.ai/mcp"
 
@@ -57,6 +58,9 @@ export const call = <F extends Schema.Struct.Fields>(
   timeout: Duration.Input,
 ) =>
   Effect.gen(function* () {
+    if (Flag.OPENCODE_DISABLE_EXTERNAL_ACCESS) {
+      throw new Error("External access disabled")
+    }
     const request = yield* HttpClientRequest.post(URL).pipe(
       HttpClientRequest.accept("application/json, text/event-stream"),
       HttpClientRequest.schemaBodyJson(McpRequest(args))({

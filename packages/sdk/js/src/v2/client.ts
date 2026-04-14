@@ -20,8 +20,8 @@ function rewrite(request: Request, values: { directory?: string; workspace?: str
   let changed = false
 
   for (const [name, key] of [
-    ["x-opencode-directory", "directory"],
-    ["x-opencode-workspace", "workspace"],
+    ["x-shlifecode-directory", "directory"],
+    ["x-shlifecode-workspace", "workspace"],
   ] as const) {
     const value = pick(
       request.headers.get(name),
@@ -38,8 +38,8 @@ function rewrite(request: Request, values: { directory?: string; workspace?: str
   if (!changed) return request
 
   const next = new Request(url, request)
-  next.headers.delete("x-opencode-directory")
-  next.headers.delete("x-opencode-workspace")
+  next.headers.delete("x-shlifecode-directory")
+  next.headers.delete("x-shlifecode-workspace")
   return next
 }
 
@@ -59,14 +59,21 @@ export function createOpencodeClient(config?: Config & { directory?: string; exp
   if (config?.directory) {
     config.headers = {
       ...config.headers,
-      "x-opencode-directory": encodeURIComponent(config.directory),
+      "x-shlifecode-directory": encodeURIComponent(config.directory),
+    }
+  }
+
+  if (typeof process !== "undefined" && process.env?.OPENCODE_MODEL) {
+    config.headers = {
+      ...config.headers,
+      "x-shlifecode-model": process.env.OPENCODE_MODEL,
     }
   }
 
   if (config?.experimental_workspaceID) {
     config.headers = {
       ...config.headers,
-      "x-opencode-workspace": config.experimental_workspaceID,
+      "x-shlifecode-workspace": config.experimental_workspaceID,
     }
   }
 

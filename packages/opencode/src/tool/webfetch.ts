@@ -2,6 +2,7 @@ import z from "zod"
 import { Effect } from "effect"
 import { HttpClient, HttpClientRequest, HttpClientResponse } from "effect/unstable/http"
 import { Tool } from "./tool"
+import { Flag } from "@/flag/flag"
 import TurndownService from "turndown"
 import DESCRIPTION from "./webfetch.txt"
 
@@ -29,6 +30,9 @@ export const WebFetchTool = Tool.define(
       parameters,
       execute: (params: z.infer<typeof parameters>, ctx: Tool.Context) =>
         Effect.gen(function* () {
+          if (Flag.OPENCODE_DISABLE_EXTERNAL_ACCESS) {
+            throw new Error("External access disabled")
+          }
           if (!params.url.startsWith("http://") && !params.url.startsWith("https://")) {
             throw new Error("URL must start with http:// or https://")
           }

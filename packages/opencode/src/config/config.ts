@@ -1129,8 +1129,8 @@ export namespace Config {
   export class Service extends Context.Service<Service, Interface>()("@opencode/Config") {}
 
   function globalConfigFile() {
-    const candidates = ["opencode.jsonc", "opencode.json", "config.json"].map((file) =>
-      path.join(Global.Path.config, file),
+    const candidates = ["shlifecode.jsonc", "shlifecode.json", "opencode.jsonc", "opencode.json", "config.json"].map(
+      (file) => path.join(Global.Path.config, file),
     )
     for (const file of candidates) {
       if (existsSync(file)) return file
@@ -1213,6 +1213,29 @@ export namespace Config {
         const authSvc = yield* Auth.Service
         const accountSvc = yield* Account.Service
 
+        const move = Effect.fnUntraced(function* (from: string, to: string) {
+          const exists = yield* fs.exists(from).pipe(Effect.orDie)
+          if (!exists) return
+          const target = yield* fs.exists(to).pipe(Effect.orDie)
+          if (target) return
+          yield* fs.ensureDir(path.dirname(to)).pipe(Effect.orDie)
+          yield* fs.rename(from, to).pipe(Effect.orDie)
+        })
+
+        const migrate = Effect.fnUntraced(function* (base: string) {
+          yield* move(path.join(base, "opencode.json"), path.join(base, "shlifecode.json"))
+          yield* move(path.join(base, "opencode.jsonc"), path.join(base, "shlifecode.jsonc"))
+          yield* move(path.join(base, "opencode.json"), path.join(base, "config.json"))
+        })
+
+        const migrateDir = Effect.fnUntraced(function* (fromDir: string, toDir: string) {
+          const exists = yield* fs.exists(fromDir).pipe(Effect.orDie)
+          if (!exists) return
+          const target = yield* fs.exists(toDir).pipe(Effect.orDie)
+          if (target) return
+          yield* fs.rename(fromDir, toDir).pipe(Effect.orDie)
+        })
+
         const readConfigFile = Effect.fnUntraced(function* (filepath: string) {
           return yield* fs.readFileString(filepath).pipe(
             Effect.catchIf(
@@ -1245,7 +1268,7 @@ export namespace Config {
             delete copy.theme
             delete copy.keybinds
             delete copy.tui
-            log.warn("tui keys in opencode config are deprecated; move them to tui.json", { path: source })
+            log.warn("tui keys in config are deprecated; move them to tui.json", { path: source })
             return copy
           })()
 
@@ -1280,9 +1303,12 @@ export namespace Config {
         })
 
         const loadGlobal = Effect.fnUntraced(function* () {
+          yield* migrate(Global.Path.config)
           let result: Info = pipe(
             {},
             mergeDeep(yield* loadFile(path.join(Global.Path.config, "config.json"))),
+            mergeDeep(yield* loadFile(path.join(Global.Path.config, "shlifecode.json"))),
+            mergeDeep(yield* loadFile(path.join(Global.Path.config, "shlifecode.jsonc"))),
             mergeDeep(yield* loadFile(path.join(Global.Path.config, "opencode.json"))),
             mergeDeep(yield* loadFile(path.join(Global.Path.config, "opencode.jsonc"))),
           )
@@ -1385,6 +1411,13 @@ export namespace Config {
           }
 
           if (!Flag.OPENCODE_DISABLE_PROJECT_CONFIG) {
+            yield* migrate(ctx.directory)
+            yield* migrate(ctx.worktree)
+            for (const file of yield* Effect.promise(() =>
+              ConfigPaths.projectFiles("shlifecode", ctx.directory, ctx.worktree),
+            )) {
+              yield* merge(file, yield* loadFile(file), "local")
+            }
             for (const file of yield* Effect.promise(() =>
               ConfigPaths.projectFiles("opencode", ctx.directory, ctx.worktree),
             )) {
@@ -1405,6 +1438,20 @@ export namespace Config {
           const deps: Promise<void>[] = []
 
           for (const dir of unique(directories)) {
+            if (dir.endsWith(".opencode")) {
+              const next = dir.replace(/\.opencode$/, ".shlifecode")
+              yield* migrateDir(dir, next)
+            }
+            if (dir.endsWith(".shlifecode") || dir === Flag.OPENCODE_CONFIG_DIR) {
+              for (const file of ["shlifecode.json", "shlifecode.jsonc"]) {
+                const source = path.join(dir, file)
+                log.debug(`loading config from ${source}`)
+                yield* merge(source, yield* loadFile(source))
+                result.agent ??= {}
+                result.mode ??= {}
+                result.plugin ??= []
+              }
+            }
             if (dir.endsWith(".opencode") || dir === Flag.OPENCODE_CONFIG_DIR) {
               for (const file of ["opencode.json", "opencode.jsonc"]) {
                 const source = path.join(dir, file)
@@ -1479,7 +1526,7 @@ export namespace Config {
           }
 
           if (existsSync(managedDir)) {
-            for (const file of ["opencode.json", "opencode.jsonc"]) {
+            for (const file of ["shlifecode.json", "shlifecode.jsonc", "opencode.json", "opencode.jsonc"]) {
               const source = path.join(managedDir, file)
               yield* merge(source, yield* loadFile(source), "global")
             }

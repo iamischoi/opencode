@@ -8,6 +8,7 @@ import { readdir, rm } from "fs/promises"
 import { Filesystem } from "@/util/filesystem"
 import { Flock } from "@/util/flock"
 import { Arborist } from "@npmcli/arborist"
+import { Flag } from "@/flag/flag"
 
 export namespace Npm {
   const log = Log.create({ service: "npm" })
@@ -42,6 +43,7 @@ export namespace Npm {
   }
 
   export async function outdated(pkg: string, cachedVersion: string): Promise<boolean> {
+    if (Flag.OPENCODE_DISABLE_EXTERNAL_ACCESS) return false
     const response = await fetch(`https://registry.npmjs.org/${pkg}`)
     if (!response.ok) {
       log.warn("Failed to resolve latest version, using cached", { pkg, cachedVersion })

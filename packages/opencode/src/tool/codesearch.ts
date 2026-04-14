@@ -4,6 +4,7 @@ import { HttpClient } from "effect/unstable/http"
 import { Tool } from "./tool"
 import * as McpExa from "./mcp-exa"
 import DESCRIPTION from "./codesearch.txt"
+import { Flag } from "@/flag/flag"
 
 export const CodeSearchTool = Tool.define(
   "codesearch",
@@ -29,6 +30,9 @@ export const CodeSearchTool = Tool.define(
       }),
       execute: (params: { query: string; tokensNum: number }, ctx: Tool.Context) =>
         Effect.gen(function* () {
+          if (Flag.OPENCODE_DISABLE_EXTERNAL_ACCESS) {
+            throw new Error("External access disabled")
+          }
           yield* ctx.ask({
             permission: "codesearch",
             patterns: [params.query],

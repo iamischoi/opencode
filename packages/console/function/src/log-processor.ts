@@ -1,8 +1,10 @@
 import { Resource } from "@opencode-ai/console-resource"
 import type { TraceItem } from "@cloudflare/workers-types"
+import { external } from "@opencode-ai/console-core/flag.js"
 
 export default {
   async tail(events: TraceItem[]) {
+    if (!external) return
     for (const event of events) {
       if (!event.event) continue
       if (!("request" in event.event)) continue

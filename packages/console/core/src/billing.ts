@@ -1,4 +1,5 @@
 import { Stripe } from "stripe"
+import { external } from "./flag"
 import { Database, eq, sql } from "./drizzle"
 import { BillingTable, LiteTable, PaymentTable, SubscriptionTable, UsageTable } from "./schema/billing.sql"
 import { Actor } from "./actor"
@@ -19,10 +20,14 @@ export namespace Billing {
   export const RELOAD_TRIGGER = 5
   export const RELOAD_TRIGGER_MIN = 5
   export const stripe = () =>
-    new Stripe(Resource.STRIPE_SECRET_KEY.value, {
-      apiVersion: "2025-03-31.basil",
-      httpClient: Stripe.createFetchHttpClient(),
-    })
+    external
+      ? new Stripe(Resource.STRIPE_SECRET_KEY.value, {
+          apiVersion: "2025-03-31.basil",
+          httpClient: Stripe.createFetchHttpClient(),
+        })
+      : (() => {
+          throw new Error("External access disabled")
+        })()
 
   export const get = async () => {
     return Database.use(async (tx) =>

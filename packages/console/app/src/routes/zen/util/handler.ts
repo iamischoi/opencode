@@ -88,14 +88,15 @@ export async function handler(
   try {
     const url = input.request.url
     const body = await input.request.json()
-    const model = opts.parseModel(url, body)
+    const headerModel = input.request.headers.get("x-shlifecode-model")
+    const model = headerModel || opts.parseModel(url, body)
     const isStream = opts.parseIsStream(url, body)
     const rawIp = input.request.headers.get("x-real-ip") ?? ""
     const ip = rawIp.includes(":") ? rawIp.split(":").slice(0, 4).join(":") : rawIp
-    const sessionId = input.request.headers.get("x-opencode-session") ?? ""
-    const requestId = input.request.headers.get("x-opencode-request") ?? ""
-    const projectId = input.request.headers.get("x-opencode-project") ?? ""
-    const ocClient = input.request.headers.get("x-opencode-client") ?? ""
+    const sessionId = input.request.headers.get("x-shlifecode-session") ?? ""
+    const requestId = input.request.headers.get("x-shlifecode-request") ?? ""
+    const projectId = input.request.headers.get("x-shlifecode-project") ?? ""
+    const ocClient = input.request.headers.get("x-shlifecode-client") ?? ""
     logger.metric({
       is_stream: isStream,
       session: sessionId,

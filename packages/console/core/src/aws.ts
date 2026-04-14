@@ -2,6 +2,7 @@ import { z } from "zod"
 import { Resource } from "@opencode-ai/console-resource"
 import { AwsClient } from "aws4fetch"
 import { fn } from "./util/fn"
+import { external } from "./flag"
 
 export namespace AWS {
   let client: AwsClient
@@ -25,6 +26,7 @@ export namespace AWS {
       replyTo: z.string().optional(),
     }),
     async (input) => {
+      if (!external) throw new Error("External access disabled")
       const res = await createClient().fetch("https://email.us-east-1.amazonaws.com/v2/email/outbound-emails", {
         method: "POST",
         headers: {

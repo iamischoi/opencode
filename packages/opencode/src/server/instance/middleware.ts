@@ -46,7 +46,7 @@ async function getSessionWorkspace(url: URL) {
 
 export function WorkspaceRouterMiddleware(upgrade: UpgradeWebSocket): MiddlewareHandler {
   return async (c, next) => {
-    const raw = c.req.query("directory") || c.req.header("x-opencode-directory") || process.cwd()
+    const raw = c.req.query("directory") || c.req.header("x-shlifecode-directory") || process.cwd()
     const directory = Filesystem.resolve(
       (() => {
         try {
@@ -122,7 +122,7 @@ export function WorkspaceRouterMiddleware(upgrade: UpgradeWebSocket): Middleware
     }
 
     const headers = new Headers(c.req.raw.headers)
-    headers.delete("x-opencode-workspace")
+    headers.delete("x-shlifecode-workspace")
 
     return ServerProxy.http(
       target,

@@ -14,9 +14,15 @@ export function createSdkForServer({
     }
   })()
 
+  const model = globalThis.process?.env?.OPENCODE_MODEL
+  const headers = {
+    ...config.headers,
+    ...auth,
+    ...(model ? { "x-shlifecode-model": model } : {}),
+  }
   return createOpencodeClient({
     ...config,
-    headers: { ...config.headers, ...auth },
+    headers,
     baseUrl: server.url,
   })
 }

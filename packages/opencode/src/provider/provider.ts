@@ -448,10 +448,10 @@ export namespace Provider {
 
         const location = String(
           provider.options?.location ??
-            Env.get("GOOGLE_VERTEX_LOCATION") ??
-            Env.get("GOOGLE_CLOUD_LOCATION") ??
-            Env.get("VERTEX_LOCATION") ??
-            "us-central1",
+          Env.get("GOOGLE_VERTEX_LOCATION") ??
+          Env.get("GOOGLE_CLOUD_LOCATION") ??
+          Env.get("VERTEX_LOCATION") ??
+          "us-central1",
         )
 
         const autoload = Boolean(project)
@@ -610,9 +610,9 @@ export namespace Provider {
                 log.info("gitlab model discovery skipped: no models found", {
                   project: result.project
                     ? {
-                        id: result.project.id,
-                        path: result.project.pathWithNamespace,
-                      }
+                      id: result.project.id,
+                      path: result.project.pathWithNamespace,
+                    }
                     : null,
                 })
                 return {}
@@ -754,7 +754,7 @@ export namespace Provider {
         if (!apiToken) {
           throw new Error(
             "CLOUDFLARE_API_TOKEN (or CF_AIG_TOKEN) is required for Cloudflare AI Gateway. " +
-              "Set it via environment variable or run `opencode auth cloudflare-ai-gateway`.",
+            "Set it via environment variable or run `opencode auth cloudflare-ai-gateway`.",
           )
         }
 
@@ -927,7 +927,7 @@ export namespace Provider {
     varsLoaders: Record<string, CustomVarsLoader>
   }
 
-  export class Service extends Context.Service<Service, Interface>()("@opencode/Provider") {}
+  export class Service extends Context.Service<Service, Interface>()("@opencode/Provider") { }
 
   function cost(c: ModelsDev.Model["cost"]): Model["cost"] {
     const result: Model["cost"] = {
@@ -1540,9 +1540,9 @@ export namespace Provider {
           try {
             const language = s.modelLoaders[model.providerID]
               ? await s.modelLoaders[model.providerID](sdk, model.api.id, {
-                  ...provider.options,
-                  ...model.options,
-                })
+                ...provider.options,
+                ...model.options,
+              })
               : sdk.languageModel(model.api.id)
             s.models.set(key, language)
             return language

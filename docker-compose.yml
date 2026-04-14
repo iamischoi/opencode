@@ -1,0 +1,50 @@
+version: "3.8"
+
+services:
+  # API Mode: 기본 백엔드 서버 역할
+  # 실행 방법: podman-compose up -d opencode-api
+  opencode-api:
+    build: .
+    image: opencode-internal-server:1.0
+    container_name: opencode-api
+    command: ["serve"]
+    restart: unless-stopped
+    ports:
+      # 외부 포트 10043을 내부 컨테이너의 10043번으로 매핑
+      - "10043:10043"
+    volumes:
+      - opencode-workspace-api-pv:/workspace
+      - ./opencode-server.properties:/app/opencode-server.properties
+    environment:
+      - OPENCODE_PORT=${OPENCODE_PORT:-10043}
+      - OPENCODE_HOSTNAME=${OPENCODE_HOSTNAME:-0.0.0.0}
+      - OPENCODE_ARGS=${OPENCODE_ARGS:-}
+      - OPENCODE_SERVER_PASSWORD=${OPENCODE_SERVER_PASSWORD:-}
+      - REPOSITORIES=${REPOSITORIES:-}
+
+  # CLI/Web Mode: CLI에서 제공되는 웹 인터페이스 모드
+  # 실행 방법: podman-compose up -d opencode-web
+  opencode-web:
+    build: .
+    image: opencode-internal-server:1.0
+    container_name: opencode-web
+    command: ["web"]
+    restart: unless-stopped
+    ports:
+      # API와 포트 충돌을 피하기 위해 10044 포트를 컨테이너 10043에 매핑
+      - "10044:10043"
+    volumes:
+      - opencode-workspace-web-pv:/workspace
+      - ./opencode-server.properties:/app/opencode-server.properties
+    environment:
+      - OPENCODE_PORT=${OPENCODE_PORT:-10043}
+      - OPENCODE_HOSTNAME=${OPENCODE_HOSTNAME:-0.0.0.0}
+      - OPENCODE_ARGS=${OPENCODE_ARGS:-}
+      - OPENCODE_SERVER_PASSWORD=${OPENCODE_SERVER_PASSWORD:-}
+      - REPOSITORIES=${REPOSITORIES:-}
+
+volumes:
+  # API 전용 PV
+  opencode-workspace-api-pv: # Web 전용 PV (필요 시 API PV를 공유해도 됩니다)
+
+  opencode-workspace-web-pv:

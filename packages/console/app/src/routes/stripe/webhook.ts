@@ -9,8 +9,10 @@ import { Actor } from "@opencode-ai/console-core/actor.js"
 import { Resource } from "@opencode-ai/console-resource"
 import { LiteData } from "@opencode-ai/console-core/lite.js"
 import { BlackData } from "@opencode-ai/console-core/black.js"
+import { external } from "@opencode-ai/console-core/flag.js"
 
 export async function POST(input: APIEvent) {
+  if (!external) return Response.json({ message: "external access disabled" }, { status: 503 })
   const body = await Billing.stripe().webhooks.constructEventAsync(
     await input.request.text(),
     input.request.headers.get("stripe-signature")!,

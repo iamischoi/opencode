@@ -4,6 +4,7 @@ import { HttpClient } from "effect/unstable/http"
 import { Tool } from "./tool"
 import * as McpExa from "./mcp-exa"
 import DESCRIPTION from "./websearch.txt"
+import { Flag } from "@/flag/flag"
 
 const Parameters = z.object({
   query: z.string().describe("Websearch query"),
@@ -36,6 +37,9 @@ export const WebSearchTool = Tool.define(
       parameters: Parameters,
       execute: (params: z.infer<typeof Parameters>, ctx: Tool.Context) =>
         Effect.gen(function* () {
+          if (Flag.OPENCODE_DISABLE_EXTERNAL_ACCESS) {
+            throw new Error("External access disabled")
+          }
           yield* ctx.ask({
             permission: "websearch",
             patterns: [params.query],

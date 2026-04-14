@@ -1,8 +1,10 @@
 import { query } from "@solidjs/router"
 import { config } from "~/config"
+import { external } from "@opencode-ai/console-core/flag.js"
 
 export const github = query(async () => {
   "use server"
+  if (!external) return undefined
   const headers = {
     "User-Agent":
       "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/108.0.0.0 Safari/537.36",

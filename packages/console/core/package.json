@@ -19,6 +19,7 @@
     "zod": "catalog:"
   },
   "exports": {
+    "./flag": "./src/flag.ts",
     "./*.js": "./src/*.ts",
     "./*": "./src/*"
   },
