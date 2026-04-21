@@ -1,3 +1,17 @@
+import path from "path"
+import { loadProperties } from "./util/properties"
+
+// Load properties from workspace root if they exist
+const possiblePaths = [
+  path.join(process.cwd(), "opencode-server.properties"),
+  path.join(path.dirname(process.cwd()), "opencode-server.properties"),
+  path.join(path.dirname(path.dirname(process.cwd())), "opencode-server.properties"),
+  "opencode-server.properties"
+]
+for (const p of possiblePaths) {
+  loadProperties(p)
+}
+
 import yargs from "yargs"
 import { hideBin } from "yargs/helpers"
 import { RunCommand } from "./cli/cmd/run"
@@ -30,7 +44,6 @@ import { WebCommand } from "./cli/cmd/web"
 import { PrCommand } from "./cli/cmd/pr"
 import { SessionCommand } from "./cli/cmd/session"
 import { DbCommand } from "./cli/cmd/db"
-import path from "path"
 import { Global } from "./global"
 import { JsonMigration } from "./storage"
 import { Database } from "./storage"

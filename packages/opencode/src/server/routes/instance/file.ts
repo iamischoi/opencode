@@ -1,12 +1,15 @@
+import path from "path"
 import { Hono } from "hono"
 import { describeRoute, validator, resolver } from "hono-openapi"
 import z from "zod"
+import { AppFileSystem } from "@opencode-ai/shared/filesystem"
 import { File } from "@/file"
 import { Ripgrep } from "@/file/ripgrep"
 import { LSP } from "@/lsp"
 import { Instance } from "@/project/instance"
 import { lazy } from "@/util/lazy"
-import { jsonRequest } from "./trace"
+import { jsonRequest, runRequest } from "./trace"
+import { Effect } from "effect"
 
 export const FileRoutes = lazy(() =>
   new Hono()
@@ -186,5 +189,53 @@ export const FileRoutes = lazy(() =>
           const svc = yield* File.Service
           return yield* svc.status()
         }),
+    )
+    .get(
+      "/file/raw",
+      describeRoute({
+        summary: "Download raw file",
+        description: "Download a file from the project directory as a raw stream.",
+        operationId: "file.raw",
+        responses: {
+          200: {
+            description: "File content",
+            content: {
+              "application/octet-stream": {
+                schema: { type: "string", format: "binary" },
+              },
+            },
+          },
+        },
+      }),
+      validator(
+        "query",
+        z.object({
+          path: z.string(),
+        }),
+      ),
+      async (c) => {
+        const { path: filePath } = c.req.valid("query")
+        return await runRequest("FileRoutes.raw", c, Effect.gen(function* () {
+          const appFs = yield* AppFileSystem.Service
+          const fullPath = path.resolve(Instance.directory, filePath)
+
+          if (!AppFileSystem.contains(Instance.directory, fullPath)) {
+            return c.text("Forbidden", 403)
+          }
+
+          const exists = yield* appFs.existsSafe(fullPath)
+          if (!exists) {
+            return c.text("Not Found", 404)
+          }
+
+          const bytes = yield* appFs.readFile(fullPath)
+          const mime = AppFileSystem.mimeType(fullPath)
+
+          return c.body(bytes, 200, {
+            "Content-Type": mime,
+            "Content-Disposition": `attachment; filename="${encodeURIComponent(path.basename(fullPath))}"`,
+          })
+        }))
+      },
     ),
 )

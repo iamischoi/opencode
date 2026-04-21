@@ -13,6 +13,12 @@ export class Server extends Schema.Class<Server>("ServerConfig")({
   cors: Schema.optional(Schema.mutable(Schema.Array(Schema.String))).annotate({
     description: "Additional domains to allow for CORS",
   }),
+  appConfig: Schema.optional(Schema.String).annotate({
+    description: "Mapping of application names to codes (e.g. SOLT1:S1,SOLT2:S2)",
+  }),
+  agentTypes: Schema.optional(Schema.mutable(Schema.Array(Schema.String))).annotate({
+    description: "List of enabled agent types (e.g. 의뢰, 검토, 개발, 검증)",
+  }),
 }) {
   static readonly zod = zod(this)
 }

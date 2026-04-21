@@ -3,6 +3,8 @@ import { encodeFilePath } from "@/context/file/path"
 import { Collapsible } from "@opencode-ai/ui/collapsible"
 import { FileIcon } from "@opencode-ai/ui/file-icon"
 import { Icon } from "@opencode-ai/ui/icon"
+import { IconButton } from "@opencode-ai/ui/icon-button"
+import { Tooltip } from "@opencode-ai/ui/tooltip"
 import {
   createEffect,
   createMemo,
@@ -18,6 +20,10 @@ import {
 } from "solid-js"
 import { Dynamic } from "solid-js/web"
 import type { FileNode } from "@opencode-ai/sdk/v2"
+import { useServer } from "@/context/server"
+import { useParams } from "@solidjs/router"
+import { decode64 } from "@/utils/base64"
+import { useLanguage } from "@/context/language"
 
 const MAX_DEPTH = 128
 

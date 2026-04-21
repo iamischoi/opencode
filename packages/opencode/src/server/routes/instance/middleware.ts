@@ -8,7 +8,9 @@ import { WorkspaceID } from "@/control-plane/schema"
 
 export function InstanceMiddleware(workspaceID?: WorkspaceID): MiddlewareHandler {
   return async (c, next) => {
-    const raw = c.req.query("directory") || c.req.header("x-opencode-directory") || process.cwd()
+    let raw = c.req.query("directory") || c.req.header("x-opencode-directory") || process.cwd()
+    // [Docker] Normalize root directory to workspace path for single-tenant container deployments
+    if ((raw === "/" || raw === "%2F") && process.env.OPENCODE_WORKSPACE) raw = process.env.OPENCODE_WORKSPACE
     const directory = AppFileSystem.resolve(
       (() => {
         try {
