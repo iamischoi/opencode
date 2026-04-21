@@ -131,9 +131,9 @@ export const OpenAiRoutes = () => {
         const isDynamicModel = model && (model.endsWith(" AGENT") || model === "SHLIFE-CODE-AGENT")
 
         if (model && !isDynamicModel) {
-          const found = yield* agentSvc.get(model).pipe(Effect.either)
-          if (found._tag === "Right" && found.right) {
-            agentName = found.right.name
+          const exit = yield* Effect.exit(agentSvc.get(model))
+          if (exit._tag === "Success" && exit.value) {
+            agentName = exit.value.name
           }
         }
 
@@ -148,9 +148,7 @@ export const OpenAiRoutes = () => {
         // For simplicity, we create a new session if none is clearly associated.
         // clients like Open WebUI often don't pass a session ID, so we might want to 
         // rely on recent sessions or a fresh one. Here we create a new one to be clean.
-        const session = yield* sessionSvc.create({
-          directory: Instance.directory,
-        })
+        const session = yield* sessionSvc.create({})
         const sessionID = session.id
 
         if (shouldStream) {
@@ -342,8 +340,8 @@ export const OpenAiRoutes = () => {
 
                 // 9. File Changes (Patches)
                 if (event.type === "message.part.created" && event.properties.type === "patch") {
-                  const files = event.properties.files || []
-                  await sendStatusUpdate(formatStatus(`📝 코드 변경 사항 반영 중:\n${files.map(f => `  - ${f}`).join("\n")}`))
+                  const files = (event.properties.files || []) as string[]
+                  await sendStatusUpdate(formatStatus(`📝 코드 변경 사항 반영 중:\n${files.map((f: string) => `  - ${f}`).join("\n")}`))
                 }
 
                 // 10. Retries
@@ -415,7 +413,7 @@ export const OpenAiRoutes = () => {
                       else if (args.Url) argsDesc = `: \`${args.Url}\``
                       // 4. Fallbacks
                       else if (args.filename) argsDesc = `: \`${args.filename}\``
-                    } catch (e) { }
+                    } catch (e: unknown) { }
                     msg = formatStatus(`⏳ ${name} 실행 중${argsDesc}...`)
                   } else if (state.status === "completed") {
                     lastActivity = "tool"
@@ -491,7 +489,7 @@ export const OpenAiRoutes = () => {
         // Non-streaming
         const msg = yield* promptSvc.prompt({
           sessionID,
-          text: lastMessage,
+          parts: [{ type: "text", text: lastMessage }],
           agent: agent.name,
         })
 
@@ -519,7 +517,7 @@ export const OpenAiRoutes = () => {
             total_tokens: 0
           }
         })
-      }))
+      }) as any)
     },
   )
 

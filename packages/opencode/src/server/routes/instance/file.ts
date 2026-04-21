@@ -231,7 +231,7 @@ export const FileRoutes = lazy(() =>
           const bytes = yield* appFs.readFile(fullPath)
           const mime = AppFileSystem.mimeType(fullPath)
 
-          return c.body(bytes, 200, {
+          return c.newResponse(bytes as any, 200, {
             "Content-Type": mime,
             "Content-Disposition": `attachment; filename="${encodeURIComponent(path.basename(fullPath))}"`,
           })
