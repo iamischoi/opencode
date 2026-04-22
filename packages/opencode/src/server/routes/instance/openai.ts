@@ -137,12 +137,63 @@ export const OpenAiRoutes = () => {
           }
         }
 
-        const agent = (yield* agentSvc.get(agentName)) || (yield* agentSvc.get("build"))
+        let promptModelOverride: { providerID: ProviderID; modelID: ModelID } | undefined = undefined
 
-        if (model && model.includes(" AGENT")) {
+        if (model && (model.includes(" AGENT") || model === "SHLIFE-CODE-AGENT")) {
           log.info("detected dynamic agent request", { model })
-          // You could extract app code/type here if needed for prompt injection
+          
+          let agentType = "default"
+          if (model.endsWith(" AGENT")) {
+            const parts = model.split(" ")
+            if (parts.length >= 3) {
+              agentType = parts[parts.length - 2]
+            }
+          }
+
+          const agentModelsEnv = process.env.OPENCODE_AGENT_MODELS || ""
+          const agentModelsMap = Object.fromEntries(
+            agentModelsEnv.split(",")
+              .map(s => s.trim())
+              .filter(Boolean)
+              .map(s => s.split(":"))
+              .filter(parts => parts.length >= 2)
+              .map(parts => {
+                const k = parts[0].trim()
+                const v = parts.length === 3 
+                    ? { overrideAgent: parts[1].trim(), targetModelStr: parts[2].trim() }
+                    : { overrideAgent: null, targetModelStr: parts[1].trim() }
+                return [k, v]
+              })
+          )
+
+          const mapping = agentModelsMap[agentType] || agentModelsMap["default"]
+          if (mapping) {
+            const { overrideAgent, targetModelStr } = mapping
+            
+            if (overrideAgent) {
+              const exit = yield* Effect.exit(agentSvc.get(overrideAgent))
+              if (exit._tag === "Success" && exit.value) {
+                agentName = exit.value.name
+                log.info("applied agent route override", { agentType, overrideAgent })
+              } else {
+                log.warn("failed to apply agent route override because agent was not found", { agentType, overrideAgent })
+              }
+            }
+
+            if (targetModelStr) {
+              const splitIdx = targetModelStr.indexOf("/")
+              if (splitIdx > 0) {
+                promptModelOverride = {
+                  providerID: ProviderID.make(targetModelStr.substring(0, splitIdx)),
+                  modelID: ModelID.make(targetModelStr.substring(splitIdx + 1))
+                }
+                log.info("applied agent model override", { agentType, targetModelStr })
+              }
+            }
+          }
         }
+
+        const agent = (yield* agentSvc.get(agentName)) || (yield* agentSvc.get("build"))
 
         // 2. Identify/Create session
         // For simplicity, we create a new session if none is clearly associated.
@@ -454,6 +505,7 @@ export const OpenAiRoutes = () => {
                   sessionID,
                   parts: [{ type: "text", text: lastMessage }],
                   agent: agent.name,
+                  model: promptModelOverride,
                 })
               )
 
@@ -491,6 +543,7 @@ export const OpenAiRoutes = () => {
           sessionID,
           parts: [{ type: "text", text: lastMessage }],
           agent: agent.name,
+          model: promptModelOverride,
         })
 
         const content = msg.parts

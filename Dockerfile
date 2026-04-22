@@ -42,8 +42,8 @@ RUN bun install --frozen-lockfile
 # Copy the rest of the codebase
 COPY . .
 
-# Make entrypoint script executable
-RUN chmod +x docker-entrypoint.sh
+# Make entrypoint script executable and fix potential Windows line endings (CRLF -> LF)
+RUN sed -i 's/\r$//' docker-entrypoint.sh && chmod +x docker-entrypoint.sh
 
 # Expose the requested port for the API server
 EXPOSE 10043

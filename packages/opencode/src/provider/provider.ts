@@ -437,10 +437,10 @@ function custom(dep: CustomDep): Record<string, CustomLoader> {
 
       const location = String(
         provider.options?.location ??
-          env["GOOGLE_VERTEX_LOCATION"] ??
-          env["GOOGLE_CLOUD_LOCATION"] ??
-          env["VERTEX_LOCATION"] ??
-          "us-central1",
+        env["GOOGLE_VERTEX_LOCATION"] ??
+        env["GOOGLE_CLOUD_LOCATION"] ??
+        env["VERTEX_LOCATION"] ??
+        "us-central1",
       )
 
       const autoload = Boolean(project)
@@ -607,9 +607,9 @@ function custom(dep: CustomDep): Record<string, CustomLoader> {
               log.info("gitlab model discovery skipped: no models found", {
                 project: result.project
                   ? {
-                      id: result.project.id,
-                      path: result.project.pathWithNamespace,
-                    }
+                    id: result.project.id,
+                    path: result.project.pathWithNamespace,
+                  }
                   : null,
               })
               return {}
@@ -750,7 +750,7 @@ function custom(dep: CustomDep): Record<string, CustomLoader> {
       if (!apiToken) {
         throw new Error(
           "CLOUDFLARE_API_TOKEN (or CF_AIG_TOKEN) is required for Cloudflare AI Gateway. " +
-            "Set it via environment variable or run `opencode auth cloudflare-ai-gateway`.",
+          "Set it via environment variable or run `opencode auth cloudflare-ai-gateway`.",
         )
       }
 
@@ -943,7 +943,7 @@ interface State {
   varsLoaders: Record<string, CustomVarsLoader>
 }
 
-export class Service extends Context.Service<Service, Interface>()("@opencode/Provider") {}
+export class Service extends Context.Service<Service, Interface>()("@opencode/Provider") { }
 
 function cost(c: ModelsDev.Model["cost"]): Model["cost"] {
   const result: Model["cost"] = {
@@ -1032,11 +1032,11 @@ export function fromModelsDevProvider(provider: ModelsDev.Provider): Info {
         cost: opts.cost ? mergeDeep(base.cost, cost(opts.cost)) : base.cost,
         options: opts.provider?.body
           ? Object.fromEntries(
-              Object.entries(opts.provider.body).map(([k, v]) => [
-                k.replace(/_([a-z])/g, (_, c) => c.toUpperCase()),
-                v,
-              ]),
-            )
+            Object.entries(opts.provider.body).map(([k, v]) => [
+              k.replace(/_([a-z])/g, (_, c) => c.toUpperCase()),
+              v,
+            ]),
+          )
           : base.options,
         headers: opts.provider?.headers ?? base.headers,
       }
@@ -1371,6 +1371,70 @@ const layer: Layer.Layer<
           log.info("found", { providerID })
         }
 
+
+        // Inject dynamic multi-endpoint custom providers
+        const customProvidersEnv = process.env.OPENCODE_CUSTOM_PROVIDERS || ""
+        const customProviderNames = customProvidersEnv.split(",").map(s => s.trim()).filter(Boolean)
+
+        for (const pName of customProviderNames) {
+          const upperName = pName.toUpperCase().replace(/[^A-Z0-9_]/g, "_")
+          const pUrl = process.env[`OPENCODE_PROVIDER_${upperName}_URL`]
+          const pKey = process.env[`OPENCODE_PROVIDER_${upperName}_KEY`] || "internal"
+          const pModelsStr = process.env[`OPENCODE_PROVIDER_${upperName}_MODELS`] || ""
+
+          if (!pUrl) {
+            log.warn(`custom provider ${pName} missing URL. Skipping.`)
+            continue
+          }
+
+          const providerID = ProviderID.make(pName)
+          const customModels: Record<string, any> = {}
+          const modelNames = pModelsStr.split(",").map(s => s.trim()).filter(Boolean)
+
+          for (const mName of modelNames) {
+            const mID = ModelID.make(mName)
+            customModels[mID] = {
+              id: mID,
+              providerID: providerID,
+              name: mName,
+              api: {
+                id: mName,
+                url: pUrl,
+                npm: "@ai-sdk/openai-compatible",
+              },
+              status: "active",
+              headers: {},
+              options: {},
+              cost: { input: 0, output: 0, cache: { read: 0, write: 0 } },
+              limit: { context: 32768, output: 4096 },
+              capabilities: {
+                temperature: true,
+                reasoning: false,
+                attachment: false,
+                toolcall: true,
+                input: { text: true, audio: false, image: false, video: false, pdf: false },
+                output: { text: true, audio: false, image: false, video: false, pdf: false },
+                interleaved: false,
+              },
+              release_date: new Date().toISOString(),
+              variants: {},
+            }
+          }
+
+          providers[providerID] = {
+            id: providerID,
+            name: `${pName} Custom LLM`,
+            source: "env",
+            env: [],
+            options: {
+              baseURL: pUrl,
+              apiKey: pKey,
+            },
+            models: customModels,
+          }
+          log.info("injected custom provider", { providerID, models: modelNames })
+        }
+
         return {
           models: languages,
           providers,
@@ -1401,7 +1465,7 @@ const layer: Layer.Layer<
 
         const baseURL = iife(() => {
           let url =
-            typeof options["baseURL"] === "string" && options["baseURL"] !== "" ? options["baseURL"] : model.api.url
+            typeof options["baseURL"] === "string" && options["baseURL"] !== "" ? options["baseURL"] : (model.api.url || Flag.OPENCODE_INTERNAL_URL)
           if (!url) return
 
           const loader = s.varsLoaders[model.providerID]
@@ -1421,7 +1485,7 @@ const layer: Layer.Layer<
         })
 
         if (baseURL !== undefined) options["baseURL"] = baseURL
-        if (options["apiKey"] === undefined && provider.key) options["apiKey"] = provider.key
+        if (options["apiKey"] === undefined) options["apiKey"] = provider.key || Flag.OPENCODE_INTERNAL_KEY
         if (model.headers)
           options["headers"] = {
             ...options["headers"],
@@ -1555,9 +1619,9 @@ const layer: Layer.Layer<
         try {
           const language = s.modelLoaders[model.providerID]
             ? await s.modelLoaders[model.providerID](sdk, model.api.id, {
-                ...provider.options,
-                ...model.options,
-              })
+              ...provider.options,
+              ...model.options,
+            })
             : sdk.languageModel(model.api.id)
           s.models.set(key, language)
           return language
@@ -1667,7 +1731,7 @@ const layer: Layer.Layer<
         return { providerID: entry.providerID, modelID: entry.modelID }
       }
 
-      const provider = Object.values(s.providers).find((p) => !cfg.provider || Object.keys(cfg.provider).includes(p.id))
+      const provider = Object.values(s.providers).find((p) => !cfg.provider || Object.keys(cfg.provider).length === 0 || Object.keys(cfg.provider).includes(p.id))
       if (!provider) throw new Error("no providers found")
       const [model] = sort(Object.values(provider.models))
       if (!model) throw new Error("no models found")

@@ -1,0 +1,13 @@
+node_modules
+.git
+.idea
+.vscode
+*.log
+dist
+build
+.next
+.opencode/logs
+.opencode/db
+.opencode/storage
+.opencode/artifacts
+.opencode/scratch
