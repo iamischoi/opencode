@@ -1372,9 +1372,10 @@ const layer: Layer.Layer<
         }
 
 
-        // Inject dynamic multi-endpoint custom providers
+        // Inject dynamic multi-endpoint custom providers only if the flag is enabled
+        const useCustomProviders = process.env.OPENCODE_USE_CUSTOM_PROVIDERS?.toLowerCase() === "true"
         const customProvidersEnv = process.env.OPENCODE_CUSTOM_PROVIDERS || ""
-        const customProviderNames = customProvidersEnv.split(",").map(s => s.trim()).filter(Boolean)
+        const customProviderNames = useCustomProviders ? customProvidersEnv.split(",").map(s => s.trim()).filter(Boolean) : []
 
         for (const pName of customProviderNames) {
           const upperName = pName.toUpperCase().replace(/[^A-Z0-9_]/g, "_")
@@ -1465,7 +1466,7 @@ const layer: Layer.Layer<
 
         const baseURL = iife(() => {
           let url =
-            typeof options["baseURL"] === "string" && options["baseURL"] !== "" ? options["baseURL"] : (model.api.url || Flag.OPENCODE_INTERNAL_URL)
+            typeof options["baseURL"] === "string" && options["baseURL"] !== "" ? options["baseURL"] : model.api.url
           if (!url) return
 
           const loader = s.varsLoaders[model.providerID]
@@ -1477,7 +1478,7 @@ const layer: Layer.Layer<
             }
           }
 
-          url = url.replace(/\$\{([^}]+)\}/g, (item, key) => {
+          url = url.replace(/\$\{([^}]+)\}/g, (item: string, key: string) => {
             const val = envs[String(key)]
             return val ?? item
           })
@@ -1485,7 +1486,7 @@ const layer: Layer.Layer<
         })
 
         if (baseURL !== undefined) options["baseURL"] = baseURL
-        if (options["apiKey"] === undefined) options["apiKey"] = provider.key || Flag.OPENCODE_INTERNAL_KEY
+        if (options["apiKey"] === undefined) options["apiKey"] = provider.key
         if (model.headers)
           options["headers"] = {
             ...options["headers"],

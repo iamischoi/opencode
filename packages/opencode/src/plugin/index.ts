@@ -17,6 +17,7 @@ import { CopilotAuthPlugin } from "./github-copilot/copilot"
 import { gitlabAuthPlugin as GitlabAuthPlugin } from "opencode-gitlab-auth"
 import { PoeAuthPlugin } from "opencode-poe-auth"
 import { CloudflareAIGatewayAuthPlugin, CloudflareWorkersAuthPlugin } from "./cloudflare"
+import OhMyOpenCodePlugin from "@opencode-ai/openagent"
 import { Effect, Layer, Context, Stream } from "effect"
 import { EffectBridge } from "@/effect"
 import { InstanceState } from "@/effect"
@@ -51,7 +52,7 @@ export interface Interface {
   readonly init: () => Effect.Effect<void>
 }
 
-export class Service extends Context.Service<Service, Interface>()("@opencode/Plugin") {}
+export class Service extends Context.Service<Service, Interface>()("@opencode/Plugin") { }
 
 // Built-in plugins that are directly imported (not installed from npm)
 const INTERNAL_PLUGINS: PluginInstance[] = [
@@ -61,6 +62,7 @@ const INTERNAL_PLUGINS: PluginInstance[] = [
   PoeAuthPlugin,
   CloudflareWorkersAuthPlugin,
   CloudflareAIGatewayAuthPlugin,
+  OhMyOpenCodePlugin,
 ]
 
 function isServerPlugin(value: unknown): value is PluginInstance {
@@ -124,8 +126,8 @@ export const layer = Layer.effect(
           directory: ctx.directory,
           headers: Flag.OPENCODE_SERVER_PASSWORD
             ? {
-                Authorization: `Basic ${Buffer.from(`${Flag.OPENCODE_SERVER_USERNAME ?? "opencode"}:${Flag.OPENCODE_SERVER_PASSWORD}`).toString("base64")}`,
-              }
+              Authorization: `Basic ${Buffer.from(`${Flag.OPENCODE_SERVER_USERNAME ?? "opencode"}:${Flag.OPENCODE_SERVER_PASSWORD}`).toString("base64")}`,
+            }
             : undefined,
           fetch: async (...args) => (await Server.Default()).app.fetch(...args),
         })
@@ -263,6 +265,10 @@ export const layer = Layer.effect(
     >(name: Name, input: Input, output: Output) {
       if (!name) return output
       const s = yield* InstanceState.get(state)
+      
+      // Publish to bus so other components (like openai.ts) can observe plugin triggers
+      yield* bus.publish(name as any, { ...input as any, output } as any)
+
       for (const hook of s.hooks) {
         const fn = hook[name] as any
         if (!fn) continue

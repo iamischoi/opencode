@@ -8,6 +8,7 @@ import { SessionPrompt } from "@/session/prompt"
 import { Bus } from "@/bus"
 import { Agent } from "@/agent/agent"
 import { jsonRequest, runRequest } from "./trace"
+import { Auth } from "@/auth"
 import { Effect, Option } from "effect"
 import { AppRuntime } from "@/effect/app-runtime"
 import { MessageV2 } from "@/session/message-v2"
@@ -123,9 +124,14 @@ export const OpenAiRoutes = () => {
         const sessionSvc = yield* Session.Service
         const promptSvc = yield* SessionPrompt.Service
         const agentSvc = yield* Agent.Service
+        const authSvc = yield* Auth.Service
 
-        // 1. Resolve internal agent (build is the primary default)
-        let agentName = "build"
+        const auths = yield* authSvc.all()
+        const isLoggedIn = Object.values(auths).some(auth => auth.type === "oauth")
+
+        // 1. Resolve internal agent (sisyphus is the primary default for external API clients)
+        let agentName = "sisyphus"
+        const useCustomProviders = process.env.OPENCODE_USE_CUSTOM_PROVIDERS?.toLowerCase() === "true"
 
         // Check if the model is one of our dynamic aliases
         const isDynamicModel = model && (model.endsWith(" AGENT") || model === "SHLIFE-CODE-AGENT")
@@ -180,7 +186,7 @@ export const OpenAiRoutes = () => {
               }
             }
 
-            if (targetModelStr) {
+            if (targetModelStr && (useCustomProviders || isLoggedIn)) {
               const splitIdx = targetModelStr.indexOf("/")
               if (splitIdx > 0) {
                 promptModelOverride = {
@@ -193,7 +199,27 @@ export const OpenAiRoutes = () => {
           }
         }
 
-        const agent = (yield* agentSvc.get(agentName)) || (yield* agentSvc.get("build"))
+        // If no model override is found, and we are not using custom providers AND not logged in, enforce the default free model
+        if (!promptModelOverride && !useCustomProviders && !isLoggedIn) {
+          log.info("No custom provider and no explicit model override. Falling back to default free model.")
+          promptModelOverride = {
+            providerID: ProviderID.make("opencode"),
+            modelID: ModelID.make("minimax-m2.5-free")
+          }
+        }
+
+        let agent: any
+        const result1 = yield* Effect.exit(agentSvc.get(agentName))
+        if (result1._tag === "Success" && result1.value) {
+          agent = result1.value
+        } else {
+          const result2 = yield* Effect.exit(agentSvc.get("sisyphus"))
+          if (result2._tag === "Success" && result2.value) {
+            agent = result2.value
+          } else {
+            agent = yield* agentSvc.get("build")
+          }
+        }
 
         // 2. Identify/Create session
         // For simplicity, we create a new session if none is clearly associated.
@@ -228,9 +254,30 @@ export const OpenAiRoutes = () => {
             let toolCallCount = 0
             let lastActivity: "prompt" | "tool" | "agent" | "planning" | "none" = "prompt"
             let lastSentStatus = "" // For deduplication
+            let currentAgentDisplayName = "Sisyphus"
+            let currentTaskSummary = ""
+
+            // Phase tracking: route intermediate LLM text to reasoning, final answer to content
+            let hasToolCallsInSession = false   // true once any tool is called in this turn
+            let currentStepHasTools = false      // true if current step has tool calls
+            let lastStepHadTools = false          // true if the previous step had tool calls
+            let finalAnswerStarted = false        // true once we inject the separator
+            let textBuffer = ""                     // accumulates text during tool-loop phases
+
+            const trackedSessions = new Set<string>([sessionID])
 
             const unsub = Bus.subscribeAll(async (event) => {
-              if (event.properties?.sessionID !== sessionID) return
+              // 1. Track session hierarchy: if a new session is created as a child of a tracked session, track it too.
+              if (event.type === "session.created") {
+                const info = event.properties.info
+                if (info && info.parentID && trackedSessions.has(info.parentID)) {
+                  trackedSessions.add(event.properties.sessionID)
+                  log.info("tracking child session", { sessionID: event.properties.sessionID, parentID: info.parentID })
+                }
+              }
+
+              // 2. Filter events by session hierarchy
+              if (!event.properties?.sessionID || !trackedSessions.has(event.properties.sessionID)) return
 
               // Detailed logging to help debug event flow
               log.debug("captured bus event", { type: event.type, properties: event.properties })
@@ -240,18 +287,29 @@ export const OpenAiRoutes = () => {
                 const formatStatus = (msg: string) => `\n> ${msg}\n`
 
                 // Helper to send deduplicated status update
-                const sendStatusUpdate = async (msg: string) => {
+                const sendStatusUpdate = async (msg: string, asContent = false) => {
                   if (msg === lastSentStatus) return
                   lastSentStatus = msg
+                  
+                  const delta: any = {}
+
+                  if (asContent) {
+                    // For activity status, send to the main content stream
+                    delta.content = msg
+                  } else {
+                    // For internal thoughts, send to reasoning fields
+                    delta.reasoning_content = msg
+                    delta.thought = msg
+                    delta.thinking = msg
+                    delta.reasoning = msg
+                  }
+
                   await sseStream.writeSSE({
                     data: JSON.stringify({
                       id: sessionID, object: "chat.completion.chunk", created, model: modelName,
                       choices: [{
                         index: 0,
-                        delta: {
-                          reasoning_content: msg,
-                          thought: msg
-                        },
+                        delta,
                         finish_reason: null
                       }]
                     })
@@ -268,16 +326,31 @@ export const OpenAiRoutes = () => {
                     if (lastActivity === "agent") thought = "🤖 새로운 에이전트가 작업 맥락을 파악하고 있습니다..."
                     if (lastActivity === "planning") thought = "📋 계획된 다음 단계 실행을 준비 중입니다..."
 
-                    await sendStatusUpdate(formatStatus(thought))
+                    await sendStatusUpdate(formatStatus(thought), false) // Don't spam content with "thinking" placeholders
                   }
                   if (status.type === "retry") {
-                    await sendStatusUpdate(formatStatus(`⚠️ 재시도 중... (시도 ${status.attempt})\n> 사유: ${status.message}`))
+                    await sendStatusUpdate(formatStatus(`⚠️ 재시도 중... (시도 ${status.attempt})\n> 사유: ${status.message}`), false)
                   }
                 }
 
-                // 2. Text Deltas (Final Answer)
+                // 1.5 New Text Part Start - clear buffer so only the last text part remains
+                // Within a step, the LLM may produce multiple text parts:
+                // first for thinking, then for the actual answer. We only want the last one.
+                if (event.type === "message.part.updated" && event.properties.part?.type === "text") {
+                  const part = event.properties.part as { text: string }
+                  if (part.text === "") {
+                    // A new text part with empty text = start of a new text section
+                    textBuffer = ""
+                  }
+                }
+
+                // 2. Text Deltas - ALL text goes to reasoning during processing
+                // The final answer buffer is flushed to content after prompt completion
                 if (event.type === "message.part.delta" && event.properties.field === "text") {
                   const delta = event.properties.delta
+                  textBuffer += delta
+
+                  // Stream to reasoning so user can see progress in Thinking box
                   await sseStream.writeSSE({
                     data: JSON.stringify({
                       id: sessionID,
@@ -286,7 +359,12 @@ export const OpenAiRoutes = () => {
                       model: modelName,
                       choices: [{
                         index: 0,
-                        delta: { content: delta },
+                        delta: {
+                          reasoning_content: delta,
+                          reasoning: delta,
+                          thinking: delta,
+                          thought: delta
+                        },
                         finish_reason: null
                       }]
                     })
@@ -296,16 +374,24 @@ export const OpenAiRoutes = () => {
                 // 3. Reasoning Deltas (Internal CoT)
                 if (event.type === "message.part.delta" && event.properties.field === "reasoning") {
                   const delta = event.properties.delta
+                  
+                  // If this is the start of reasoning and we have context, prepend it
+                  let prefix = ""
+                  if (!lastSentStatus.includes("생각 중") && currentAgentDisplayName) {
+                    prefix = `[${currentAgentDisplayName}] ${currentTaskSummary || "생각 중..."}\n\n`
+                    lastSentStatus = prefix // Mark as sent to avoid repeated prefixing
+                  }
+
                   await sseStream.writeSSE({
                     data: JSON.stringify({
                       id: sessionID, object: "chat.completion.chunk", created, model: modelName,
                       choices: [{
                         index: 0,
                         delta: {
-                          reasoning_content: delta,
-                          reasoning: delta,
-                          thinking: delta,
-                          thought: delta
+                          reasoning_content: prefix + delta,
+                          reasoning: prefix + delta,
+                          thinking: prefix + delta,
+                          thought: prefix + delta
                         },
                         finish_reason: null
                       }]
@@ -321,8 +407,13 @@ export const OpenAiRoutes = () => {
                   const index = toolCallCount++
                   toolCalls.set(partID, { id: toolCallId, index, name: toolName, args: "" })
 
-                  // Instead of simple preparation, we'll rely more on the 'running' state in #12
-                  // but we can show a quick start emoji here.
+                  // Mark that this session and current step use tools
+                  hasToolCallsInSession = true
+                  currentStepHasTools = true
+                  // Clear text buffer - any text before a tool call is intermediate thinking
+                  // (already sent to reasoning stream, not needed for final answer)
+                  textBuffer = ""
+
                   await sendStatusUpdate(formatStatus(`⚙️ **${toolName}** 준비 중...`))
 
                   // Also send the actual tool call chunk (OpenAI spec)
@@ -380,6 +471,8 @@ export const OpenAiRoutes = () => {
                 // 7. Planning / Step Start
                 if (event.type === "message.part.created" && event.properties.type === "step-start") {
                   lastActivity = "planning"
+                  // Clear buffer at step start - previous step's text is intermediate
+                  textBuffer = ""
                   await sendStatusUpdate(formatStatus(`🔍 다음 단계를 계획하고 있습니다...`))
                 }
 
@@ -387,6 +480,17 @@ export const OpenAiRoutes = () => {
                 if (event.type === "message.part.created" && event.properties.type === "step-finish") {
                   const { reason, cost } = event.properties
                   await sendStatusUpdate(formatStatus(`🏁 단계 완료 (상태: ${reason}, 비용: $${cost.toFixed(4)})`))
+
+                  // Track step transitions for phase detection
+                  lastStepHadTools = currentStepHasTools
+                  currentStepHasTools = false
+
+                  if (reason === "tool-calls") {
+                    // Step ended with tool-calls - clear the buffer since this text was intermediate
+                    textBuffer = ""
+                  }
+                  // If reason is NOT "tool-calls" (e.g. "stop", "end_turn"),
+                  // keep textBuffer - it will be flushed as final answer after prompt completes
                 }
 
                 // 9. File Changes (Patches)
@@ -424,9 +528,21 @@ export const OpenAiRoutes = () => {
                     grep_search: "파일 내용 검색",
                     list_dir: "디렉토리 구조 분석",
                     search_web: "웹 검색",
-                    google_search: "구글 검색"
+                    google_search: "구글 검색",
+                    question: "사용자 질문",
+                    delegate_task: "에이전트 업무 위임",
+                    task: "에이전트 업무 위임"
                   }
-                  const name = toolMap[toolName] || toolName
+                  let name = toolMap[toolName]
+                  if (!name) {
+                    // Detect MCP server tools (format: server_toolname)
+                    const mcpMatch = toolName.match(/^([^_]+)_(.+)$/)
+                    if (mcpMatch) {
+                      name = `[MCP ${mcpMatch[1]}] ${mcpMatch[2]}`
+                    } else {
+                      name = toolName
+                    }
+                  }
 
                   if (state.status === "running") {
                     lastActivity = "tool"
@@ -450,19 +566,32 @@ export const OpenAiRoutes = () => {
                       // 1. Prioritize 'description' for high-level intent (common in bash/task tools)
                       if (args.description) {
                         argsDesc = `: ${args.description}`
+                        currentTaskSummary = args.description
                       }
-                      // 2. Specific Path Fields (File/Dir/Grep)
+                      // 2. Question Tool
+                      else if (args.questions && Array.isArray(args.questions) && args.questions[0]?.question) {
+                        argsDesc = `: "${args.questions[0].question}"`
+                        currentTaskSummary = "질문 작성 중"
+                      }
+                      // 3. Delegate Task Tool (Sisyphus orchestration)
+                      else if (toolName === "delegate_task" || toolName === "task") {
+                        const target = args.subagent_type || args.category || "알 수 없는 에이전트"
+                        const taskDesc = args.description || "업무 수행"
+                        argsDesc = `: **${target}**에게 **"${taskDesc}"** 위임`
+                        currentTaskSummary = `${target}에게 업무 위임 중`
+                      }
+                      // 4. Specific Path Fields (File/Dir/Grep)
                       else if (args.filePath) argsDesc = `: \`${formatPath(args.filePath)}\``
                       else if (args.DirectoryPath) argsDesc = `: \`${formatPath(args.DirectoryPath)}\``
                       else if (args.SearchPath) argsDesc = `: \`${formatPath(args.SearchPath)}\``
                       else if (args.TargetFile) argsDesc = `: \`${formatPath(args.TargetFile)}\``
                       else if (args.AbsolutePath) argsDesc = `: \`${formatPath(args.AbsolutePath)}\``
                       else if (args.path) argsDesc = `: \`${formatPath(args.path)}\``
-                      // 3. Command/Query/Url
+                      // 4. Command/Query/Url
                       else if (args.command) argsDesc = `: \`${args.command}\``
                       else if (args.query) argsDesc = `: \`${args.query}\``
                       else if (args.Url) argsDesc = `: \`${args.Url}\``
-                      // 4. Fallbacks
+                      // 5. Fallbacks
                       else if (args.filename) argsDesc = `: \`${args.filename}\``
                     } catch (e: unknown) { }
                     msg = formatStatus(`⏳ ${name} 실행 중${argsDesc}...`)
@@ -491,7 +620,11 @@ export const OpenAiRoutes = () => {
                     coder: "개발 에이전트(Coder)"
                   }
                   const displayName = agentMap[name.toLowerCase()] || `분야별 에이전트(${name})`
+                  currentAgentDisplayName = displayName
+                  currentTaskSummary = "작업 계획 수립 및 수행 중"
                   await sendStatusUpdate(formatStatus(`🤖 작업 주체 전환: **${displayName}**`))
+                  // Also inject into reasoning field for Thinking box context
+                  await sendStatusUpdate(`\n[${displayName}] 작업 수행 중...\n`, false)
                 }
               } catch (e) {
                 log.error("failed to write SSE", { error: e })
@@ -510,6 +643,24 @@ export const OpenAiRoutes = () => {
               )
 
               // After the turn is FULLY complete (all tool loops done)
+              // Flush any remaining buffered text as the final answer
+              if (textBuffer.length > 0) {
+                await sseStream.writeSSE({
+                  data: JSON.stringify({
+                    id: sessionID,
+                    object: "chat.completion.chunk",
+                    created,
+                    model: modelName,
+                    choices: [{
+                      index: 0,
+                      delta: { content: textBuffer },
+                      finish_reason: null
+                    }]
+                  })
+                })
+                textBuffer = ""
+              }
+
               await sseStream.writeSSE({
                 data: JSON.stringify({
                   id: sessionID,

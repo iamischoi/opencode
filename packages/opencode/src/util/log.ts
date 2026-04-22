@@ -60,14 +60,18 @@ let write = (msg: any) => {
 export async function init(options: Options) {
   if (options.level) level = options.level
   void cleanup(Global.Path.log)
-  if (options.print) return
+  
   logpath = path.join(
     Global.Path.log,
     options.dev ? "dev.log" : new Date().toISOString().split(".")[0].replace(/:/g, "") + ".log",
   )
   await fs.truncate(logpath).catch(() => {})
   const stream = createWriteStream(logpath, { flags: "a" })
+  
   write = async (msg: any) => {
+    if (options.print) {
+      process.stderr.write(msg)
+    }
     return new Promise((resolve, reject) => {
       stream.write(msg, (err) => {
         if (err) reject(err)
