@@ -1,0 +1,13 @@
+{
+  "name": "@opencode/api-test",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Standalone API integration test for opencode server (manual vs auto handover modes). Safe to delete.",
+  "scripts": {
+    "test": "bun run src/run-all.ts",
+    "test:manual": "bun run src/scenarios/manual-mode.ts",
+    "test:auto": "bun run src/scenarios/auto-mode.ts",
+    "test:models": "bun run src/scenarios/list-models.ts"
+  }
+}

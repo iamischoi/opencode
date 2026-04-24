@@ -1,0 +1,7 @@
+rule1=src/lsp/diagnostic.ts filters report output to severity===1 only
+rule2=src/lsp/diagnostic.ts caps displayed diagnostics to 20 per file
+rule3=test/util/log.test.ts uses tmpdir plus async file stabilization polling, so temp-file churn is intentional
+rule4=test/effect/runner.test.ts includes Promise.race timeout assertions and cancellation timing checks, so timing-related messages can be expected test behavior
+rule5=test/lib/effect.ts pretty-prints Effect failures to logs, so pretty error output must be paired with failing summary or non-zero exit before classification
+rule6=test/AGENTS.md states it.live is used for real time/filesystem/process behavior, so live-test noise alone is not enough to prove a defect
+classification=stderr/plugin/timing logs alone are non-authoritative without non-zero exit or failing Bun summary

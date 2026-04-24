@@ -1,0 +1,1859 @@
+artifact_note=stale filename from an earlier interpretation; current contents show a completed full-suite run with final Bun summary
+classification=REAL ISSUE
+summary_present=true
+outer_harness_timeout=false
+
+exit_code=1
+bun test v1.3.13 (bf2e2cec)
+System.Management.Automation.RemoteException
+test\effect\cross-spawn-spawner.test.ts:
+[15:20:53.407] ERROR (#7358): 169 |             'process.stderr.write("stderr\\n", done)',
+170 |           ].join("\n"),
+171 |         )
+172 |         const [stdout, stderr] = yield* Effect.all([decodeByteStream(handle.stdout), decodeByteStream(handle.stderr)])
+173 |         expect(stdout).toBe("stdout")
+174 |         expect(stderr).toBe("stderr")
+      ^
+error: expect(received).toBe(expected)
+
+Expected: "stderr"
+Received: ""
+
+      at toBe (unknown:1:1)
+      at D:\sources\poc\ai\opencode\packages\opencode\test\effect\cross-spawn-spawner.test.ts:174:24
+
+169 |             'process.stderr.write("stderr\\n", done)',
+170 |           ].join("\n"),
+171 |         )
+172 |         const [stdout, stderr] = yield* Effect.all([decodeByteStream(handle.stdout), decodeByteStream(handle.stderr)])
+173 |         expect(stdout).toBe("stdout")
+174 |         expect(stderr).toBe("stderr")
+      ^
+error: expect(received).toBe(expected)
+System.Management.Automation.RemoteException
+Expected: "stderr"
+Received: ""
+System.Management.Automation.RemoteException
+      at toBe (unknown:1:1)
+      at D:\sources\poc\ai\opencode\packages\opencode\test\effect\cross-spawn-spawner.test.ts:174:24
+      at ~effect/Effect/successCont (D:\sources\poc\ai\opencode\node_modules\.bun\effect@4.0.0-beta.48\node_modules\effect\dist\internal\effect.js:913:22)
+      at runLoop (D:\sources\poc\ai\opencode\node_modules\.bun\effect@4.0.0-beta.48\node_modules\effect\dist\internal\effect.js:420:66)
+      at evaluate (D:\sources\poc\ai\opencode\node_modules\.bun\effect@4.0.0-beta.48\node_modules\effect\dist\internal\effect.js:380:14)
+      at D:\sources\poc\ai\opencode\node_modules\.bun\effect@4.0.0-beta.48\node_modules\effect\dist\internal\effect.js:732:11
+      at flushWaiters (D:\sources\poc\ai\opencode\node_modules\.bun\effect@4.0.0-beta.48\node_modules\effect\dist\internal\effect.js:2668:11)
+      at openUnsafe (D:\sources\poc\ai\opencode\node_modules\.bun\effect@4.0.0-beta.48\node_modules\effect\dist\internal\effect.js:2681:11)
+      at onEnd (D:\sources\poc\ai\opencode\node_modules\.bun\@effect+platform-node-shared@4.0.0-beta.48+f637a52eb09780da\node_modules\@effect\platform-node-shared\dist\NodeStream.js:242:10)
+      at emit (node:events:92:22)
+      at endReadableNT (internal:streams/readable:865:50)
+      at processTicksAndRejections (unknown:7:39)
+(fail) cross-spawn spawner > stderr > captures both stdout and stderr [328.00ms]
+[15:20:53.726] ERROR (#7370): 180 |     fx.effect(
+181 |       "captures stdout via .all when no stderr",
+182 |       Effect.gen(function* () {
+183 |         const handle = yield* ChildProcess.make("echo", ["hello from stdout"])
+184 |         const all = yield* decodeByteStream(handle.all)
+185 |         expect(all).toBe("hello from stdout")
+      ^
+error: expect(received).toBe(expected)
+
+Expected: "hello from stdout"
+Received: ""hello from stdout""
+
+      at toBe (unknown:1:1)
+      at D:\sources\poc\ai\opencode\packages\opencode\test\effect\cross-spawn-spawner.test.ts:185:21
+
+180 |     fx.effect(
+181 |       "captures stdout via .all when no stderr",
+182 |       Effect.gen(function* () {
+183 |         const handle = yield* ChildProcess.make("echo", ["hello from stdout"])
+184 |         const all = yield* decodeByteStream(handle.all)
+185 |         expect(all).toBe("hello from stdout")
+      ^
+error: expect(received).toBe(expected)
+System.Management.Automation.RemoteException
+Expected: "hello from stdout"
+Received: ""hello from stdout""
+System.Management.Automation.RemoteException
+      at toBe (unknown:1:1)
+      at D:\sources\poc\ai\opencode\packages\opencode\test\effect\cross-spawn-spawner.test.ts:185:21
+      at ~effect/Effect/successCont (D:\sources\poc\ai\opencode\node_modules\.bun\effect@4.0.0-beta.48\node_modules\effect\dist\internal\effect.js:913:22)
+      at runLoop (D:\sources\poc\ai\opencode\node_modules\.bun\effect@4.0.0-beta.48\node_modules\effect\dist\internal\effect.js:420:66)
+      at evaluate (D:\sources\poc\ai\opencode\node_modules\.bun\effect@4.0.0-beta.48\node_modules\effect\dist\internal\effect.js:380:14)
+      at D:\sources\poc\ai\opencode\node_modules\.bun\effect@4.0.0-beta.48\node_modules\effect\dist\internal\effect.js:732:11
+      at evaluate (D:\sources\poc\ai\opencode\node_modules\.bun\effect@4.0.0-beta.48\node_modules\effect\dist\internal\effect.js:397:21)
+      at D:\sources\poc\ai\opencode\node_modules\.bun\effect@4.0.0-beta.48\node_modules\effect\dist\internal\effect.js:732:11
+      at flushWaiters (D:\sources\poc\ai\opencode\node_modules\.bun\effect@4.0.0-beta.48\node_modules\effect\dist\internal\effect.js:2668:11)
+      at openUnsafe (D:\sources\poc\ai\opencode\node_modules\.bun\effect@4.0.0-beta.48\node_modules\effect\dist\internal\effect.js:2681:11)
+      at onEnd (D:\sources\poc\ai\opencode\node_modules\.bun\@effect+platform-node-shared@4.0.0-beta.48+f637a52eb09780da\node_modules\@effect\platform-node-shared\dist\NodeStream.js:242:10)
+      at emit (node:events:92:22)
+      at endReadableNT (internal:streams/readable:865:50)
+      at processTicksAndRejections (native:7:39)
+(fail) cross-spawn spawner > combined output (all) > captures stdout via .all when no stderr [312.00ms]
+System.Management.Automation.RemoteException
+test\file\path-traversal.test.ts:
+156 |     await using tmp = await tmpdir({ git: true })
+157 | 
+158 |     await Instance.provide({
+159 |       directory: tmp.path,
+160 |       fn: () => {
+161 |         expect(Instance.containsPath("/etc/passwd")).toBe(false)
+                                                           ^
+error: expect(received).toBe(expected)
+System.Management.Automation.RemoteException
+Expected: false
+Received: true
+System.Management.Automation.RemoteException
+      at fn (D:\sources\poc\ai\opencode\packages\opencode\test\file\path-traversal.test.ts:161:54)
+      at <anonymous> (D:\sources\poc\ai\opencode\packages\opencode\src\project\instance.ts:73:20)
+      at run (node:async_hooks:62:22)
+      at async <anonymous> (D:\sources\poc\ai\opencode\packages\opencode\test\file\path-traversal.test.ts:158:20)
+(fail) Instance.containsPath > returns false for path outside both directory and worktree [454.00ms]
+181 |     await Instance.provide({
+182 |       directory: tmp.path,
+183 |       fn: () => {
+184 |         expect(Instance.directory).toBe(Instance.worktree)
+185 |         expect(Instance.containsPath(path.join(tmp.path, "file.txt"))).toBe(true)
+186 |         expect(Instance.containsPath("/etc/passwd")).toBe(false)
+                                                           ^
+error: expect(received).toBe(expected)
+System.Management.Automation.RemoteException
+Expected: false
+Received: true
+System.Management.Automation.RemoteException
+      at fn (D:\sources\poc\ai\opencode\packages\opencode\test\file\path-traversal.test.ts:186:54)
+      at <anonymous> (D:\sources\poc\ai\opencode\packages\opencode\src\project\instance.ts:73:20)
+      at run (node:async_hooks:62:22)
+      at async <anonymous> (D:\sources\poc\ai\opencode\packages\opencode\test\file\path-traversal.test.ts:181:20)
+(fail) Instance.containsPath > handles directory === worktree (running from repo root) [422.00ms]
+194 |     await Instance.provide({
+195 |       directory: tmp.path,
+196 |       fn: () => {
+197 |         // worktree is "/" for non-git projects, but containsPath should NOT allow all paths
+198 |         expect(Instance.containsPath(path.join(tmp.path, "file.txt"))).toBe(true)
+199 |         expect(Instance.containsPath("/etc/passwd")).toBe(false)
+                                                           ^
+error: expect(received).toBe(expected)
+System.Management.Automation.RemoteException
+Expected: false
+Received: true
+System.Management.Automation.RemoteException
+      at fn (D:\sources\poc\ai\opencode\packages\opencode\test\file\path-traversal.test.ts:199:54)
+      at <anonymous> (D:\sources\poc\ai\opencode\packages\opencode\src\project\instance.ts:73:20)
+      at run (node:async_hooks:62:22)
+      at async <anonymous> (D:\sources\poc\ai\opencode\packages\opencode\test\file\path-traversal.test.ts:194:20)
+(fail) Instance.containsPath > non-git project does not allow arbitrary paths via worktree='/'
+System.Management.Automation.RemoteException
+test\format\format.test.ts:
+[15:21:39.284] ERROR (#12640): 221 |               yield* fmt.init()
+222 |               yield* fmt.file(file)
+223 |             }),
+224 |           )
+225 | 
+226 |           expect(yield* Effect.promise(() => Bun.file(file).text())).toBe("xAB")
+      ^
+error: expect(received).toBe(expected)
+
+Expected: "xAB"
+Received: "x"
+
+      at toBe (unknown:1:1)
+      at D:\sources\poc\ai\opencode\packages\opencode\test\format\format.test.ts:226:70
+
+221 |               yield* fmt.init()
+222 |               yield* fmt.file(file)
+223 |             }),
+224 |           )
+225 | 
+226 |           expect(yield* Effect.promise(() => Bun.file(file).text())).toBe("xAB")
+      ^
+error: expect(received).toBe(expected)
+System.Management.Automation.RemoteException
+Expected: "xAB"
+Received: "x"
+System.Management.Automation.RemoteException
+      at toBe (unknown:1:1)
+      at D:\sources\poc\ai\opencode\packages\opencode\test\format\format.test.ts:226:70
+      at ~effect/Effect/successCont (D:\sources\poc\ai\opencode\node_modules\.bun\effect@4.0.0-beta.48\node_modules\effect\dist\internal\effect.js:913:22)
+      at runLoop (D:\sources\poc\ai\opencode\node_modules\.bun\effect@4.0.0-beta.48\node_modules\effect\dist\internal\effect.js:420:66)
+      at evaluate (D:\sources\poc\ai\opencode\node_modules\.bun\effect@4.0.0-beta.48\node_modules\effect\dist\internal\effect.js:380:14)
+      at D:\sources\poc\ai\opencode\node_modules\.bun\effect@4.0.0-beta.48\node_modules\effect\dist\internal\effect.js:732:11
+      at processTicksAndRejections (native:7:39)
+(fail) Format > runs matching formatters sequentially for the same file [63.00ms]
+INFO  2026-04-23T15:21:41 +2677ms service=default directory=D:\sources\poc\ai\opencode\packages\opencode creating instance
+INFO  2026-04-23T15:21:41 +0ms service=project directory=D:\sources\poc\ai\opencode\packages\opencode fromDirectory
+INFO  2026-04-23T15:21:42 +95ms service=lsp.client serverID=fake starting client
+INFO  2026-04-23T15:21:42 +1ms service=lsp.client serverID=fake sending initialize
+INFO  2026-04-23T15:21:42 +357ms service=lsp.client serverID=fake initialized
+INFO  2026-04-23T15:21:42 +108ms service=lsp.client serverID=fake shutting down
+INFO  2026-04-23T15:21:42 +133ms service=lsp.client serverID=fake shutdown
+INFO  2026-04-23T15:21:42 +6ms service=lsp.client serverID=fake starting client
+INFO  2026-04-23T15:21:42 +0ms service=lsp.client serverID=fake sending initialize
+INFO  2026-04-23T15:21:42 +306ms service=lsp.client serverID=fake initialized
+INFO  2026-04-23T15:21:43 +104ms service=lsp.client serverID=fake shutting down
+INFO  2026-04-23T15:21:43 +117ms service=lsp.client serverID=fake shutdown
+INFO  2026-04-23T15:21:43 +6ms service=lsp.client serverID=fake starting client
+INFO  2026-04-23T15:21:43 +0ms service=lsp.client serverID=fake sending initialize
+INFO  2026-04-23T15:21:43 +311ms service=lsp.client serverID=fake initialized
+INFO  2026-04-23T15:21:43 +115ms service=lsp.client serverID=fake shutting down
+INFO  2026-04-23T15:21:43 +131ms service=lsp.client serverID=fake shutdown
+INFO  2026-04-23T15:21:43 +6ms service=default directory=C:\Users\Administrator\AppData\Local\Temp\opencode-test-htsn9l5eojk creating instance
+INFO  2026-04-23T15:21:43 +1ms service=project directory=C:\Users\Administrator\AppData\Local\Temp\opencode-test-htsn9l5eojk fromDirectory
+INFO  2026-04-23T15:21:43 +1ms service=lsp file=C:\Users\Administrator\AppData\Local\Temp\outside.ts touching file
+INFO  2026-04-23T15:21:43 +1ms service=default directory=C:\Users\Administrator\AppData\Local\Temp\opencode-test-htsn9l5eojk disposing instance
+INFO  2026-04-23T15:21:43 +3ms service=default directory=C:\Users\Administrator\AppData\Local\Temp\opencode-test-36vzds1okvi creating instance
+INFO  2026-04-23T15:21:43 +0ms service=project directory=C:\Users\Administrator\AppData\Local\Temp\opencode-test-36vzds1okvi fromDirectory
+INFO  2026-04-23T15:21:43 +3ms service=config path=C:\Users\ADMINI~1\AppData\Local\Temp\opencode-test-data-20000\config\opencode\config.json loading
+INFO  2026-04-23T15:21:43 +0ms service=config path=C:\Users\ADMINI~1\AppData\Local\Temp\opencode-test-data-20000\config\opencode\opencode.json loading
+INFO  2026-04-23T15:21:43 +0ms service=config path=C:\Users\ADMINI~1\AppData\Local\Temp\opencode-test-data-20000\config\opencode\opencode.jsonc loading
+INFO  2026-04-23T15:21:43 +5ms service=lsp all LSPs are disabled
+INFO  2026-04-23T15:21:43 +1ms service=default directory=C:\Users\Administrator\AppData\Local\Temp\opencode-test-36vzds1okvi disposing instance
+INFO  2026-04-23T15:21:43 +3ms service=default directory=C:\Users\Administrator\AppData\Local\Temp\opencode-test-qkiyb6yx57m creating instance
+INFO  2026-04-23T15:21:43 +0ms service=project directory=C:\Users\Administrator\AppData\Local\Temp\opencode-test-qkiyb6yx57m fromDirectory
+INFO  2026-04-23T15:21:43 +2ms service=config path=C:\Users\ADMINI~1\AppData\Local\Temp\opencode-test-data-20000\config\opencode\config.json loading
+INFO  2026-04-23T15:21:43 +1ms service=config path=C:\Users\ADMINI~1\AppData\Local\Temp\opencode-test-data-20000\config\opencode\opencode.json loading
+INFO  2026-04-23T15:21:43 +0ms service=config path=C:\Users\ADMINI~1\AppData\Local\Temp\opencode-test-data-20000\config\opencode\opencode.jsonc loading
+INFO  2026-04-23T15:21:43 +2ms service=config path=C:\Users\Administrator\AppData\Local\Temp\opencode-test-qkiyb6yx57m\opencode.json loading
+INFO  2026-04-23T15:21:43 +5ms service=lsp serverIds=astro, bash, biome, csharp, clangd, clojure-lsp, dart, deno, dockerfile, eslint, elixir-ls, fsharp, gleam, gopls, haskell-language-server, jdtls, julials, kotlin-ls, lua-ls, nixd, ocaml-lsp, oxlint, php intelephense, prisma, pyright, ruby-lsp, rust, sourcekit-lsp, svelte, terraform, texlab, tinymist, typescript, vue, yaml-ls, zls enabled LSP servers
+INFO  2026-04-23T15:21:43 +86ms service=lsp.server oxlint not found, please install oxlint
+INFO  2026-04-23T15:21:43 +1ms service=default directory=C:\Users\Administrator\AppData\Local\Temp\opencode-test-qkiyb6yx57m disposing instance
+INFO  2026-04-23T15:21:43 +3ms service=default directory=C:\Users\Administrator\AppData\Local\Temp\opencode-test-x1dmaga7z1c creating instance
+INFO  2026-04-23T15:21:43 +0ms service=project directory=C:\Users\Administrator\AppData\Local\Temp\opencode-test-x1dmaga7z1c fromDirectory
+INFO  2026-04-23T15:21:43 +2ms service=config path=C:\Users\ADMINI~1\AppData\Local\Temp\opencode-test-data-20000\config\opencode\config.json loading
+INFO  2026-04-23T15:21:43 +0ms service=config path=C:\Users\ADMINI~1\AppData\Local\Temp\opencode-test-data-20000\config\opencode\opencode.json loading
+INFO  2026-04-23T15:21:43 +1ms service=config path=C:\Users\ADMINI~1\AppData\Local\Temp\opencode-test-data-20000\config\opencode\opencode.jsonc loading
+INFO  2026-04-23T15:21:43 +1ms service=config path=C:\Users\Administrator\AppData\Local\Temp\opencode-test-x1dmaga7z1c\opencode.json loading
+INFO  2026-04-23T15:21:43 +5ms service=lsp LSP server eslint is disabled
+INFO  2026-04-23T15:21:43 +0ms service=lsp serverIds=astro, bash, biome, csharp, clangd, clojure-lsp, dart, deno, dockerfile, elixir-ls, fsharp, gleam, gopls, haskell-language-server, jdtls, julials, kotlin-ls, lua-ls, nixd, ocaml-lsp, oxlint, php intelephense, prisma, pyright, ruby-lsp, rust, sourcekit-lsp, svelte, terraform, texlab, tinymist, typescript, vue, yaml-ls, zls enabled LSP servers
+INFO  2026-04-23T15:21:43 +77ms service=lsp.server oxlint not found, please install oxlint
+INFO  2026-04-23T15:21:43 +1ms service=default directory=C:\Users\Administrator\AppData\Local\Temp\opencode-test-x1dmaga7z1c disposing instance
+INFO  2026-04-23T15:21:44 +42ms service=default directory=C:\Users\Administrator\AppData\Local\Temp\opencode-test-kqfqoxob8yg creating instance
+INFO  2026-04-23T15:21:44 +0ms service=project directory=C:\Users\Administrator\AppData\Local\Temp\opencode-test-kqfqoxob8yg fromDirectory
+INFO  2026-04-23T15:21:44 +2ms service=config path=C:\Users\ADMINI~1\AppData\Local\Temp\opencode-test-data-20000\config\opencode\config.json loading
+INFO  2026-04-23T15:21:44 +0ms service=config path=C:\Users\ADMINI~1\AppData\Local\Temp\opencode-test-data-20000\config\opencode\opencode.json loading
+INFO  2026-04-23T15:21:44 +0ms service=config path=C:\Users\ADMINI~1\AppData\Local\Temp\opencode-test-data-20000\config\opencode\opencode.jsonc loading
+INFO  2026-04-23T15:21:44 +5ms service=lsp all LSPs are disabled
+INFO  2026-04-23T15:21:44 +0ms service=default directory=C:\Users\Administrator\AppData\Local\Temp\opencode-test-kqfqoxob8yg disposing instance
+INFO  2026-04-23T15:21:44 +3ms service=default directory=C:\Users\Administrator\AppData\Local\Temp\opencode-test-zkt09wx7xsc creating instance
+INFO  2026-04-23T15:21:44 +0ms service=project directory=C:\Users\Administrator\AppData\Local\Temp\opencode-test-zkt09wx7xsc fromDirectory
+INFO  2026-04-23T15:21:44 +2ms service=config path=C:\Users\ADMINI~1\AppData\Local\Temp\opencode-test-data-20000\config\opencode\config.json loading
+INFO  2026-04-23T15:21:44 +1ms service=config path=C:\Users\ADMINI~1\AppData\Local\Temp\opencode-test-data-20000\config\opencode\opencode.json loading
+INFO  2026-04-23T15:21:44 +0ms service=config path=C:\Users\ADMINI~1\AppData\Local\Temp\opencode-test-data-20000\config\opencode\opencode.jsonc loading
+INFO  2026-04-23T15:21:44 +4ms service=lsp all LSPs are disabled
+INFO  2026-04-23T15:21:44 +1ms service=default directory=C:\Users\Administrator\AppData\Local\Temp\opencode-test-zkt09wx7xsc disposing instance
+INFO  2026-04-23T15:21:44 +2ms service=default directory=C:\Users\Administrator\AppData\Local\Temp\opencode-test-3z7xbp6dxun creating instance
+INFO  2026-04-23T15:21:44 +0ms service=project directory=C:\Users\Administrator\AppData\Local\Temp\opencode-test-3z7xbp6dxun fromDirectory
+INFO  2026-04-23T15:21:44 +2ms service=config path=C:\Users\ADMINI~1\AppData\Local\Temp\opencode-test-data-20000\config\opencode\config.json loading
+INFO  2026-04-23T15:21:44 +0ms service=config path=C:\Users\ADMINI~1\AppData\Local\Temp\opencode-test-data-20000\config\opencode\opencode.json loading
+INFO  2026-04-23T15:21:44 +1ms service=config path=C:\Users\ADMINI~1\AppData\Local\Temp\opencode-test-data-20000\config\opencode\opencode.jsonc loading
+INFO  2026-04-23T15:21:44 +4ms service=lsp all LSPs are disabled
+INFO  2026-04-23T15:21:44 +0ms service=default directory=C:\Users\Administrator\AppData\Local\Temp\opencode-test-3z7xbp6dxun disposing instance
+INFO  2026-04-23T15:21:44 +2ms service=default directory=C:\Users\Administrator\AppData\Local\Temp\opencode-test-w4b693y1nc creating instance
+INFO  2026-04-23T15:21:44 +1ms service=project directory=C:\Users\Administrator\AppData\Local\Temp\opencode-test-w4b693y1nc fromDirectory
+INFO  2026-04-23T15:21:44 +1ms service=config path=C:\Users\ADMINI~1\AppData\Local\Temp\opencode-test-data-20000\config\opencode\config.json loading
+INFO  2026-04-23T15:21:44 +0ms service=config path=C:\Users\ADMINI~1\AppData\Local\Temp\opencode-test-data-20000\config\opencode\opencode.json loading
+INFO  2026-04-23T15:21:44 +1ms service=config path=C:\Users\ADMINI~1\AppData\Local\Temp\opencode-test-data-20000\config\opencode\opencode.jsonc loading
+INFO  2026-04-23T15:21:44 +4ms service=lsp all LSPs are disabled
+INFO  2026-04-23T15:21:44 +1ms service=default directory=C:\Users\Administrator\AppData\Local\Temp\opencode-test-w4b693y1nc disposing instance
+INFO  2026-04-23T15:21:44 +3ms service=default directory=C:\Users\Administrator\AppData\Local\Temp\opencode-test-sgf1rac9frd creating instance
+INFO  2026-04-23T15:21:44 +0ms service=project directory=C:\Users\Administrator\AppData\Local\Temp\opencode-test-sgf1rac9frd fromDirectory
+INFO  2026-04-23T15:21:44 +2ms service=config path=C:\Users\ADMINI~1\AppData\Local\Temp\opencode-test-data-20000\config\opencode\config.json loading
+INFO  2026-04-23T15:21:44 +0ms service=config path=C:\Users\ADMINI~1\AppData\Local\Temp\opencode-test-data-20000\config\opencode\opencode.json loading
+INFO  2026-04-23T15:21:44 +0ms service=config path=C:\Users\ADMINI~1\AppData\Local\Temp\opencode-test-data-20000\config\opencode\opencode.jsonc loading
+INFO  2026-04-23T15:21:44 +1ms service=config path=C:\Users\Administrator\AppData\Local\Temp\opencode-test-sgf1rac9frd\opencode.json loading
+INFO  2026-04-23T15:21:44 +6ms service=lsp serverIds=astro, bash, biome, csharp, clangd, clojure-lsp, dart, deno, dockerfile, eslint, elixir-ls, fsharp, gleam, gopls, haskell-language-server, jdtls, julials, kotlin-ls, lua-ls, nixd, ocaml-lsp, oxlint, php intelephense, prisma, pyright, ruby-lsp, rust, sourcekit-lsp, svelte, terraform, texlab, tinymist, typescript, vue, yaml-ls, zls enabled LSP servers
+INFO  2026-04-23T15:21:44 +1ms service=default directory=C:\Users\Administrator\AppData\Local\Temp\opencode-test-sgf1rac9frd disposing instance
+INFO  2026-04-23T15:21:44 +3ms service=default directory=C:\Users\Administrator\AppData\Local\Temp\opencode-test-3tqaz4plxpc creating instance
+INFO  2026-04-23T15:21:44 +0ms service=project directory=C:\Users\Administrator\AppData\Local\Temp\opencode-test-3tqaz4plxpc fromDirectory
+INFO  2026-04-23T15:21:44 +2ms service=config path=C:\Users\ADMINI~1\AppData\Local\Temp\opencode-test-data-20000\config\opencode\config.json loading
+INFO  2026-04-23T15:21:44 +0ms service=config path=C:\Users\ADMINI~1\AppData\Local\Temp\opencode-test-data-20000\config\opencode\opencode.json loading
+INFO  2026-04-23T15:21:44 +1ms service=config path=C:\Users\ADMINI~1\AppData\Local\Temp\opencode-test-data-20000\config\opencode\opencode.jsonc loading
+INFO  2026-04-23T15:21:44 +2ms service=config path=C:\Users\Administrator\AppData\Local\Temp\opencode-test-3tqaz4plxpc\opencode.json loading
+INFO  2026-04-23T15:21:44 +5ms service=lsp LSP server eslint is disabled
+INFO  2026-04-23T15:21:44 +0ms service=lsp serverIds=astro, bash, biome, csharp, clangd, clojure-lsp, dart, deno, dockerfile, elixir-ls, fsharp, gleam, gopls, haskell-language-server, jdtls, julials, kotlin-ls, lua-ls, nixd, ocaml-lsp, oxlint, php intelephense, prisma, pyright, ruby-lsp, rust, sourcekit-lsp, svelte, terraform, texlab, tinymist, typescript, vue, yaml-ls, zls enabled LSP servers
+INFO  2026-04-23T15:21:44 +0ms service=default directory=C:\Users\Administrator\AppData\Local\Temp\opencode-test-3tqaz4plxpc disposing instance
+INFO  2026-04-23T15:21:44 +3ms service=default directory=C:\Users\Administrator\AppData\Local\Temp\opencode-test-gye4o9hgeuu creating instance
+INFO  2026-04-23T15:21:44 +0ms service=project directory=C:\Users\Administrator\AppData\Local\Temp\opencode-test-gye4o9hgeuu fromDirectory
+INFO  2026-04-23T15:21:44 +2ms service=config path=C:\Users\ADMINI~1\AppData\Local\Temp\opencode-test-data-20000\config\opencode\config.json loading
+INFO  2026-04-23T15:21:44 +1ms service=config path=C:\Users\ADMINI~1\AppData\Local\Temp\opencode-test-data-20000\config\opencode\opencode.json loading
+INFO  2026-04-23T15:21:44 +0ms service=config path=C:\Users\ADMINI~1\AppData\Local\Temp\opencode-test-data-20000\config\opencode\opencode.jsonc loading
+INFO  2026-04-23T15:21:44 +5ms service=lsp all LSPs are disabled
+INFO  2026-04-23T15:21:44 +0ms service=default directory=C:\Users\Administrator\AppData\Local\Temp\opencode-test-gye4o9hgeuu disposing instance
+INFO  2026-04-23T15:21:44 +2ms service=default directory=C:\Users\Administrator\AppData\Local\Temp\opencode-test-jwnf0c4x20j creating instance
+INFO  2026-04-23T15:21:44 +0ms service=project directory=C:\Users\Administrator\AppData\Local\Temp\opencode-test-jwnf0c4x20j fromDirectory
+INFO  2026-04-23T15:21:44 +2ms service=config path=C:\Users\ADMINI~1\AppData\Local\Temp\opencode-test-data-20000\config\opencode\config.json loading
+INFO  2026-04-23T15:21:44 +0ms service=config path=C:\Users\ADMINI~1\AppData\Local\Temp\opencode-test-data-20000\config\opencode\opencode.json loading
+INFO  2026-04-23T15:21:44 +1ms service=config path=C:\Users\ADMINI~1\AppData\Local\Temp\opencode-test-data-20000\config\opencode\opencode.jsonc loading
+INFO  2026-04-23T15:21:44 +4ms service=lsp all LSPs are disabled
+INFO  2026-04-23T15:21:44 +0ms service=default directory=C:\Users\Administrator\AppData\Local\Temp\opencode-test-jwnf0c4x20j disposing instance
+INFO  2026-04-23T15:21:44 +3ms service=default directory=C:\Users\Administrator\AppData\Local\Temp\opencode-test-g90nntfwda creating instance
+INFO  2026-04-23T15:21:44 +0ms service=project directory=C:\Users\Administrator\AppData\Local\Temp\opencode-test-g90nntfwda fromDirectory
+INFO  2026-04-23T15:21:44 +1ms service=config path=C:\Users\ADMINI~1\AppData\Local\Temp\opencode-test-data-20000\config\opencode\config.json loading
+INFO  2026-04-23T15:21:44 +1ms service=config path=C:\Users\ADMINI~1\AppData\Local\Temp\opencode-test-data-20000\config\opencode\opencode.json loading
+INFO  2026-04-23T15:21:44 +0ms service=config path=C:\Users\ADMINI~1\AppData\Local\Temp\opencode-test-data-20000\config\opencode\opencode.jsonc loading
+INFO  2026-04-23T15:21:44 +4ms service=lsp all LSPs are disabled
+INFO  2026-04-23T15:21:44 +1ms service=default directory=C:\Users\Administrator\AppData\Local\Temp\opencode-test-g90nntfwda disposing instance
+INFO  2026-04-23T15:21:44 +2ms service=default directory=C:\Users\Administrator\AppData\Local\Temp\opencode-test-pjynmz9p0i9 creating instance
+INFO  2026-04-23T15:21:44 +0ms service=project directory=C:\Users\Administrator\AppData\Local\Temp\opencode-test-pjynmz9p0i9 fromDirectory
+INFO  2026-04-23T15:21:44 +2ms service=config path=C:\Users\ADMINI~1\AppData\Local\Temp\opencode-test-data-20000\config\opencode\config.json loading
+INFO  2026-04-23T15:21:44 +1ms service=config path=C:\Users\ADMINI~1\AppData\Local\Temp\opencode-test-data-20000\config\opencode\opencode.json loading
+INFO  2026-04-23T15:21:44 +1ms service=config path=C:\Users\ADMINI~1\AppData\Local\Temp\opencode-test-data-20000\config\opencode\opencode.jsonc loading
+INFO  2026-04-23T15:21:44 +4ms service=lsp all LSPs are disabled
+INFO  2026-04-23T15:21:44 +1ms service=default directory=C:\Users\Administrator\AppData\Local\Temp\opencode-test-pjynmz9p0i9 disposing instance
+INFO  2026-04-23T15:21:44 +2ms service=default directory=C:\Users\Administrator\AppData\Local\Temp\opencode-test-h6qyuju3dm9 creating instance
+INFO  2026-04-23T15:21:44 +0ms service=project directory=C:\Users\Administrator\AppData\Local\Temp\opencode-test-h6qyuju3dm9 fromDirectory
+INFO  2026-04-23T15:21:44 +2ms service=config path=C:\Users\ADMINI~1\AppData\Local\Temp\opencode-test-data-20000\config\opencode\config.json loading
+INFO  2026-04-23T15:21:44 +0ms service=config path=C:\Users\ADMINI~1\AppData\Local\Temp\opencode-test-data-20000\config\opencode\opencode.json loading
+INFO  2026-04-23T15:21:44 +0ms service=config path=C:\Users\ADMINI~1\AppData\Local\Temp\opencode-test-data-20000\config\opencode\opencode.jsonc loading
+INFO  2026-04-23T15:21:44 +4ms service=lsp all LSPs are disabled
+INFO  2026-04-23T15:21:44 +1ms service=default directory=C:\Users\Administrator\AppData\Local\Temp\opencode-test-h6qyuju3dm9 disposing instance
+INFO  2026-04-23T15:21:44 +8ms service=default directory=C:\Users\Administrator\AppData\Local\Temp\opencode-test-1w7s73xzjj7 creating instance
+INFO  2026-04-23T15:21:44 +1ms service=project directory=C:\Users\Administrator\AppData\Local\Temp\opencode-test-1w7s73xzjj7 fromDirectory
+INFO  2026-04-23T15:21:44 +2ms service=config path=C:\Users\ADMINI~1\AppData\Local\Temp\opencode-test-data-20000\config\opencode\config.json loading
+INFO  2026-04-23T15:21:44 +0ms service=config path=C:\Users\ADMINI~1\AppData\Local\Temp\opencode-test-data-20000\config\opencode\opencode.json loading
+INFO  2026-04-23T15:21:44 +1ms service=config path=C:\Users\ADMINI~1\AppData\Local\Temp\opencode-test-data-20000\config\opencode\opencode.jsonc loading
+INFO  2026-04-23T15:21:44 +1ms service=config path=C:\Users\Administrator\AppData\Local\Temp\opencode-test-1w7s73xzjj7\opencode.json loading
+INFO  2026-04-23T15:21:44 +6ms service=mcp key=test-server type=remote found
+DEBUG 2026-04-23T15:21:44 +3ms service=mcp key=test-server transport=StreamableHTTP url=https://example.com/mcp error=Mock transport cannot connect transport connection failed
+DEBUG 2026-04-23T15:21:44 +1ms service=mcp key=test-server transport=SSE url=https://example.com/mcp error=Mock transport cannot connect transport connection failed
+INFO  2026-04-23T15:21:44 +0ms service=mcp key=test-server type=remote found
+DEBUG 2026-04-23T15:21:44 +1ms service=mcp key=test-server transport=StreamableHTTP url=https://example.com/mcp error=Mock transport cannot connect transport connection failed
+DEBUG 2026-04-23T15:21:44 +0ms service=mcp key=test-server transport=SSE url=https://example.com/mcp error=Mock transport cannot connect transport connection failed
+INFO  2026-04-23T15:21:44 +1ms service=default directory=C:\Users\Administrator\AppData\Local\Temp\opencode-test-6eaknxostyg creating instance
+INFO  2026-04-23T15:21:44 +0ms service=project directory=C:\Users\Administrator\AppData\Local\Temp\opencode-test-6eaknxostyg fromDirectory
+INFO  2026-04-23T15:21:44 +7ms service=mcp key=test-server-no-oauth type=remote found
+DEBUG 2026-04-23T15:21:44 +1ms service=mcp key=test-server-no-oauth transport=StreamableHTTP url=https://example.com/mcp error=Mock transport cannot connect transport connection failed
+DEBUG 2026-04-23T15:21:44 +0ms service=mcp key=test-server-no-oauth transport=SSE url=https://example.com/mcp error=Mock transport cannot connect transport connection failed
+INFO  2026-04-23T15:21:44 +1ms service=default directory=C:\Users\Administrator\AppData\Local\Temp\opencode-test-w3vctytzi4 creating instance
+INFO  2026-04-23T15:21:44 +0ms service=project directory=C:\Users\Administrator\AppData\Local\Temp\opencode-test-w3vctytzi4 fromDirectory
+INFO  2026-04-23T15:21:44 +7ms service=mcp key=test-server-no-headers type=remote found
+DEBUG 2026-04-23T15:21:44 +0ms service=mcp key=test-server-no-headers transport=StreamableHTTP url=https://example.com/mcp error=Mock transport cannot connect transport connection failed
+DEBUG 2026-04-23T15:21:44 +0ms service=mcp key=test-server-no-headers transport=SSE url=https://example.com/mcp error=Mock transport cannot connect transport connection failed
+INFO  2026-04-23T15:21:44 +9ms service=default directory=C:\Users\Administrator\AppData\Local\Temp\opencode-test-ivjn544ahpg creating instance
+INFO  2026-04-23T15:21:44 +0ms service=project directory=C:\Users\Administrator\AppData\Local\Temp\opencode-test-ivjn544ahpg fromDirectory
+INFO  2026-04-23T15:21:44 +3ms service=config path=C:\Users\ADMINI~1\AppData\Local\Temp\opencode-test-data-20000\config\opencode\config.json loading
+INFO  2026-04-23T15:21:44 +0ms service=config path=C:\Users\ADMINI~1\AppData\Local\Temp\opencode-test-data-20000\config\opencode\opencode.json loading
+INFO  2026-04-23T15:21:44 +0ms service=config path=C:\Users\ADMINI~1\AppData\Local\Temp\opencode-test-data-20000\config\opencode\opencode.jsonc loading
+INFO  2026-04-23T15:21:44 +2ms service=config path=C:\Users\Administrator\AppData\Local\Temp\opencode-test-ivjn544ahpg\opencode.json loading
+INFO  2026-04-23T15:21:44 +5ms service=mcp key=my-server type=local found
+INFO  2026-04-23T15:21:44 +1ms service=mcp key=my-server toolCount=1 create() successfully created client
+INFO  2026-04-23T15:21:44 +1ms service=default directory=C:\Users\Administrator\AppData\Local\Temp\opencode-test-ivjn544ahpg disposing instance
+INFO  2026-04-23T15:21:44 +2ms service=default directory=C:\Users\Administrator\AppData\Local\Temp\opencode-test-lgl059qrckr creating instance
+INFO  2026-04-23T15:21:44 +0ms service=project directory=C:\Users\Administrator\AppData\Local\Temp\opencode-test-lgl059qrckr fromDirectory
+INFO  2026-04-23T15:21:44 +3ms service=config path=C:\Users\ADMINI~1\AppData\Local\Temp\opencode-test-data-20000\config\opencode\config.json loading
+INFO  2026-04-23T15:21:44 +0ms service=config path=C:\Users\ADMINI~1\AppData\Local\Temp\opencode-test-data-20000\config\opencode\opencode.json loading
+INFO  2026-04-23T15:21:44 +0ms service=config path=C:\Users\ADMINI~1\AppData\Local\Temp\opencode-test-data-20000\config\opencode\opencode.jsonc loading
+INFO  2026-04-23T15:21:44 +2ms service=config path=C:\Users\Administrator\AppData\Local\Temp\opencode-test-lgl059qrckr\opencode.json loading
+INFO  2026-04-23T15:21:44 +5ms service=mcp key=status-server type=local found
+INFO  2026-04-23T15:21:44 +0ms service=mcp key=status-server toolCount=1 create() successfully created client
+INFO  2026-04-23T15:21:44 +0ms service=mcp server=status-server tools list changed notification received
+INFO  2026-04-23T15:21:44 +1ms service=bus type=mcp.tools.changed publishing
+INFO  2026-04-23T15:21:44 +0ms service=default directory=C:\Users\Administrator\AppData\Local\Temp\opencode-test-lgl059qrckr disposing instance
+INFO  2026-04-23T15:21:44 +2ms service=default directory=C:\Users\Administrator\AppData\Local\Temp\opencode-test-65mnbjvj4j4 creating instance
+INFO  2026-04-23T15:21:44 +0ms service=project directory=C:\Users\Administrator\AppData\Local\Temp\opencode-test-65mnbjvj4j4 fromDirectory
+INFO  2026-04-23T15:21:44 +2ms service=config path=C:\Users\ADMINI~1\AppData\Local\Temp\opencode-test-data-20000\config\opencode\config.json loading
+INFO  2026-04-23T15:21:44 +0ms service=config path=C:\Users\ADMINI~1\AppData\Local\Temp\opencode-test-data-20000\config\opencode\opencode.json loading
+INFO  2026-04-23T15:21:44 +0ms service=config path=C:\Users\ADMINI~1\AppData\Local\Temp\opencode-test-data-20000\config\opencode\opencode.jsonc loading
+INFO  2026-04-23T15:21:44 +2ms service=config path=C:\Users\Administrator\AppData\Local\Temp\opencode-test-65mnbjvj4j4\opencode.json loading
+INFO  2026-04-23T15:21:44 +5ms service=mcp key=disc-server type=local found
+INFO  2026-04-23T15:21:44 +0ms service=mcp key=disc-server toolCount=1 create() successfully created client
+INFO  2026-04-23T15:21:44 +0ms service=mcp key=disc-server type=local found
+INFO  2026-04-23T15:21:44 +0ms service=mcp key=disc-server toolCount=1 create() successfully created client
+INFO  2026-04-23T15:21:44 +1ms service=default directory=C:\Users\Administrator\AppData\Local\Temp\opencode-test-65mnbjvj4j4 disposing instance
+INFO  2026-04-23T15:21:44 +2ms service=default directory=C:\Users\Administrator\AppData\Local\Temp\opencode-test-utcddixecb creating instance
+INFO  2026-04-23T15:21:44 +0ms service=project directory=C:\Users\Administrator\AppData\Local\Temp\opencode-test-utcddixecb fromDirectory
+INFO  2026-04-23T15:21:44 +2ms service=config path=C:\Users\ADMINI~1\AppData\Local\Temp\opencode-test-data-20000\config\opencode\config.json loading
+INFO  2026-04-23T15:21:44 +1ms service=config path=C:\Users\ADMINI~1\AppData\Local\Temp\opencode-test-data-20000\config\opencode\opencode.json loading
+INFO  2026-04-23T15:21:44 +0ms service=config path=C:\Users\ADMINI~1\AppData\Local\Temp\opencode-test-data-20000\config\opencode\opencode.jsonc loading
+INFO  2026-04-23T15:21:44 +1ms service=config path=C:\Users\Administrator\AppData\Local\Temp\opencode-test-utcddixecb\opencode.json loading
+INFO  2026-04-23T15:21:44 +5ms service=mcp key=reconn-server type=local found
+INFO  2026-04-23T15:21:44 +1ms service=mcp key=reconn-server toolCount=1 create() successfully created client
+INFO  2026-04-23T15:21:44 +0ms service=mcp key=reconn-server type=local found
+INFO  2026-04-23T15:21:44 +0ms service=mcp key=reconn-server toolCount=1 create() successfully created client
+INFO  2026-04-23T15:21:44 +0ms service=mcp key=reconn-server type=local found
+INFO  2026-04-23T15:21:44 +0ms service=mcp key=reconn-server toolCount=1 create() successfully created client
+INFO  2026-04-23T15:21:44 +1ms service=default directory=C:\Users\Administrator\AppData\Local\Temp\opencode-test-utcddixecb disposing instance
+INFO  2026-04-23T15:21:44 +2ms service=default directory=C:\Users\Administrator\AppData\Local\Temp\opencode-test-grg7720jrep creating instance
+INFO  2026-04-23T15:21:44 +0ms service=project directory=C:\Users\Administrator\AppData\Local\Temp\opencode-test-grg7720jrep fromDirectory
+INFO  2026-04-23T15:21:44 +2ms service=config path=C:\Users\ADMINI~1\AppData\Local\Temp\opencode-test-data-20000\config\opencode\config.json loading
+INFO  2026-04-23T15:21:44 +0ms service=config path=C:\Users\ADMINI~1\AppData\Local\Temp\opencode-test-data-20000\config\opencode\opencode.json loading
+INFO  2026-04-23T15:21:44 +1ms service=config path=C:\Users\ADMINI~1\AppData\Local\Temp\opencode-test-data-20000\config\opencode\opencode.jsonc loading
+INFO  2026-04-23T15:21:44 +1ms service=config path=C:\Users\Administrator\AppData\Local\Temp\opencode-test-grg7720jrep\opencode.json loading
+INFO  2026-04-23T15:21:44 +6ms service=mcp key=replace-server type=local found
+INFO  2026-04-23T15:21:44 +0ms service=mcp key=replace-server toolCount=1 create() successfully created client
+INFO  2026-04-23T15:21:44 +0ms service=mcp key=replace-server type=local found
+INFO  2026-04-23T15:21:44 +0ms service=mcp key=replace-server toolCount=1 create() successfully created client
+INFO  2026-04-23T15:21:44 +0ms service=default directory=C:\Users\Administrator\AppData\Local\Temp\opencode-test-grg7720jrep disposing instance
+INFO  2026-04-23T15:21:44 +2ms service=default directory=C:\Users\Administrator\AppData\Local\Temp\opencode-test-3acdurum98o creating instance
+INFO  2026-04-23T15:21:44 +1ms service=project directory=C:\Users\Administrator\AppData\Local\Temp\opencode-test-3acdurum98o fromDirectory
+INFO  2026-04-23T15:21:44 +2ms service=config path=C:\Users\ADMINI~1\AppData\Local\Temp\opencode-test-data-20000\config\opencode\config.json loading
+INFO  2026-04-23T15:21:44 +0ms service=config path=C:\Users\ADMINI~1\AppData\Local\Temp\opencode-test-data-20000\config\opencode\opencode.json loading
+INFO  2026-04-23T15:21:44 +0ms service=config path=C:\Users\ADMINI~1\AppData\Local\Temp\opencode-test-data-20000\config\opencode\opencode.jsonc loading
+INFO  2026-04-23T15:21:44 +2ms service=config path=C:\Users\Administrator\AppData\Local\Temp\opencode-test-3acdurum98o\opencode.json loading
+INFO  2026-04-23T15:21:44 +4ms service=mcp key=good-server type=local found
+INFO  2026-04-23T15:21:44 +0ms service=mcp key=bad-server type=local found
+INFO  2026-04-23T15:21:44 +0ms service=mcp key=good-server toolCount=1 create() successfully created client
+INFO  2026-04-23T15:21:44 +0ms service=mcp key=bad-server toolCount=1 create() successfully created client
+INFO  2026-04-23T15:21:44 +0ms service=mcp key=good-server type=local found
+INFO  2026-04-23T15:21:44 +1ms service=mcp key=good-server toolCount=1 create() successfully created client
+INFO  2026-04-23T15:21:44 +0ms service=mcp key=bad-server type=local found
+ERROR 2026-04-23T15:21:44 +0ms service=mcp key=bad-server error=listTools failed failed to get tools from client
+INFO  2026-04-23T15:21:44 +0ms service=default directory=C:\Users\Administrator\AppData\Local\Temp\opencode-test-3acdurum98o disposing instance
+INFO  2026-04-23T15:21:44 +2ms service=default directory=C:\Users\Administrator\AppData\Local\Temp\opencode-test-7zgyvcwg96c creating instance
+INFO  2026-04-23T15:21:44 +0ms service=project directory=C:\Users\Administrator\AppData\Local\Temp\opencode-test-7zgyvcwg96c fromDirectory
+INFO  2026-04-23T15:21:44 +3ms service=config path=C:\Users\ADMINI~1\AppData\Local\Temp\opencode-test-data-20000\config\opencode\config.json loading
+INFO  2026-04-23T15:21:44 +1ms service=config path=C:\Users\ADMINI~1\AppData\Local\Temp\opencode-test-data-20000\config\opencode\opencode.json loading
+INFO  2026-04-23T15:21:44 +0ms service=config path=C:\Users\ADMINI~1\AppData\Local\Temp\opencode-test-data-20000\config\opencode\opencode.jsonc loading
+INFO  2026-04-23T15:21:44 +2ms service=config path=C:\Users\Administrator\AppData\Local\Temp\opencode-test-7zgyvcwg96c\opencode.json loading
+INFO  2026-04-23T15:21:44 +5ms service=mcp key=disabled-server mcp server disabled
+INFO  2026-04-23T15:21:44 +0ms service=default directory=C:\Users\Administrator\AppData\Local\Temp\opencode-test-7zgyvcwg96c disposing instance
+INFO  2026-04-23T15:21:44 +2ms service=default directory=C:\Users\Administrator\AppData\Local\Temp\opencode-test-s35321jw5vn creating instance
+INFO  2026-04-23T15:21:44 +0ms service=project directory=C:\Users\Administrator\AppData\Local\Temp\opencode-test-s35321jw5vn fromDirectory
+INFO  2026-04-23T15:21:44 +2ms service=config path=C:\Users\ADMINI~1\AppData\Local\Temp\opencode-test-data-20000\config\opencode\config.json loading
+INFO  2026-04-23T15:21:44 +1ms service=config path=C:\Users\ADMINI~1\AppData\Local\Temp\opencode-test-data-20000\config\opencode\opencode.json loading
+INFO  2026-04-23T15:21:44 +0ms service=config path=C:\Users\ADMINI~1\AppData\Local\Temp\opencode-test-data-20000\config\opencode\opencode.jsonc loading
+INFO  2026-04-23T15:21:44 +2ms service=config path=C:\Users\Administrator\AppData\Local\Temp\opencode-test-s35321jw5vn\opencode.json loading
+INFO  2026-04-23T15:21:44 +5ms service=mcp key=prompt-server type=local found
+INFO  2026-04-23T15:21:44 +0ms service=mcp key=prompt-server toolCount=1 create() successfully created client
+INFO  2026-04-23T15:21:44 +0ms service=mcp key=prompt-server type=local found
+INFO  2026-04-23T15:21:44 +0ms service=mcp key=prompt-server toolCount=1 create() successfully created client
+INFO  2026-04-23T15:21:44 +1ms service=default directory=C:\Users\Administrator\AppData\Local\Temp\opencode-test-s35321jw5vn disposing instance
+INFO  2026-04-23T15:21:44 +1ms service=default directory=C:\Users\Administrator\AppData\Local\Temp\opencode-test-5a0wt4l6aot creating instance
+INFO  2026-04-23T15:21:44 +1ms service=project directory=C:\Users\Administrator\AppData\Local\Temp\opencode-test-5a0wt4l6aot fromDirectory
+INFO  2026-04-23T15:21:44 +2ms service=config path=C:\Users\ADMINI~1\AppData\Local\Temp\opencode-test-data-20000\config\opencode\config.json loading
+INFO  2026-04-23T15:21:44 +0ms service=config path=C:\Users\ADMINI~1\AppData\Local\Temp\opencode-test-data-20000\config\opencode\opencode.json loading
+INFO  2026-04-23T15:21:44 +0ms service=config path=C:\Users\ADMINI~1\AppData\Local\Temp\opencode-test-data-20000\config\opencode\opencode.jsonc loading
+INFO  2026-04-23T15:21:44 +1ms service=config path=C:\Users\Administrator\AppData\Local\Temp\opencode-test-5a0wt4l6aot\opencode.json loading
+INFO  2026-04-23T15:21:44 +8ms service=mcp key=resource-server type=local found
+INFO  2026-04-23T15:21:44 +0ms service=mcp key=resource-server toolCount=1 create() successfully created client
+INFO  2026-04-23T15:21:44 +0ms service=mcp key=resource-server type=local found
+INFO  2026-04-23T15:21:44 +0ms service=mcp key=resource-server toolCount=1 create() successfully created client
+INFO  2026-04-23T15:21:44 +1ms service=default directory=C:\Users\Administrator\AppData\Local\Temp\opencode-test-5a0wt4l6aot disposing instance
+INFO  2026-04-23T15:21:44 +3ms service=default directory=C:\Users\Administrator\AppData\Local\Temp\opencode-test-e7tqi2v4p15 creating instance
+INFO  2026-04-23T15:21:44 +0ms service=project directory=C:\Users\Administrator\AppData\Local\Temp\opencode-test-e7tqi2v4p15 fromDirectory
+INFO  2026-04-23T15:21:44 +4ms service=config path=C:\Users\ADMINI~1\AppData\Local\Temp\opencode-test-data-20000\config\opencode\config.json loading
+INFO  2026-04-23T15:21:44 +0ms service=config path=C:\Users\ADMINI~1\AppData\Local\Temp\opencode-test-data-20000\config\opencode\opencode.json loading
+INFO  2026-04-23T15:21:44 +0ms service=config path=C:\Users\ADMINI~1\AppData\Local\Temp\opencode-test-data-20000\config\opencode\opencode.jsonc loading
+INFO  2026-04-23T15:21:44 +2ms service=config path=C:\Users\Administrator\AppData\Local\Temp\opencode-test-e7tqi2v4p15\opencode.json loading
+INFO  2026-04-23T15:21:44 +5ms service=mcp key=prompt-disc-server type=local found
+INFO  2026-04-23T15:21:44 +1ms service=mcp key=prompt-disc-server toolCount=1 create() successfully created client
+INFO  2026-04-23T15:21:44 +0ms service=mcp key=prompt-disc-server type=local found
+INFO  2026-04-23T15:21:44 +0ms service=mcp key=prompt-disc-server toolCount=1 create() successfully created client
+INFO  2026-04-23T15:21:44 +0ms service=default directory=C:\Users\Administrator\AppData\Local\Temp\opencode-test-e7tqi2v4p15 disposing instance
+INFO  2026-04-23T15:21:44 +2ms service=default directory=C:\Users\Administrator\AppData\Local\Temp\opencode-test-nopr01z6c7o creating instance
+INFO  2026-04-23T15:21:44 +0ms service=project directory=C:\Users\Administrator\AppData\Local\Temp\opencode-test-nopr01z6c7o fromDirectory
+INFO  2026-04-23T15:21:44 +2ms service=config path=C:\Users\ADMINI~1\AppData\Local\Temp\opencode-test-data-20000\config\opencode\config.json loading
+INFO  2026-04-23T15:21:44 +0ms service=config path=C:\Users\ADMINI~1\AppData\Local\Temp\opencode-test-data-20000\config\opencode\opencode.json loading
+INFO  2026-04-23T15:21:44 +1ms service=config path=C:\Users\ADMINI~1\AppData\Local\Temp\opencode-test-data-20000\config\opencode\opencode.jsonc loading
+INFO  2026-04-23T15:21:44 +1ms service=config path=C:\Users\Administrator\AppData\Local\Temp\opencode-test-nopr01z6c7o\opencode.json loading
+ERROR 2026-04-23T15:21:44 +4ms service=mcp name=nonexistent MCP config not found or invalid
+INFO  2026-04-23T15:21:44 +1ms service=default directory=C:\Users\Administrator\AppData\Local\Temp\opencode-test-nopr01z6c7o disposing instance
+INFO  2026-04-23T15:21:44 +2ms service=default directory=C:\Users\Administrator\AppData\Local\Temp\opencode-test-oqcnh4t39yr creating instance
+INFO  2026-04-23T15:21:44 +0ms service=project directory=C:\Users\Administrator\AppData\Local\Temp\opencode-test-oqcnh4t39yr fromDirectory
+INFO  2026-04-23T15:21:44 +2ms service=config path=C:\Users\ADMINI~1\AppData\Local\Temp\opencode-test-data-20000\config\opencode\config.json loading
+INFO  2026-04-23T15:21:44 +0ms service=config path=C:\Users\ADMINI~1\AppData\Local\Temp\opencode-test-data-20000\config\opencode\opencode.json loading
+INFO  2026-04-23T15:21:44 +0ms service=config path=C:\Users\ADMINI~1\AppData\Local\Temp\opencode-test-data-20000\config\opencode\opencode.jsonc loading
+INFO  2026-04-23T15:21:44 +2ms service=config path=C:\Users\Administrator\AppData\Local\Temp\opencode-test-oqcnh4t39yr\opencode.json loading
+INFO  2026-04-23T15:21:44 +5ms service=default directory=C:\Users\Administrator\AppData\Local\Temp\opencode-test-oqcnh4t39yr disposing instance
+INFO  2026-04-23T15:21:44 +2ms service=default directory=C:\Users\Administrator\AppData\Local\Temp\opencode-test-4up36z846zk creating instance
+INFO  2026-04-23T15:21:44 +0ms service=project directory=C:\Users\Administrator\AppData\Local\Temp\opencode-test-4up36z846zk fromDirectory
+INFO  2026-04-23T15:21:44 +3ms service=config path=C:\Users\ADMINI~1\AppData\Local\Temp\opencode-test-data-20000\config\opencode\config.json loading
+INFO  2026-04-23T15:21:44 +0ms service=config path=C:\Users\ADMINI~1\AppData\Local\Temp\opencode-test-data-20000\config\opencode\opencode.json loading
+INFO  2026-04-23T15:21:44 +1ms service=config path=C:\Users\ADMINI~1\AppData\Local\Temp\opencode-test-data-20000\config\opencode\opencode.jsonc loading
+INFO  2026-04-23T15:21:44 +1ms service=config path=C:\Users\Administrator\AppData\Local\Temp\opencode-test-4up36z846zk\opencode.json loading
+INFO  2026-04-23T15:21:44 +6ms service=default directory=C:\Users\Administrator\AppData\Local\Temp\opencode-test-4up36z846zk disposing instance
+INFO  2026-04-23T15:21:44 +3ms service=default directory=C:\Users\Administrator\AppData\Local\Temp\opencode-test-kphrvmf7njd creating instance
+INFO  2026-04-23T15:21:44 +0ms service=project directory=C:\Users\Administrator\AppData\Local\Temp\opencode-test-kphrvmf7njd fromDirectory
+INFO  2026-04-23T15:21:44 +3ms service=config path=C:\Users\ADMINI~1\AppData\Local\Temp\opencode-test-data-20000\config\opencode\config.json loading
+INFO  2026-04-23T15:21:44 +0ms service=config path=C:\Users\ADMINI~1\AppData\Local\Temp\opencode-test-data-20000\config\opencode\opencode.json loading
+INFO  2026-04-23T15:21:44 +0ms service=config path=C:\Users\ADMINI~1\AppData\Local\Temp\opencode-test-data-20000\config\opencode\opencode.jsonc loading
+INFO  2026-04-23T15:21:44 +2ms service=config path=C:\Users\Administrator\AppData\Local\Temp\opencode-test-kphrvmf7njd\opencode.json loading
+INFO  2026-04-23T15:21:44 +4ms service=mcp key=fail-connect type=local found
+ERROR 2026-04-23T15:21:44 +0ms service=mcp key=fail-connect command=["echo","test"] cwd=C:\Users\Administrator\AppData\Local\Temp\opencode-test-kphrvmf7njd error=Connection refused local mcp startup failed
+INFO  2026-04-23T15:21:44 +0ms service=mcp key=fail-connect type=local found
+ERROR 2026-04-23T15:21:44 +1ms service=mcp key=fail-connect command=["echo","test"] cwd=C:\Users\Administrator\AppData\Local\Temp\opencode-test-kphrvmf7njd error=Connection refused local mcp startup failed
+INFO  2026-04-23T15:21:44 +0ms service=default directory=C:\Users\Administrator\AppData\Local\Temp\opencode-test-kphrvmf7njd disposing instance
+INFO  2026-04-23T15:21:44 +59ms service=default directory=C:\Users\Administrator\AppData\Local\Temp\opencode-test-sp0yh9so69d creating instance
+INFO  2026-04-23T15:21:44 +0ms service=project directory=C:\Users\Administrator\AppData\Local\Temp\opencode-test-sp0yh9so69d fromDirectory
+INFO  2026-04-23T15:21:44 +3ms service=config path=C:\Users\ADMINI~1\AppData\Local\Temp\opencode-test-data-20000\config\opencode\config.json loading
+INFO  2026-04-23T15:21:44 +0ms service=config path=C:\Users\ADMINI~1\AppData\Local\Temp\opencode-test-data-20000\config\opencode\opencode.json loading
+INFO  2026-04-23T15:21:44 +0ms service=config path=C:\Users\ADMINI~1\AppData\Local\Temp\opencode-test-data-20000\config\opencode\opencode.jsonc loading
+INFO  2026-04-23T15:21:44 +2ms service=config path=C:\Users\Administrator\AppData\Local\Temp\opencode-test-sp0yh9so69d\opencode.json loading
+INFO  2026-04-23T15:21:44 +5ms service=mcp key=my.special-server type=local found
+INFO  2026-04-23T15:21:44 +0ms service=mcp key=my.special-server toolCount=2 create() successfully created client
+INFO  2026-04-23T15:21:44 +0ms service=mcp key=my.special-server type=local found
+INFO  2026-04-23T15:21:44 +0ms service=mcp key=my.special-server toolCount=2 create() successfully created client
+INFO  2026-04-23T15:21:44 +1ms service=default directory=C:\Users\Administrator\AppData\Local\Temp\opencode-test-sp0yh9so69d disposing instance
+INFO  2026-04-23T15:21:44 +2ms service=default directory=C:\Users\Administrator\AppData\Local\Temp\opencode-test-jfwi4ugwzmo creating instance
+INFO  2026-04-23T15:21:44 +0ms service=project directory=C:\Users\Administrator\AppData\Local\Temp\opencode-test-jfwi4ugwzmo fromDirectory
+INFO  2026-04-23T15:21:44 +2ms service=config path=C:\Users\ADMINI~1\AppData\Local\Temp\opencode-test-data-20000\config\opencode\config.json loading
+INFO  2026-04-23T15:21:44 +1ms service=config path=C:\Users\ADMINI~1\AppData\Local\Temp\opencode-test-data-20000\config\opencode\opencode.json loading
+INFO  2026-04-23T15:21:44 +0ms service=config path=C:\Users\ADMINI~1\AppData\Local\Temp\opencode-test-data-20000\config\opencode\opencode.jsonc loading
+INFO  2026-04-23T15:21:44 +2ms service=config path=C:\Users\Administrator\AppData\Local\Temp\opencode-test-jfwi4ugwzmo\opencode.json loading
+INFO  2026-04-23T15:21:44 +6ms service=mcp key=hanging-server type=local found
+ERROR 2026-04-23T15:21:44 +109ms service=mcp key=hanging-server command=["node","fake.js"] cwd=C:\Users\Administrator\AppData\Local\Temp\opencode-test-jfwi4ugwzmo error=Operation timed out after 100ms local mcp startup failed
+INFO  2026-04-23T15:21:44 +1ms service=default directory=C:\Users\Administrator\AppData\Local\Temp\opencode-test-jfwi4ugwzmo disposing instance
+INFO  2026-04-23T15:21:44 +2ms service=default directory=C:\Users\Administrator\AppData\Local\Temp\opencode-test-sleed6j67x creating instance
+INFO  2026-04-23T15:21:44 +0ms service=project directory=C:\Users\Administrator\AppData\Local\Temp\opencode-test-sleed6j67x fromDirectory
+INFO  2026-04-23T15:21:44 +2ms service=config path=C:\Users\ADMINI~1\AppData\Local\Temp\opencode-test-data-20000\config\opencode\config.json loading
+INFO  2026-04-23T15:21:44 +1ms service=config path=C:\Users\ADMINI~1\AppData\Local\Temp\opencode-test-data-20000\config\opencode\opencode.json loading
+INFO  2026-04-23T15:21:44 +0ms service=config path=C:\Users\ADMINI~1\AppData\Local\Temp\opencode-test-data-20000\config\opencode\opencode.jsonc loading
+INFO  2026-04-23T15:21:44 +1ms service=config path=C:\Users\Administrator\AppData\Local\Temp\opencode-test-sleed6j67x\opencode.json loading
+INFO  2026-04-23T15:21:44 +5ms service=mcp key=hanging-remote type=remote found
+DEBUG 2026-04-23T15:21:44 +111ms service=mcp key=hanging-remote transport=StreamableHTTP url=http://localhost:9999/mcp error=Operation timed out after 100ms transport connection failed
+DEBUG 2026-04-23T15:21:44 +112ms service=mcp key=hanging-remote transport=SSE url=http://localhost:9999/mcp error=Operation timed out after 100ms transport connection failed
+INFO  2026-04-23T15:21:44 +1ms service=default directory=C:\Users\Administrator\AppData\Local\Temp\opencode-test-sleed6j67x disposing instance
+INFO  2026-04-23T15:21:44 +3ms service=default directory=C:\Users\Administrator\AppData\Local\Temp\opencode-test-4thfexyh8e9 creating instance
+INFO  2026-04-23T15:21:44 +0ms service=project directory=C:\Users\Administrator\AppData\Local\Temp\opencode-test-4thfexyh8e9 fromDirectory
+INFO  2026-04-23T15:21:44 +2ms service=config path=C:\Users\ADMINI~1\AppData\Local\Temp\opencode-test-data-20000\config\opencode\config.json loading
+INFO  2026-04-23T15:21:44 +0ms service=config path=C:\Users\ADMINI~1\AppData\Local\Temp\opencode-test-data-20000\config\opencode\opencode.json loading
+INFO  2026-04-23T15:21:44 +0ms service=config path=C:\Users\ADMINI~1\AppData\Local\Temp\opencode-test-data-20000\config\opencode\opencode.jsonc loading
+INFO  2026-04-23T15:21:44 +2ms service=config path=C:\Users\Administrator\AppData\Local\Temp\opencode-test-4thfexyh8e9\opencode.json loading
+INFO  2026-04-23T15:21:44 +4ms service=mcp key=fail-remote type=remote found
+DEBUG 2026-04-23T15:21:44 +0ms service=mcp key=fail-remote transport=StreamableHTTP url=http://localhost:9999/mcp error=Connection refused transport connection failed
+DEBUG 2026-04-23T15:21:44 +0ms service=mcp key=fail-remote transport=SSE url=http://localhost:9999/mcp error=Connection refused transport connection failed
+INFO  2026-04-23T15:21:44 +1ms service=default directory=C:\Users\Administrator\AppData\Local\Temp\opencode-test-4thfexyh8e9 disposing instance
+INFO  2026-04-23T15:21:44 +8ms service=default directory=C:\Users\Administrator\AppData\Local\Temp\opencode-test-jdbcr68hsoo creating instance
+INFO  2026-04-23T15:21:44 +0ms service=project directory=C:\Users\Administrator\AppData\Local\Temp\opencode-test-jdbcr68hsoo fromDirectory
+INFO  2026-04-23T15:21:44 +3ms service=config path=C:\Users\ADMINI~1\AppData\Local\Temp\opencode-test-data-20000\config\opencode\config.json loading
+INFO  2026-04-23T15:21:44 +0ms service=config path=C:\Users\ADMINI~1\AppData\Local\Temp\opencode-test-data-20000\config\opencode\opencode.json loading
+INFO  2026-04-23T15:21:44 +0ms service=config path=C:\Users\ADMINI~1\AppData\Local\Temp\opencode-test-data-20000\config\opencode\opencode.jsonc loading
+INFO  2026-04-23T15:21:44 +1ms service=config path=C:\Users\Administrator\AppData\Local\Temp\opencode-test-jdbcr68hsoo\opencode.json loading
+INFO  2026-04-23T15:21:44 +5ms service=mcp key=test-oauth type=remote found
+INFO  2026-04-23T15:21:44 +5ms service=mcp.oauth mcpName=test-oauth url=https://auth.example.com/authorize?state=test redirecting to authorization
+INFO  2026-04-23T15:21:44 +1ms service=mcp key=test-oauth url=https://auth.example.com/authorize?state=test oauth redirect requested
+INFO  2026-04-23T15:21:44 +0ms service=mcp key=test-oauth transport=StreamableHTTP mcp server requires authentication
+INFO  2026-04-23T15:21:44 +0ms service=bus type=tui.toast.show publishing
+INFO  2026-04-23T15:21:44 +0ms service=mcp key=test-oauth type=remote found
+INFO  2026-04-23T15:21:44 +2ms service=mcp.oauth mcpName=test-oauth url=https://auth.example.com/authorize?state=test redirecting to authorization
+INFO  2026-04-23T15:21:44 +0ms service=mcp key=test-oauth url=https://auth.example.com/authorize?state=test oauth redirect requested
+INFO  2026-04-23T15:21:44 +1ms service=mcp key=test-oauth transport=StreamableHTTP mcp server requires authentication
+INFO  2026-04-23T15:21:44 +0ms service=bus type=tui.toast.show publishing
+INFO  2026-04-23T15:21:44 +1ms service=default directory=C:\Users\Administrator\AppData\Local\Temp\opencode-test-qz6pcajyzuk creating instance
+INFO  2026-04-23T15:21:44 +0ms service=project directory=C:\Users\Administrator\AppData\Local\Temp\opencode-test-qz6pcajyzuk fromDirectory
+INFO  2026-04-23T15:21:44 +7ms service=default directory=C:\Users\Administrator\AppData\Local\Temp\opencode-test-9ss3tt0nyto creating instance
+INFO  2026-04-23T15:21:44 +1ms service=project directory=C:\Users\Administrator\AppData\Local\Temp\opencode-test-9ss3tt0nyto fromDirectory
+INFO  2026-04-23T15:21:44 +5ms service=default directory=C:\Users\Administrator\AppData\Local\Temp\opencode-test-hkljidemt1o creating instance
+INFO  2026-04-23T15:21:44 +0ms service=project directory=C:\Users\Administrator\AppData\Local\Temp\opencode-test-hkljidemt1o fromDirectory
+INFO  2026-04-23T15:21:44 +2ms service=config path=C:\Users\ADMINI~1\AppData\Local\Temp\opencode-test-data-20000\config\opencode\config.json loading
+INFO  2026-04-23T15:21:44 +0ms service=config path=C:\Users\ADMINI~1\AppData\Local\Temp\opencode-test-data-20000\config\opencode\opencode.json loading
+INFO  2026-04-23T15:21:44 +0ms service=config path=C:\Users\ADMINI~1\AppData\Local\Temp\opencode-test-data-20000\config\opencode\opencode.jsonc loading
+INFO  2026-04-23T15:21:44 +2ms service=config path=C:\Users\Administrator\AppData\Local\Temp\opencode-test-hkljidemt1o\opencode.json loading
+INFO  2026-04-23T15:21:44 +4ms service=mcp key=test-oauth-connect type=remote found
+INFO  2026-04-23T15:21:44 +3ms service=mcp.oauth mcpName=test-oauth-connect url=https://auth.example.com/authorize?state=test redirecting to authorization
+INFO  2026-04-23T15:21:44 +0ms service=mcp key=test-oauth-connect url=https://auth.example.com/authorize?state=test oauth redirect requested
+INFO  2026-04-23T15:21:44 +0ms service=mcp key=test-oauth-connect transport=StreamableHTTP mcp server requires authentication
+INFO  2026-04-23T15:21:44 +0ms service=bus type=tui.toast.show publishing
+INFO  2026-04-23T15:21:44 +0ms service=mcp key=test-oauth-connect type=remote found
+INFO  2026-04-23T15:21:44 +2ms service=mcp.oauth mcpName=test-oauth-connect url=https://auth.example.com/authorize?state=test redirecting to authorization
+INFO  2026-04-23T15:21:44 +0ms service=mcp key=test-oauth-connect url=https://auth.example.com/authorize?state=test oauth redirect requested
+INFO  2026-04-23T15:21:44 +0ms service=mcp key=test-oauth-connect transport=StreamableHTTP mcp server requires authentication
+INFO  2026-04-23T15:21:44 +0ms service=bus type=tui.toast.show publishing
+INFO  2026-04-23T15:21:44 +20ms service=mcp.oauth-callback port=19876 path=/mcp/oauth/callback oauth callback server started
+INFO  2026-04-23T15:21:44 +11ms service=default directory=C:\Users\Administrator\AppData\Local\Temp\opencode-test-e3zn24ha91a creating instance
+INFO  2026-04-23T15:21:44 +0ms service=project directory=C:\Users\Administrator\AppData\Local\Temp\opencode-test-e3zn24ha91a fromDirectory
+INFO  2026-04-23T15:21:44 +2ms service=bus type=mcp.browser.open.failed subscribing
+INFO  2026-04-23T15:21:44 +2ms service=config path=C:\Users\Administrator\AppData\Local\Temp\opencode-test-e3zn24ha91a\opencode.json loading
+INFO  2026-04-23T15:21:44 +7ms service=mcp.oauth mcpName=test-oauth-server url=https://auth.example.com/authorize?client_id=test redirecting to authorization
+INFO  2026-04-23T15:21:44 +0ms service=mcp mcpName=test-oauth-server url=https://auth.example.com/authorize?client_id=test state=79a9017da718c938badcb1fc4bfd54165f1327ba83d5eff00de9eeed4e0c2f68 opening browser for oauth
+WARN  2026-04-23T15:21:44 +14ms service=mcp mcpName=test-oauth-server failed to open browser, user must open URL manually
+INFO  2026-04-23T15:21:44 +0ms service=bus type=mcp.browser.open.failed publishing
+INFO  2026-04-23T15:21:46 +2009ms service=mcp.oauth-callback oauth callback server stopped
+INFO  2026-04-23T15:21:46 +0ms service=bus type=mcp.browser.open.failed unsubscribing
+INFO  2026-04-23T15:21:46 +2ms service=default directory=C:\Users\Administrator\AppData\Local\Temp\opencode-test-oud18wn7n creating instance
+INFO  2026-04-23T15:21:46 +0ms service=project directory=C:\Users\Administrator\AppData\Local\Temp\opencode-test-oud18wn7n fromDirectory
+INFO  2026-04-23T15:21:46 +2ms service=bus type=mcp.browser.open.failed subscribing
+INFO  2026-04-23T15:21:46 +2ms service=config path=C:\Users\Administrator\AppData\Local\Temp\opencode-test-oud18wn7n\opencode.json loading
+INFO  2026-04-23T15:21:46 +33ms service=mcp.oauth-callback port=19876 path=/mcp/oauth/callback oauth callback server started
+INFO  2026-04-23T15:21:46 +2ms service=mcp.oauth mcpName=test-oauth-server-2 url=https://auth.example.com/authorize?client_id=test redirecting to authorization
+INFO  2026-04-23T15:21:46 +0ms service=mcp mcpName=test-oauth-server-2 url=https://auth.example.com/authorize?client_id=test state=ee4b64b3a0b609e9c84f914eb6cbca5a0c34aa68dc02a2159176f7e343f40f1e opening browser for oauth
+INFO  2026-04-23T15:21:48 +1985ms service=mcp.oauth-callback oauth callback server stopped
+INFO  2026-04-23T15:21:48 +1ms service=bus type=mcp.browser.open.failed unsubscribing
+INFO  2026-04-23T15:21:48 +2ms service=default directory=C:\Users\Administrator\AppData\Local\Temp\opencode-test-p4tbzupu5g creating instance
+INFO  2026-04-23T15:21:48 +0ms service=project directory=C:\Users\Administrator\AppData\Local\Temp\opencode-test-p4tbzupu5g fromDirectory
+INFO  2026-04-23T15:21:48 +3ms service=config path=C:\Users\Administrator\AppData\Local\Temp\opencode-test-p4tbzupu5g\opencode.json loading
+INFO  2026-04-23T15:21:48 +16ms service=mcp.oauth-callback port=19876 path=/mcp/oauth/callback oauth callback server started
+INFO  2026-04-23T15:21:48 +2ms service=mcp.oauth mcpName=test-oauth-server-3 url=https://auth.example.com/authorize?client_id=test redirecting to authorization
+INFO  2026-04-23T15:21:48 +0ms service=mcp mcpName=test-oauth-server-3 url=https://auth.example.com/authorize?client_id=test state=41d6bdccb1fa4fb110463b8868e8df80e7b3ab0e7f5024c5e760c1c6bf8ab57b opening browser for oauth
+INFO  2026-04-23T15:21:50 +1989ms service=mcp.oauth-callback oauth callback server stopped
+INFO  2026-04-23T15:21:50 +23ms service=mcp.oauth-callback port=18000 path=/custom/callback oauth callback server started
+INFO  2026-04-23T15:21:50 +0ms service=mcp.oauth-callback oauth callback server stopped
+System.Management.Automation.RemoteException
+test\memory\abort-leak.test.ts:
+Baseline: 10.00 MB
+After 50 fetches: 10.00 MB
+Growth: 0.00 MB
+OLD pattern (closure): 0.00 MB growth (500 closures)
+NEW pattern (bind): 0.00 MB growth
+Improvement: 0.00 MB saved
+INFO  2026-04-23T15:21:52 +1226ms service=patch Added file: C:\Users\ADMINI~1\AppData\Local\Temp\patch-test-yCo415/new-file.txt
+INFO  2026-04-23T15:21:52 +3ms service=patch Deleted file: C:\Users\ADMINI~1\AppData\Local\Temp\patch-test-xBqGXK\to-delete.txt
+INFO  2026-04-23T15:21:52 +3ms service=patch Updated file: C:\Users\ADMINI~1\AppData\Local\Temp\patch-test-iVjdI4\to-update.txt
+INFO  2026-04-23T15:21:52 +3ms service=patch Moved file: C:\Users\ADMINI~1\AppData\Local\Temp\patch-test-D7lvgc\old-name.txt -> C:\Users\ADMINI~1\AppData\Local\Temp\patch-test-D7lvgc\new-name.txt
+INFO  2026-04-23T15:21:52 +4ms service=patch Added file: C:\Users\ADMINI~1\AppData\Local\Temp\patch-test-eerX1b\file3.txt
+INFO  2026-04-23T15:21:52 +1ms service=patch Updated file: C:\Users\ADMINI~1\AppData\Local\Temp\patch-test-eerX1b\file1.txt
+INFO  2026-04-23T15:21:52 +0ms service=patch Deleted file: C:\Users\ADMINI~1\AppData\Local\Temp\patch-test-eerX1b\file2.txt
+INFO  2026-04-23T15:21:52 +3ms service=patch Added file: C:\Users\ADMINI~1\AppData\Local\Temp\patch-test-q3cMmO\deep\nested\file.txt
+INFO  2026-04-23T15:21:52 +4ms service=patch Updated file: C:\Users\ADMINI~1\AppData\Local\Temp\patch-test-Ry5T7S\empty.txt
+INFO  2026-04-23T15:21:52 +4ms service=patch Updated file: C:\Users\ADMINI~1\AppData\Local\Temp\patch-test-UX7gry\no-newline.txt
+INFO  2026-04-23T15:21:52 +3ms service=patch Updated file: C:\Users\ADMINI~1\AppData\Local\Temp\patch-test-o9Txy6\multi-chunk.txt
+INFO  2026-04-23T15:21:52 +10ms service=default disposing all instances
+INFO  2026-04-23T15:21:52 +1ms service=default directory=D:\sources\poc\ai\opencode\packages\opencode disposing instance
+INFO  2026-04-23T15:21:52 +0ms service=default directory=C:\Users\Administrator\AppData\Local\Temp\opencode-test-1w7s73xzjj7 disposing instance
+INFO  2026-04-23T15:21:52 +1ms service=default directory=C:\Users\Administrator\AppData\Local\Temp\opencode-test-6eaknxostyg disposing instance
+INFO  2026-04-23T15:21:52 +0ms service=default directory=C:\Users\Administrator\AppData\Local\Temp\opencode-test-w3vctytzi4 disposing instance
+INFO  2026-04-23T15:21:52 +0ms service=default directory=C:\Users\Administrator\AppData\Local\Temp\opencode-test-jdbcr68hsoo disposing instance
+INFO  2026-04-23T15:21:52 +1ms service=default directory=C:\Users\Administrator\AppData\Local\Temp\opencode-test-qz6pcajyzuk disposing instance
+INFO  2026-04-23T15:21:52 +0ms service=default directory=C:\Users\Administrator\AppData\Local\Temp\opencode-test-9ss3tt0nyto disposing instance
+INFO  2026-04-23T15:21:52 +0ms service=default directory=C:\Users\Administrator\AppData\Local\Temp\opencode-test-hkljidemt1o disposing instance
+INFO  2026-04-23T15:21:52 +0ms service=default directory=C:\Users\Administrator\AppData\Local\Temp\opencode-test-e3zn24ha91a disposing instance
+INFO  2026-04-23T15:21:52 +1ms service=default directory=C:\Users\Administrator\AppData\Local\Temp\opencode-test-oud18wn7n disposing instance
+INFO  2026-04-23T15:21:52 +0ms service=default directory=C:\Users\Administrator\AppData\Local\Temp\opencode-test-p4tbzupu5g disposing instance
+INFO  2026-04-23T15:21:52 +1ms service=default disposing all instances
+INFO  2026-04-23T15:21:52 +0ms service=default disposing all instances
+INFO  2026-04-23T15:21:52 +0ms service=default disposing all instances
+INFO  2026-04-23T15:21:52 +0ms service=default disposing all instances
+INFO  2026-04-23T15:21:52 +0ms service=default disposing all instances
+INFO  2026-04-23T15:21:52 +0ms service=default disposing all instances
+INFO  2026-04-23T15:21:52 +0ms service=default disposing all instances
+INFO  2026-04-23T15:21:52 +0ms service=default disposing all instances
+INFO  2026-04-23T15:21:52 +0ms service=permission permission=external_directory pattern=C:\Users\Administrator/projects/file.txt ruleset=[{"permission":"external_directory","pattern":"C:\\Users\\Administrator/projects/*","action":"allow"}] evaluate
+INFO  2026-04-23T15:21:52 +0ms service=default disposing all instances
+INFO  2026-04-23T15:21:52 +0ms service=permission permission=external_directory pattern=C:\Users\Administrator/projects/file.txt ruleset=[{"permission":"external_directory","pattern":"C:\\Users\\Administrator/projects/*","action":"allow"}] evaluate
+INFO  2026-04-23T15:21:52 +0ms service=default disposing all instances
+INFO  2026-04-23T15:21:52 +0ms service=default disposing all instances
+INFO  2026-04-23T15:21:52 +0ms service=default disposing all instances
+INFO  2026-04-23T15:21:52 +0ms service=default disposing all instances
+INFO  2026-04-23T15:21:52 +0ms service=default disposing all instances
+INFO  2026-04-23T15:21:52 +0ms service=default disposing all instances
+INFO  2026-04-23T15:21:52 +0ms service=default disposing all instances
+INFO  2026-04-23T15:21:52 +0ms service=permission permission=bash pattern=ls ruleset=[{"permission":"*","pattern":"*","action":"ask"},{"permission":"bash","pattern":"*","action":"allow"}] evaluate
+INFO  2026-04-23T15:21:52 +0ms service=permission permission=edit pattern=foo.ts ruleset=[{"permission":"*","pattern":"*","action":"ask"},{"permission":"bash","pattern":"*","action":"allow"}] evaluate
+INFO  2026-04-23T15:21:52 +0ms service=default disposing all instances
+INFO  2026-04-23T15:21:52 +1ms service=permission permission=bash pattern=ls ruleset=[{"permission":"bash","pattern":"*","action":"allow"},{"permission":"bash","pattern":"*","action":"ask"}] evaluate
+INFO  2026-04-23T15:21:52 +0ms service=default disposing all instances
+INFO  2026-04-23T15:21:52 +0ms service=permission permission=bash pattern=rm ruleset=[{"permission":"bash","pattern":"rm","action":"deny"}] evaluate
+INFO  2026-04-23T15:21:52 +0ms service=default disposing all instances
+INFO  2026-04-23T15:21:52 +0ms service=permission permission=bash pattern=rm ruleset=[{"permission":"bash","pattern":"*","action":"allow"}] evaluate
+INFO  2026-04-23T15:21:52 +0ms service=default disposing all instances
+INFO  2026-04-23T15:21:52 +0ms service=permission permission=bash pattern=rm ruleset=[{"permission":"bash","pattern":"*","action":"allow"},{"permission":"bash","pattern":"rm","action":"deny"}] evaluate
+INFO  2026-04-23T15:21:52 +0ms service=default disposing all instances
+INFO  2026-04-23T15:21:52 +0ms service=permission permission=bash pattern=rm ruleset=[{"permission":"bash","pattern":"rm","action":"deny"},{"permission":"bash","pattern":"*","action":"allow"}] evaluate
+INFO  2026-04-23T15:21:52 +0ms service=default disposing all instances
+INFO  2026-04-23T15:21:52 +0ms service=permission permission=edit pattern=src/foo.ts ruleset=[{"permission":"edit","pattern":"src/*","action":"allow"}] evaluate
+INFO  2026-04-23T15:21:52 +0ms service=default disposing all instances
+INFO  2026-04-23T15:21:52 +0ms service=permission permission=edit pattern=src/components/Button.tsx ruleset=[{"permission":"edit","pattern":"src/*","action":"deny"},{"permission":"edit","pattern":"src/components/*","action":"allow"}] evaluate
+INFO  2026-04-23T15:21:52 +0ms service=default disposing all instances
+INFO  2026-04-23T15:21:52 +0ms service=permission permission=edit pattern=src/components/Button.tsx ruleset=[{"permission":"edit","pattern":"src/components/*","action":"allow"},{"permission":"edit","pattern":"src/*","action":"deny"}] evaluate
+INFO  2026-04-23T15:21:52 +0ms service=default disposing all instances
+INFO  2026-04-23T15:21:52 +0ms service=permission permission=unknown_tool pattern=anything ruleset=[{"permission":"bash","pattern":"*","action":"allow"}] evaluate
+INFO  2026-04-23T15:21:52 +0ms service=default disposing all instances
+INFO  2026-04-23T15:21:52 +0ms service=permission permission=bash pattern=rm ruleset=[] evaluate
+INFO  2026-04-23T15:21:52 +0ms service=default disposing all instances
+INFO  2026-04-23T15:21:52 +0ms service=permission permission=edit pattern=etc/passwd ruleset=[{"permission":"edit","pattern":"src/*","action":"allow"}] evaluate
+INFO  2026-04-23T15:21:52 +0ms service=default disposing all instances
+INFO  2026-04-23T15:21:52 +0ms service=permission permission=bash pattern=rm ruleset=[] evaluate
+INFO  2026-04-23T15:21:52 +0ms service=default disposing all instances
+INFO  2026-04-23T15:21:52 +0ms service=permission permission=edit pattern=src/secret.ts ruleset=[{"permission":"edit","pattern":"*","action":"ask"},{"permission":"edit","pattern":"src/*","action":"allow"},{"permission":"edit","pattern":"src/secret.ts","action":"deny"}] evaluate
+INFO  2026-04-23T15:21:52 +0ms service=default disposing all instances
+INFO  2026-04-23T15:21:52 +0ms service=permission permission=edit pattern=src/foo.ts ruleset=[{"permission":"edit","pattern":"*","action":"ask"},{"permission":"edit","pattern":"test/*","action":"deny"},{"permission":"edit","pattern":"src/*","action":"allow"}] evaluate
+INFO  2026-04-23T15:21:52 +0ms service=default disposing all instances
+INFO  2026-04-23T15:21:52 +0ms service=permission permission=bash pattern=/bin/rm ruleset=[{"permission":"bash","pattern":"*","action":"allow"},{"permission":"bash","pattern":"/bin/rm","action":"deny"}] evaluate
+INFO  2026-04-23T15:21:52 +0ms service=default disposing all instances
+INFO  2026-04-23T15:21:52 +0ms service=permission permission=bash pattern=/bin/rm ruleset=[{"permission":"bash","pattern":"/bin/rm","action":"deny"},{"permission":"bash","pattern":"*","action":"allow"}] evaluate
+INFO  2026-04-23T15:21:52 +0ms service=default disposing all instances
+INFO  2026-04-23T15:21:52 +0ms service=permission permission=bash pattern=rm ruleset=[{"permission":"*","pattern":"*","action":"deny"}] evaluate
+INFO  2026-04-23T15:21:52 +0ms service=default disposing all instances
+INFO  2026-04-23T15:21:52 +0ms service=permission permission=bash pattern=rm ruleset=[{"permission":"*","pattern":"rm","action":"deny"}] evaluate
+INFO  2026-04-23T15:21:52 +0ms service=default disposing all instances
+INFO  2026-04-23T15:21:52 +0ms service=permission permission=mcp_server_tool pattern=anything ruleset=[{"permission":"mcp_*","pattern":"*","action":"allow"}] evaluate
+INFO  2026-04-23T15:21:52 +0ms service=default disposing all instances
+INFO  2026-04-23T15:21:52 +0ms service=permission permission=bash pattern=rm ruleset=[{"permission":"*","pattern":"*","action":"deny"},{"permission":"bash","pattern":"*","action":"allow"}] evaluate
+INFO  2026-04-23T15:21:52 +0ms service=default disposing all instances
+INFO  2026-04-23T15:21:52 +0ms service=permission permission=edit pattern=src/foo.ts ruleset=[{"permission":"*","pattern":"*","action":"deny"},{"permission":"edit","pattern":"src/*","action":"allow"}] evaluate
+INFO  2026-04-23T15:21:52 +0ms service=default disposing all instances
+INFO  2026-04-23T15:21:52 +0ms service=permission permission=mcp_dangerous pattern=anything ruleset=[{"permission":"*","pattern":"*","action":"ask"},{"permission":"mcp_*","pattern":"*","action":"allow"},{"permission":"mcp_dangerous","pattern":"*","action":"deny"}] evaluate
+INFO  2026-04-23T15:21:52 +0ms service=default disposing all instances
+INFO  2026-04-23T15:21:52 +0ms service=permission permission=unknown_tool pattern=anything ruleset=[{"permission":"*","pattern":"*","action":"ask"},{"permission":"bash","pattern":"*","action":"allow"}] evaluate
+INFO  2026-04-23T15:21:52 +0ms service=default disposing all instances
+INFO  2026-04-23T15:21:52 +0ms service=permission permission=bash pattern=rm ruleset=[{"permission":"bash","pattern":"*","action":"allow"},{"permission":"*","pattern":"*","action":"deny"}] evaluate
+INFO  2026-04-23T15:21:52 +0ms service=default disposing all instances
+INFO  2026-04-23T15:21:52 +0ms service=permission permission=bash pattern=rm ruleset=[{"permission":"bash","pattern":"*","action":"allow"},{"permission":"bash","pattern":"rm","action":"deny"}] evaluate
+INFO  2026-04-23T15:21:52 +0ms service=default disposing all instances
+INFO  2026-04-23T15:21:52 +0ms service=default disposing all instances
+INFO  2026-04-23T15:21:52 +0ms service=default disposing all instances
+INFO  2026-04-23T15:21:52 +0ms service=default disposing all instances
+INFO  2026-04-23T15:21:52 +0ms service=default disposing all instances
+INFO  2026-04-23T15:21:52 +0ms service=default disposing all instances
+INFO  2026-04-23T15:21:52 +0ms service=default disposing all instances
+INFO  2026-04-23T15:21:52 +1ms service=default disposing all instances
+INFO  2026-04-23T15:21:52 +0ms service=default disposing all instances
+INFO  2026-04-23T15:21:52 +0ms service=default disposing all instances
+INFO  2026-04-23T15:21:52 +0ms service=default disposing all instances
+INFO  2026-04-23T15:21:52 +334ms service=default directory=C:\Users\Administrator\AppData\Local\Temp\opencode-test-n7gz9b4ozr creating instance
+INFO  2026-04-23T15:21:52 +0ms service=project directory=C:\Users\Administrator\AppData\Local\Temp\opencode-test-n7gz9b4ozr fromDirectory
+INFO  2026-04-23T15:21:52 +153ms service=permission permission=bash pattern=ls ruleset=[{"permission":"bash","pattern":"*","action":"allow"}] evaluate
+INFO  2026-04-23T15:21:52 +0ms service=permission permission=bash pattern=ls action={"permission":"bash","pattern":"*","action":"allow"} evaluated
+INFO  2026-04-23T15:21:52 +1ms service=default directory=C:\Users\Administrator\AppData\Local\Temp\opencode-test-n7gz9b4ozr disposing instance
+INFO  2026-04-23T15:21:52 +40ms service=default disposing all instances
+INFO  2026-04-23T15:21:53 +337ms service=default directory=C:\Users\Administrator\AppData\Local\Temp\opencode-test-86b7x17golw creating instance
+INFO  2026-04-23T15:21:53 +0ms service=project directory=C:\Users\Administrator\AppData\Local\Temp\opencode-test-86b7x17golw fromDirectory
+INFO  2026-04-23T15:21:53 +144ms service=permission permission=bash pattern=rm -rf / ruleset=[{"permission":"bash","pattern":"*","action":"deny"}] evaluate
+INFO  2026-04-23T15:21:53 +0ms service=permission permission=bash pattern=rm -rf / action={"permission":"bash","pattern":"*","action":"deny"} evaluated
+INFO  2026-04-23T15:21:53 +1ms service=default directory=C:\Users\Administrator\AppData\Local\Temp\opencode-test-86b7x17golw disposing instance
+INFO  2026-04-23T15:21:53 +40ms service=default disposing all instances
+INFO  2026-04-23T15:21:53 +323ms service=default directory=C:\Users\Administrator\AppData\Local\Temp\opencode-test-4sc5szgjkon creating instance
+INFO  2026-04-23T15:21:53 +0ms service=project directory=C:\Users\Administrator\AppData\Local\Temp\opencode-test-4sc5szgjkon fromDirectory
+INFO  2026-04-23T15:21:53 +147ms service=permission permission=bash pattern=ls ruleset=[{"permission":"bash","pattern":"*","action":"ask"}] evaluate
+INFO  2026-04-23T15:21:53 +1ms service=permission permission=bash pattern=ls action={"permission":"bash","pattern":"*","action":"ask"} evaluated
+INFO  2026-04-23T15:21:53 +1ms service=permission id=per_dbaeeed5b001qrRk72Zc7xdYmq permission=bash patterns=["ls"] asking
+INFO  2026-04-23T15:21:53 +0ms service=bus type=permission.asked publishing
+INFO  2026-04-23T15:21:53 +24ms service=bus type=permission.replied publishing
+INFO  2026-04-23T15:21:53 +1ms service=default directory=C:\Users\Administrator\AppData\Local\Temp\opencode-test-4sc5szgjkon disposing instance
+INFO  2026-04-23T15:21:53 +39ms service=default disposing all instances
+INFO  2026-04-23T15:21:54 +326ms service=default directory=C:\Users\Administrator\AppData\Local\Temp\opencode-test-sznnq5oajr creating instance
+INFO  2026-04-23T15:21:54 +0ms service=project directory=C:\Users\Administrator\AppData\Local\Temp\opencode-test-sznnq5oajr fromDirectory
+INFO  2026-04-23T15:21:54 +172ms service=permission permission=bash pattern=ls ruleset=[] evaluate
+INFO  2026-04-23T15:21:54 +0ms service=permission permission=bash pattern=ls action={"action":"ask","permission":"bash","pattern":"*"} evaluated
+INFO  2026-04-23T15:21:54 +0ms service=permission id=per_dbaeeef8e0017mkMmB573Xmzmc permission=bash patterns=["ls"] asking
+INFO  2026-04-23T15:21:54 +1ms service=bus type=permission.asked publishing
+INFO  2026-04-23T15:21:54 +22ms service=bus type=permission.replied publishing
+INFO  2026-04-23T15:21:54 +0ms service=default directory=C:\Users\Administrator\AppData\Local\Temp\opencode-test-sznnq5oajr disposing instance
+INFO  2026-04-23T15:21:54 +39ms service=default disposing all instances
+INFO  2026-04-23T15:21:54 +328ms service=default directory=C:\Users\Administrator\AppData\Local\Temp\opencode-test-esdukvbrsqq creating instance
+INFO  2026-04-23T15:21:54 +0ms service=project directory=C:\Users\Administrator\AppData\Local\Temp\opencode-test-esdukvbrsqq fromDirectory
+INFO  2026-04-23T15:21:54 +142ms service=bus type=permission.asked subscribing
+INFO  2026-04-23T15:21:54 +1ms service=permission permission=bash pattern=ls ruleset=[] evaluate
+INFO  2026-04-23T15:21:54 +0ms service=permission permission=bash pattern=ls action={"action":"ask","permission":"bash","pattern":"*"} evaluated
+INFO  2026-04-23T15:21:54 +1ms service=permission id=per_dbaeef1a3001Ph2BCb6OY8bdcZ permission=bash patterns=["ls"] asking
+INFO  2026-04-23T15:21:54 +0ms service=bus type=permission.asked publishing
+INFO  2026-04-23T15:21:54 +23ms service=bus type=permission.replied publishing
+INFO  2026-04-23T15:21:54 +0ms service=bus type=permission.asked unsubscribing
+INFO  2026-04-23T15:21:54 +1ms service=default directory=C:\Users\Administrator\AppData\Local\Temp\opencode-test-esdukvbrsqq disposing instance
+INFO  2026-04-23T15:21:54 +40ms service=default disposing all instances
+INFO  2026-04-23T15:21:55 +337ms service=default directory=C:\Users\Administrator\AppData\Local\Temp\opencode-test-y2a92599lhi creating instance
+INFO  2026-04-23T15:21:55 +0ms service=project directory=C:\Users\Administrator\AppData\Local\Temp\opencode-test-y2a92599lhi fromDirectory
+INFO  2026-04-23T15:21:55 +142ms service=permission permission=bash pattern=ls ruleset=[] evaluate
+INFO  2026-04-23T15:21:55 +0ms service=permission permission=bash pattern=ls action={"action":"ask","permission":"bash","pattern":"*"} evaluated
+INFO  2026-04-23T15:21:55 +1ms service=permission id=per_test1 permission=bash patterns=["ls"] asking
+INFO  2026-04-23T15:21:55 +0ms service=bus type=permission.asked publishing
+INFO  2026-04-23T15:21:55 +10ms service=bus type=permission.replied publishing
+INFO  2026-04-23T15:21:55 +1ms service=default directory=C:\Users\Administrator\AppData\Local\Temp\opencode-test-y2a92599lhi disposing instance
+INFO  2026-04-23T15:21:55 +39ms service=default disposing all instances
+INFO  2026-04-23T15:21:55 +326ms service=default directory=C:\Users\Administrator\AppData\Local\Temp\opencode-test-mcclkv77ml creating instance
+INFO  2026-04-23T15:21:55 +0ms service=project directory=C:\Users\Administrator\AppData\Local\Temp\opencode-test-mcclkv77ml fromDirectory
+INFO  2026-04-23T15:21:55 +143ms service=permission permission=bash pattern=ls ruleset=[] evaluate
+INFO  2026-04-23T15:21:55 +0ms service=permission permission=bash pattern=ls action={"action":"ask","permission":"bash","pattern":"*"} evaluated
+INFO  2026-04-23T15:21:55 +0ms service=permission id=per_test2 permission=bash patterns=["ls"] asking
+INFO  2026-04-23T15:21:55 +0ms service=bus type=permission.asked publishing
+INFO  2026-04-23T15:21:55 +13ms service=bus type=permission.replied publishing
+INFO  2026-04-23T15:21:55 +1ms service=default directory=C:\Users\Administrator\AppData\Local\Temp\opencode-test-mcclkv77ml disposing instance
+INFO  2026-04-23T15:21:55 +40ms service=default disposing all instances
+INFO  2026-04-23T15:21:56 +334ms service=default directory=C:\Users\Administrator\AppData\Local\Temp\opencode-test-pqn7ysaugt creating instance
+INFO  2026-04-23T15:21:56 +0ms service=project directory=C:\Users\Administrator\AppData\Local\Temp\opencode-test-pqn7ysaugt fromDirectory
+INFO  2026-04-23T15:21:56 +141ms service=permission permission=bash pattern=ls ruleset=[] evaluate
+INFO  2026-04-23T15:21:56 +1ms service=permission permission=bash pattern=ls action={"action":"ask","permission":"bash","pattern":"*"} evaluated
+INFO  2026-04-23T15:21:56 +0ms service=permission id=per_test2b permission=bash patterns=["ls"] asking
+INFO  2026-04-23T15:21:56 +0ms service=bus type=permission.asked publishing
+INFO  2026-04-23T15:21:56 +25ms service=bus type=permission.replied publishing
+INFO  2026-04-23T15:21:56 +1ms service=default directory=C:\Users\Administrator\AppData\Local\Temp\opencode-test-pqn7ysaugt disposing instance
+INFO  2026-04-23T15:21:56 +39ms service=default disposing all instances
+INFO  2026-04-23T15:21:56 +342ms service=default directory=C:\Users\Administrator\AppData\Local\Temp\opencode-test-9xjzqwvlik5 creating instance
+INFO  2026-04-23T15:21:56 +0ms service=project directory=C:\Users\Administrator\AppData\Local\Temp\opencode-test-9xjzqwvlik5 fromDirectory
+INFO  2026-04-23T15:21:56 +144ms service=permission permission=bash pattern=ls ruleset=[] evaluate
+INFO  2026-04-23T15:21:56 +0ms service=permission permission=bash pattern=ls action={"action":"ask","permission":"bash","pattern":"*"} evaluated
+INFO  2026-04-23T15:21:56 +0ms service=permission id=per_test3 permission=bash patterns=["ls"] asking
+INFO  2026-04-23T15:21:56 +0ms service=bus type=permission.asked publishing
+INFO  2026-04-23T15:21:57 +26ms service=bus type=permission.replied publishing
+INFO  2026-04-23T15:21:57 +0ms service=permission permission=bash pattern=ls ruleset=[{"permission":"bash","pattern":"ls","action":"allow"}] evaluate
+INFO  2026-04-23T15:21:57 +0ms service=permission permission=bash pattern=ls action={"permission":"bash","pattern":"ls","action":"allow"} evaluated
+INFO  2026-04-23T15:21:57 +40ms service=default disposing all instances
+INFO  2026-04-23T15:21:57 +0ms service=default directory=C:\Users\Administrator\AppData\Local\Temp\opencode-test-9xjzqwvlik5 disposing instance
+INFO  2026-04-23T15:21:57 +364ms service=default directory=C:\Users\Administrator\AppData\Local\Temp\opencode-test-zhumwy0j6lh creating instance
+INFO  2026-04-23T15:21:57 +1ms service=project directory=C:\Users\Administrator\AppData\Local\Temp\opencode-test-zhumwy0j6lh fromDirectory
+INFO  2026-04-23T15:21:57 +150ms service=permission permission=bash pattern=ls ruleset=[] evaluate
+INFO  2026-04-23T15:21:57 +0ms service=permission permission=bash pattern=ls action={"action":"ask","permission":"bash","pattern":"*"} evaluated
+INFO  2026-04-23T15:21:57 +0ms service=permission id=per_test4a permission=bash patterns=["ls"] asking
+INFO  2026-04-23T15:21:57 +1ms service=bus type=permission.asked publishing
+INFO  2026-04-23T15:21:57 +0ms service=permission permission=edit pattern=foo.ts ruleset=[] evaluate
+INFO  2026-04-23T15:21:57 +0ms service=permission permission=edit pattern=foo.ts action={"action":"ask","permission":"edit","pattern":"*"} evaluated
+INFO  2026-04-23T15:21:57 +0ms service=permission id=per_test4b permission=edit patterns=["foo.ts"] asking
+INFO  2026-04-23T15:21:57 +0ms service=bus type=permission.asked publishing
+INFO  2026-04-23T15:21:57 +13ms service=bus type=permission.replied publishing
+INFO  2026-04-23T15:21:57 +0ms service=bus type=permission.replied publishing
+INFO  2026-04-23T15:21:57 +1ms service=default directory=C:\Users\Administrator\AppData\Local\Temp\opencode-test-zhumwy0j6lh disposing instance
+INFO  2026-04-23T15:21:57 +46ms service=default disposing all instances
+INFO  2026-04-23T15:21:57 +335ms service=default directory=C:\Users\Administrator\AppData\Local\Temp\opencode-test-14sudnmx9zx creating instance
+INFO  2026-04-23T15:21:57 +0ms service=project directory=C:\Users\Administrator\AppData\Local\Temp\opencode-test-14sudnmx9zx fromDirectory
+INFO  2026-04-23T15:21:58 +143ms service=permission permission=bash pattern=ls ruleset=[] evaluate
+INFO  2026-04-23T15:21:58 +0ms service=permission permission=bash pattern=ls action={"action":"ask","permission":"bash","pattern":"*"} evaluated
+INFO  2026-04-23T15:21:58 +0ms service=permission id=per_test5a permission=bash patterns=["ls"] asking
+INFO  2026-04-23T15:21:58 +0ms service=bus type=permission.asked publishing
+INFO  2026-04-23T15:21:58 +0ms service=permission permission=bash pattern=ls ruleset=[] evaluate
+INFO  2026-04-23T15:21:58 +0ms service=permission permission=bash pattern=ls action={"action":"ask","permission":"bash","pattern":"*"} evaluated
+INFO  2026-04-23T15:21:58 +0ms service=permission id=per_test5b permission=bash patterns=["ls"] asking
+INFO  2026-04-23T15:21:58 +0ms service=bus type=permission.asked publishing
+INFO  2026-04-23T15:21:58 +9ms service=bus type=permission.replied publishing
+INFO  2026-04-23T15:21:58 +1ms service=permission permission=bash pattern=ls ruleset=[{"permission":"bash","pattern":"ls","action":"allow"}] evaluate
+INFO  2026-04-23T15:21:58 +0ms service=bus type=permission.replied publishing
+INFO  2026-04-23T15:21:58 +0ms service=default directory=C:\Users\Administrator\AppData\Local\Temp\opencode-test-14sudnmx9zx disposing instance
+INFO  2026-04-23T15:21:58 +39ms service=default disposing all instances
+INFO  2026-04-23T15:21:58 +331ms service=default directory=C:\Users\Administrator\AppData\Local\Temp\opencode-test-cg8c4mvd5v9 creating instance
+INFO  2026-04-23T15:21:58 +0ms service=project directory=C:\Users\Administrator\AppData\Local\Temp\opencode-test-cg8c4mvd5v9 fromDirectory
+INFO  2026-04-23T15:21:58 +140ms service=permission permission=bash pattern=ls ruleset=[] evaluate
+INFO  2026-04-23T15:21:58 +0ms service=permission permission=bash pattern=ls action={"action":"ask","permission":"bash","pattern":"*"} evaluated
+INFO  2026-04-23T15:21:58 +0ms service=permission id=per_test6a permission=bash patterns=["ls"] asking
+INFO  2026-04-23T15:21:58 +0ms service=bus type=permission.asked publishing
+INFO  2026-04-23T15:21:58 +0ms service=permission permission=bash pattern=ls ruleset=[] evaluate
+INFO  2026-04-23T15:21:58 +0ms service=permission permission=bash pattern=ls action={"action":"ask","permission":"bash","pattern":"*"} evaluated
+INFO  2026-04-23T15:21:58 +0ms service=permission id=per_test6b permission=bash patterns=["ls"] asking
+INFO  2026-04-23T15:21:58 +0ms service=bus type=permission.asked publishing
+INFO  2026-04-23T15:21:58 +25ms service=bus type=permission.replied publishing
+INFO  2026-04-23T15:21:58 +0ms service=bus type=permission.replied publishing
+INFO  2026-04-23T15:21:58 +0ms service=default directory=C:\Users\Administrator\AppData\Local\Temp\opencode-test-cg8c4mvd5v9 disposing instance
+INFO  2026-04-23T15:21:58 +39ms service=default disposing all instances
+INFO  2026-04-23T15:21:59 +321ms service=default directory=C:\Users\Administrator\AppData\Local\Temp\opencode-test-kbpzp0d8kc creating instance
+INFO  2026-04-23T15:21:59 +1ms service=project directory=C:\Users\Administrator\AppData\Local\Temp\opencode-test-kbpzp0d8kc fromDirectory
+INFO  2026-04-23T15:21:59 +140ms service=permission permission=bash pattern=ls ruleset=[] evaluate
+INFO  2026-04-23T15:21:59 +0ms service=permission permission=bash pattern=ls action={"action":"ask","permission":"bash","pattern":"*"} evaluated
+INFO  2026-04-23T15:21:59 +0ms service=permission id=per_test7 permission=bash patterns=["ls"] asking
+INFO  2026-04-23T15:21:59 +0ms service=bus type=permission.asked publishing
+INFO  2026-04-23T15:21:59 +21ms service=bus type=permission.replied subscribing
+INFO  2026-04-23T15:21:59 +1ms service=bus type=permission.replied publishing
+INFO  2026-04-23T15:21:59 +0ms service=bus type=permission.replied unsubscribing
+INFO  2026-04-23T15:21:59 +0ms service=default directory=C:\Users\Administrator\AppData\Local\Temp\opencode-test-kbpzp0d8kc disposing instance
+INFO  2026-04-23T15:21:59 +46ms service=default disposing all instances
+INFO  2026-04-23T15:21:59 +679ms service=default directory=C:\Users\Administrator\AppData\Local\Temp\opencode-test-5qe1ulgjgen creating instance
+INFO  2026-04-23T15:21:59 +0ms service=project directory=C:\Users\Administrator\AppData\Local\Temp\opencode-test-5qe1ulgjgen fromDirectory
+INFO  2026-04-23T15:21:59 +0ms service=default directory=C:\Users\Administrator\AppData\Local\Temp\opencode-test-0rsvve57m16l creating instance
+INFO  2026-04-23T15:21:59 +0ms service=project directory=C:\Users\Administrator\AppData\Local\Temp\opencode-test-0rsvve57m16l fromDirectory
+INFO  2026-04-23T15:22:00 +149ms service=permission permission=bash pattern=ls ruleset=[] evaluate
+INFO  2026-04-23T15:22:00 +0ms service=permission permission=bash pattern=ls action={"action":"ask","permission":"bash","pattern":"*"} evaluated
+INFO  2026-04-23T15:22:00 +0ms service=permission id=per_dir_a permission=bash patterns=["ls"] asking
+INFO  2026-04-23T15:22:00 +0ms service=bus type=permission.asked publishing
+INFO  2026-04-23T15:22:00 +7ms service=permission permission=bash pattern=pwd ruleset=[] evaluate
+INFO  2026-04-23T15:22:00 +0ms service=permission permission=bash pattern=pwd action={"action":"ask","permission":"bash","pattern":"*"} evaluated
+INFO  2026-04-23T15:22:00 +0ms service=permission id=per_dir_b permission=bash patterns=["pwd"] asking
+INFO  2026-04-23T15:22:00 +0ms service=bus type=permission.asked publishing
+INFO  2026-04-23T15:22:00 +20ms service=bus type=permission.replied publishing
+INFO  2026-04-23T15:22:00 +1ms service=bus type=permission.replied publishing
+INFO  2026-04-23T15:22:00 +80ms service=default disposing all instances
+INFO  2026-04-23T15:22:00 +0ms service=default directory=C:\Users\Administrator\AppData\Local\Temp\opencode-test-5qe1ulgjgen disposing instance
+INFO  2026-04-23T15:22:00 +0ms service=default directory=C:\Users\Administrator\AppData\Local\Temp\opencode-test-0rsvve57m16l disposing instance
+INFO  2026-04-23T15:22:00 +330ms service=default directory=C:\Users\Administrator\AppData\Local\Temp\opencode-test-wdqbipnyj9g creating instance
+INFO  2026-04-23T15:22:00 +0ms service=project directory=C:\Users\Administrator\AppData\Local\Temp\opencode-test-wdqbipnyj9g fromDirectory
+INFO  2026-04-23T15:22:00 +140ms service=permission permission=bash pattern=ls ruleset=[] evaluate
+INFO  2026-04-23T15:22:00 +0ms service=permission permission=bash pattern=ls action={"action":"ask","permission":"bash","pattern":"*"} evaluated
+INFO  2026-04-23T15:22:00 +0ms service=permission id=per_dispose permission=bash patterns=["ls"] asking
+INFO  2026-04-23T15:22:00 +0ms service=bus type=permission.asked publishing
+INFO  2026-04-23T15:22:00 +26ms service=default directory=C:\Users\Administrator\AppData\Local\Temp\opencode-test-wdqbipnyj9g disposing instance
+INFO  2026-04-23T15:22:00 +39ms service=default disposing all instances
+INFO  2026-04-23T15:22:01 +335ms service=default directory=C:\Users\Administrator\AppData\Local\Temp\opencode-test-3s5qmvn01b3 creating instance
+INFO  2026-04-23T15:22:01 +1ms service=project directory=C:\Users\Administrator\AppData\Local\Temp\opencode-test-3s5qmvn01b3 fromDirectory
+INFO  2026-04-23T15:22:01 +140ms service=permission permission=bash pattern=ls ruleset=[] evaluate
+INFO  2026-04-23T15:22:01 +0ms service=permission permission=bash pattern=ls action={"action":"ask","permission":"bash","pattern":"*"} evaluated
+INFO  2026-04-23T15:22:01 +0ms service=permission id=per_reload permission=bash patterns=["ls"] asking
+INFO  2026-04-23T15:22:01 +0ms service=bus type=permission.asked publishing
+INFO  2026-04-23T15:22:01 +11ms service=default directory=C:\Users\Administrator\AppData\Local\Temp\opencode-test-3s5qmvn01b3 reloading instance
+INFO  2026-04-23T15:22:01 +1ms service=project directory=C:\Users\Administrator\AppData\Local\Temp\opencode-test-3s5qmvn01b3 fromDirectory
+INFO  2026-04-23T15:22:01 +135ms service=default disposing all instances
+INFO  2026-04-23T15:22:01 +0ms service=default directory=C:\Users\Administrator\AppData\Local\Temp\opencode-test-3s5qmvn01b3 disposing instance
+INFO  2026-04-23T15:22:01 +321ms service=default directory=C:\Users\Administrator\AppData\Local\Temp\opencode-test-14e9kl3jzb3l creating instance
+INFO  2026-04-23T15:22:01 +0ms service=project directory=C:\Users\Administrator\AppData\Local\Temp\opencode-test-14e9kl3jzb3l fromDirectory
+INFO  2026-04-23T15:22:01 +145ms service=default directory=C:\Users\Administrator\AppData\Local\Temp\opencode-test-14e9kl3jzb3l disposing instance
+INFO  2026-04-23T15:22:01 +42ms service=default disposing all instances
+INFO  2026-04-23T15:22:02 +319ms service=default directory=C:\Users\Administrator\AppData\Local\Temp\opencode-test-bwhmtm98ku4 creating instance
+INFO  2026-04-23T15:22:02 +0ms service=project directory=C:\Users\Administrator\AppData\Local\Temp\opencode-test-bwhmtm98ku4 fromDirectory
+INFO  2026-04-23T15:22:02 +144ms service=permission permission=bash pattern=echo hello ruleset=[{"permission":"bash","pattern":"*","action":"allow"},{"permission":"bash","pattern":"rm *","action":"deny"}] evaluate
+INFO  2026-04-23T15:22:02 +0ms service=permission permission=bash pattern=echo hello action={"permission":"bash","pattern":"*","action":"allow"} evaluated
+INFO  2026-04-23T15:22:02 +0ms service=permission permission=bash pattern=rm -rf / ruleset=[{"permission":"bash","pattern":"*","action":"allow"},{"permission":"bash","pattern":"rm *","action":"deny"}] evaluate
+INFO  2026-04-23T15:22:02 +0ms service=permission permission=bash pattern=rm -rf / action={"permission":"bash","pattern":"rm *","action":"deny"} evaluated
+INFO  2026-04-23T15:22:02 +1ms service=default directory=C:\Users\Administrator\AppData\Local\Temp\opencode-test-bwhmtm98ku4 disposing instance
+INFO  2026-04-23T15:22:02 +39ms service=default disposing all instances
+INFO  2026-04-23T15:22:02 +321ms service=default directory=C:\Users\Administrator\AppData\Local\Temp\opencode-test-udnurg71csr creating instance
+INFO  2026-04-23T15:22:02 +0ms service=project directory=C:\Users\Administrator\AppData\Local\Temp\opencode-test-udnurg71csr fromDirectory
+INFO  2026-04-23T15:22:02 +143ms service=permission permission=bash pattern=echo hello ruleset=[{"permission":"bash","pattern":"*","action":"allow"}] evaluate
+INFO  2026-04-23T15:22:02 +0ms service=permission permission=bash pattern=echo hello action={"permission":"bash","pattern":"*","action":"allow"} evaluated
+INFO  2026-04-23T15:22:02 +0ms service=permission permission=bash pattern=ls -la ruleset=[{"permission":"bash","pattern":"*","action":"allow"}] evaluate
+INFO  2026-04-23T15:22:02 +0ms service=permission permission=bash pattern=ls -la action={"permission":"bash","pattern":"*","action":"allow"} evaluated
+INFO  2026-04-23T15:22:02 +0ms service=permission permission=bash pattern=pwd ruleset=[{"permission":"bash","pattern":"*","action":"allow"}] evaluate
+INFO  2026-04-23T15:22:02 +0ms service=permission permission=bash pattern=pwd action={"permission":"bash","pattern":"*","action":"allow"} evaluated
+INFO  2026-04-23T15:22:02 +0ms service=default directory=C:\Users\Administrator\AppData\Local\Temp\opencode-test-udnurg71csr disposing instance
+INFO  2026-04-23T15:22:02 +40ms service=default disposing all instances
+INFO  2026-04-23T15:22:03 +342ms service=default directory=C:\Users\Administrator\AppData\Local\Temp\opencode-test-6q0gi16apq5 creating instance
+INFO  2026-04-23T15:22:03 +0ms service=project directory=C:\Users\Administrator\AppData\Local\Temp\opencode-test-6q0gi16apq5 fromDirectory
+INFO  2026-04-23T15:22:03 +144ms service=permission permission=bash pattern=echo hello ruleset=[{"permission":"bash","pattern":"echo *","action":"ask"},{"permission":"bash","pattern":"rm *","action":"deny"}] evaluate
+INFO  2026-04-23T15:22:03 +0ms service=permission permission=bash pattern=echo hello action={"permission":"bash","pattern":"echo *","action":"ask"} evaluated
+INFO  2026-04-23T15:22:03 +0ms service=permission permission=bash pattern=rm -rf / ruleset=[{"permission":"bash","pattern":"echo *","action":"ask"},{"permission":"bash","pattern":"rm *","action":"deny"}] evaluate
+INFO  2026-04-23T15:22:03 +0ms service=permission permission=bash pattern=rm -rf / action={"permission":"bash","pattern":"rm *","action":"deny"} evaluated
+INFO  2026-04-23T15:22:03 +1ms service=default directory=C:\Users\Administrator\AppData\Local\Temp\opencode-test-6q0gi16apq5 disposing instance
+INFO  2026-04-23T15:22:03 +39ms service=default disposing all instances
+INFO  2026-04-23T15:22:03 +333ms service=default directory=C:\Users\Administrator\AppData\Local\Temp\opencode-test-m255gdb968p creating instance
+INFO  2026-04-23T15:22:03 +0ms service=project directory=C:\Users\Administrator\AppData\Local\Temp\opencode-test-m255gdb968p fromDirectory
+INFO  2026-04-23T15:22:03 +142ms service=permission permission=bash pattern=ls ruleset=[{"permission":"bash","pattern":"*","action":"ask"}] evaluate
+INFO  2026-04-23T15:22:03 +0ms service=permission permission=bash pattern=ls action={"permission":"bash","pattern":"*","action":"ask"} evaluated
+INFO  2026-04-23T15:22:03 +1ms service=permission id=per_reload permission=bash patterns=["ls"] asking
+INFO  2026-04-23T15:22:03 +0ms service=bus type=permission.asked publishing
+INFO  2026-04-23T15:22:03 +21ms service=default directory=C:\Users\Administrator\AppData\Local\Temp\opencode-test-m255gdb968p reloading instance
+INFO  2026-04-23T15:22:03 +1ms service=project directory=C:\Users\Administrator\AppData\Local\Temp\opencode-test-m255gdb968p fromDirectory
+INFO  2026-04-23T15:22:03 +134ms service=default disposing all instances
+INFO  2026-04-23T15:22:03 +0ms service=default directory=C:\Users\Administrator\AppData\Local\Temp\opencode-test-m255gdb968p disposing instance
+INFO  2026-04-23T15:22:04 +8ms service=default directory=C:\Users\Administrator\AppData\Local\Temp\opencode-test-rdbw91pgj3m creating instance
+INFO  2026-04-23T15:22:04 +1ms service=project directory=C:\Users\Administrator\AppData\Local\Temp\opencode-test-rdbw91pgj3m fromDirectory
+INFO  2026-04-23T15:22:06 +2539ms service=config path=C:\Users\ADMINI~1\AppData\Local\Temp\opencode-test-data-20000\config\opencode\config.json loading
+INFO  2026-04-23T15:22:06 +6ms service=config path=C:\Users\ADMINI~1\AppData\Local\Temp\opencode-test-data-20000\config\opencode\opencode.json loading
+INFO  2026-04-23T15:22:06 +1ms service=config path=C:\Users\ADMINI~1\AppData\Local\Temp\opencode-test-data-20000\config\opencode\opencode.jsonc loading
+DEBUG 2026-04-23T15:22:06 +9ms service=config loading config from C:\Users\Administrator\AppData\Local\Temp\opencode-test-rdbw91pgj3m\.opencode\opencode.json
+INFO  2026-04-23T15:22:06 +0ms service=config path=C:\Users\Administrator\AppData\Local\Temp\opencode-test-rdbw91pgj3m\.opencode\opencode.json loading
+DEBUG 2026-04-23T15:22:06 +0ms service=config loading config from C:\Users\Administrator\AppData\Local\Temp\opencode-test-rdbw91pgj3m\.opencode\opencode.jsonc
+INFO  2026-04-23T15:22:06 +0ms service=config path=C:\Users\Administrator\AppData\Local\Temp\opencode-test-rdbw91pgj3m\.opencode\opencode.jsonc loading
+INFO  2026-04-23T15:22:06 +5ms service=plugin name=CodexAuthPlugin loading internal plugin
+INFO  2026-04-23T15:22:06 +0ms service=plugin name=CopilotAuthPlugin loading internal plugin
+INFO  2026-04-23T15:22:06 +0ms service=plugin name=gitlabAuthPlugin loading internal plugin
+INFO  2026-04-23T15:22:06 +0ms service=plugin name=PoeAuthPlugin loading internal plugin
+INFO  2026-04-23T15:22:06 +0ms service=plugin name=CloudflareWorkersAuthPlugin loading internal plugin
+INFO  2026-04-23T15:22:06 +0ms service=plugin name=CloudflareAIGatewayAuthPlugin loading internal plugin
+INFO  2026-04-23T15:22:06 +0ms service=plugin name=OhMyOpenCodePlugin loading internal plugin
+INFO  2026-04-23T15:22:10 +3513ms service=plugin path=file:///C:/Users/Administrator/AppData/Local/Temp/opencode-test-rdbw91pgj3m/.opencode/plugin/custom-copilot-auth.ts loading plugin
+INFO  2026-04-23T15:22:10 +261ms service=bus type=* subscribing
+INFO  2026-04-23T15:22:10 +2ms service=server-proxy directory=C:\Users\Administrator\AppData\Local\Temp\opencode-test-vcle3ff3ydg creating instance
+INFO  2026-04-23T15:22:10 +0ms service=project directory=C:\Users\Administrator\AppData\Local\Temp\opencode-test-vcle3ff3ydg fromDirectory
+INFO  2026-04-23T15:22:10 +2ms service=config path=C:\Users\ADMINI~1\AppData\Local\Temp\opencode-test-data-20000\config\opencode\config.json loading
+INFO  2026-04-23T15:22:10 +1ms service=config path=C:\Users\ADMINI~1\AppData\Local\Temp\opencode-test-data-20000\config\opencode\opencode.json loading
+INFO  2026-04-23T15:22:10 +0ms service=config path=C:\Users\ADMINI~1\AppData\Local\Temp\opencode-test-data-20000\config\opencode\opencode.jsonc loading
+INFO  2026-04-23T15:22:10 +5ms service=plugin name=CodexAuthPlugin loading internal plugin
+INFO  2026-04-23T15:22:10 +0ms service=plugin name=CopilotAuthPlugin loading internal plugin
+INFO  2026-04-23T15:22:10 +0ms service=plugin name=gitlabAuthPlugin loading internal plugin
+INFO  2026-04-23T15:22:10 +0ms service=plugin name=PoeAuthPlugin loading internal plugin
+INFO  2026-04-23T15:22:10 +0ms service=plugin name=CloudflareWorkersAuthPlugin loading internal plugin
+INFO  2026-04-23T15:22:10 +0ms service=plugin name=CloudflareAIGatewayAuthPlugin loading internal plugin
+INFO  2026-04-23T15:22:10 +0ms service=plugin name=OhMyOpenCodePlugin loading internal plugin
+INFO  2026-04-23T15:22:10 +367ms service=bus type=* subscribing
+ERROR 2026-04-23T15:22:11 +662ms service=plugin.copilot error=timeout failed to fetch copilot models
+INFO  2026-04-23T15:22:21 +10289ms service=server-proxy directory=C:\Users\Administrator\AppData\Local\Temp\opencode-test-um3ofjaeg9m creating instance
+INFO  2026-04-23T15:22:21 +0ms service=project directory=C:\Users\Administrator\AppData\Local\Temp\opencode-test-um3ofjaeg9m fromDirectory
+INFO  2026-04-23T15:22:21 +3ms service=config path=C:\Users\ADMINI~1\AppData\Local\Temp\opencode-test-data-20000\config\opencode\config.json loading
+INFO  2026-04-23T15:22:21 +0ms service=config path=C:\Users\ADMINI~1\AppData\Local\Temp\opencode-test-data-20000\config\opencode\opencode.json loading
+INFO  2026-04-23T15:22:21 +0ms service=config path=C:\Users\ADMINI~1\AppData\Local\Temp\opencode-test-data-20000\config\opencode\opencode.jsonc loading
+INFO  2026-04-23T15:22:21 +1ms service=config path=C:\Users\Administrator\AppData\Local\Temp\opencode-test-um3ofjaeg9m\opencode.json loading
+INFO  2026-04-23T15:22:21 +5ms service=plugin name=CodexAuthPlugin loading internal plugin
+INFO  2026-04-23T15:22:21 +1ms service=plugin name=CopilotAuthPlugin loading internal plugin
+INFO  2026-04-23T15:22:21 +0ms service=plugin name=gitlabAuthPlugin loading internal plugin
+INFO  2026-04-23T15:22:21 +0ms service=plugin name=PoeAuthPlugin loading internal plugin
+INFO  2026-04-23T15:22:21 +0ms service=plugin name=CloudflareWorkersAuthPlugin loading internal plugin
+INFO  2026-04-23T15:22:21 +0ms service=plugin name=CloudflareAIGatewayAuthPlugin loading internal plugin
+INFO  2026-04-23T15:22:21 +0ms service=plugin name=OhMyOpenCodePlugin loading internal plugin
+INFO  2026-04-23T15:22:21 +109ms service=plugin path=file:///C:/Users/Administrator/AppData/Local/Temp/opencode-test-um3ofjaeg9m/plugin.ts loading plugin
+INFO  2026-04-23T15:22:22 +244ms service=bus type=* subscribing
+INFO  2026-04-23T15:22:22 +2ms service=server-proxy disposing all instances
+INFO  2026-04-23T15:22:22 +0ms service=server-proxy directory=C:\Users\Administrator\AppData\Local\Temp\opencode-test-rdbw91pgj3m disposing instance
+INFO  2026-04-23T15:22:22 +1ms service=server-proxy directory=C:\Users\Administrator\AppData\Local\Temp\opencode-test-vcle3ff3ydg disposing instance
+INFO  2026-04-23T15:22:22 +0ms service=server-proxy directory=C:\Users\Administrator\AppData\Local\Temp\opencode-test-um3ofjaeg9m disposing instance
+INFO  2026-04-23T15:22:22 +4ms service=server-proxy directory=C:\Users\Administrator\AppData\Local\Temp\opencode-test-xkeujvt1w9p creating instance
+INFO  2026-04-23T15:22:22 +0ms service=project directory=C:\Users\Administrator\AppData\Local\Temp\opencode-test-xkeujvt1w9p fromDirectory
+INFO  2026-04-23T15:22:22 +2ms service=config path=C:\Users\ADMINI~1\AppData\Local\Temp\opencode-test-data-20000\config\opencode\config.json loading
+INFO  2026-04-23T15:22:22 +1ms service=config path=C:\Users\ADMINI~1\AppData\Local\Temp\opencode-test-data-20000\config\opencode\opencode.json loading
+INFO  2026-04-23T15:22:22 +0ms service=config path=C:\Users\ADMINI~1\AppData\Local\Temp\opencode-test-data-20000\config\opencode\opencode.jsonc loading
+INFO  2026-04-23T15:22:22 +1ms service=config path=C:\Users\Administrator\AppData\Local\Temp\opencode-test-xkeujvt1w9p\opencode.json loading
+INFO  2026-04-23T15:22:22 +6ms service=plugin name=CodexAuthPlugin loading internal plugin
+INFO  2026-04-23T15:22:22 +0ms service=plugin name=CopilotAuthPlugin loading internal plugin
+INFO  2026-04-23T15:22:22 +0ms service=plugin name=gitlabAuthPlugin loading internal plugin
+INFO  2026-04-23T15:22:22 +0ms service=plugin name=PoeAuthPlugin loading internal plugin
+INFO  2026-04-23T15:22:22 +0ms service=plugin name=CloudflareWorkersAuthPlugin loading internal plugin
+INFO  2026-04-23T15:22:22 +0ms service=plugin name=CloudflareAIGatewayAuthPlugin loading internal plugin
+INFO  2026-04-23T15:22:22 +0ms service=plugin name=OhMyOpenCodePlugin loading internal plugin
+INFO  2026-04-23T15:22:22 +131ms service=plugin path=file:///C:/Users/Administrator/AppData/Local/Temp/opencode-test-xkeujvt1w9p/plugin.ts loading plugin
+INFO  2026-04-23T15:22:22 +230ms service=bus type=* subscribing
+INFO  2026-04-23T15:22:22 +3ms service=server-proxy disposing all instances
+INFO  2026-04-23T15:22:22 +0ms service=server-proxy directory=C:\Users\Administrator\AppData\Local\Temp\opencode-test-xkeujvt1w9p disposing instance
+INFO  2026-04-23T15:22:22 +2ms service=server-proxy directory=C:\Users\Administrator\AppData\Local\Temp\opencode-test-l9l9us03yno creating instance
+INFO  2026-04-23T15:22:22 +0ms service=project directory=C:\Users\Administrator\AppData\Local\Temp\opencode-test-l9l9us03yno fromDirectory
+INFO  2026-04-23T15:22:22 +3ms service=config path=C:\Users\ADMINI~1\AppData\Local\Temp\opencode-test-data-20000\config\opencode\config.json loading
+INFO  2026-04-23T15:22:22 +0ms service=config path=C:\Users\ADMINI~1\AppData\Local\Temp\opencode-test-data-20000\config\opencode\opencode.json loading
+INFO  2026-04-23T15:22:22 +0ms service=config path=C:\Users\ADMINI~1\AppData\Local\Temp\opencode-test-data-20000\config\opencode\opencode.jsonc loading
+INFO  2026-04-23T15:22:22 +1ms service=config path=C:\Users\Administrator\AppData\Local\Temp\opencode-test-l9l9us03yno\opencode.json loading
+INFO  2026-04-23T15:22:22 +6ms service=plugin name=CodexAuthPlugin loading internal plugin
+INFO  2026-04-23T15:22:22 +0ms service=plugin name=CopilotAuthPlugin loading internal plugin
+INFO  2026-04-23T15:22:22 +0ms service=plugin name=gitlabAuthPlugin loading internal plugin
+INFO  2026-04-23T15:22:22 +0ms service=plugin name=PoeAuthPlugin loading internal plugin
+INFO  2026-04-23T15:22:22 +0ms service=plugin name=CloudflareWorkersAuthPlugin loading internal plugin
+INFO  2026-04-23T15:22:22 +0ms service=plugin name=CloudflareAIGatewayAuthPlugin loading internal plugin
+INFO  2026-04-23T15:22:22 +0ms service=plugin name=OhMyOpenCodePlugin loading internal plugin
+INFO  2026-04-23T15:22:22 +133ms service=plugin path=file:///C:/Users/Administrator/AppData/Local/Temp/opencode-test-l9l9us03yno/plugin.ts loading plugin
+INFO  2026-04-23T15:22:22 +230ms service=bus type=* subscribing
+INFO  2026-04-23T15:22:22 +7ms service=server-proxy disposing all instances
+INFO  2026-04-23T15:22:22 +0ms service=server-proxy directory=C:\Users\Administrator\AppData\Local\Temp\opencode-test-l9l9us03yno disposing instance
+INFO  2026-04-23T15:22:22 +3ms service=server-proxy directory=C:\Users\Administrator\AppData\Local\Temp\opencode-test-ke4fa98rxe8 creating instance
+INFO  2026-04-23T15:22:22 +0ms service=project directory=C:\Users\Administrator\AppData\Local\Temp\opencode-test-ke4fa98rxe8 fromDirectory
+INFO  2026-04-23T15:22:22 +2ms service=config path=C:\Users\ADMINI~1\AppData\Local\Temp\opencode-test-data-20000\config\opencode\config.json loading
+INFO  2026-04-23T15:22:22 +1ms service=config path=C:\Users\ADMINI~1\AppData\Local\Temp\opencode-test-data-20000\config\opencode\opencode.json loading
+INFO  2026-04-23T15:22:22 +0ms service=config path=C:\Users\ADMINI~1\AppData\Local\Temp\opencode-test-data-20000\config\opencode\opencode.jsonc loading
+INFO  2026-04-23T15:22:22 +2ms service=config path=C:\Users\Administrator\AppData\Local\Temp\opencode-test-ke4fa98rxe8\opencode.json loading
+INFO  2026-04-23T15:22:22 +4ms service=plugin name=CodexAuthPlugin loading internal plugin
+INFO  2026-04-23T15:22:22 +0ms service=plugin name=CopilotAuthPlugin loading internal plugin
+INFO  2026-04-23T15:22:22 +0ms service=plugin name=gitlabAuthPlugin loading internal plugin
+INFO  2026-04-23T15:22:22 +0ms service=plugin name=PoeAuthPlugin loading internal plugin
+INFO  2026-04-23T15:22:22 +0ms service=plugin name=CloudflareWorkersAuthPlugin loading internal plugin
+INFO  2026-04-23T15:22:22 +0ms service=plugin name=CloudflareAIGatewayAuthPlugin loading internal plugin
+INFO  2026-04-23T15:22:22 +0ms service=plugin name=OhMyOpenCodePlugin loading internal plugin
+INFO  2026-04-23T15:22:22 +132ms service=plugin path=file:///C:/Users/Administrator/AppData/Local/Temp/opencode-test-ke4fa98rxe8/plugin.ts loading plugin
+ERROR 2026-04-23T15:22:22 +2ms service=plugin path=file:///C:/Users/Administrator/AppData/Local/Temp/opencode-test-ke4fa98rxe8/plugin.ts error=Path plugin file:///C:/Users/Administrator/AppData/Local/Temp/opencode-test-ke4fa98rxe8/plugin.ts must export id failed to load plugin
+INFO  2026-04-23T15:22:23 +225ms service=bus type=* subscribing
+INFO  2026-04-23T15:22:23 +1ms service=server-proxy disposing all instances
+INFO  2026-04-23T15:22:23 +0ms service=server-proxy directory=C:\Users\Administrator\AppData\Local\Temp\opencode-test-ke4fa98rxe8 disposing instance
+INFO  2026-04-23T15:22:23 +3ms service=server-proxy directory=C:\Users\Administrator\AppData\Local\Temp\opencode-test-iau9ums0a3 creating instance
+INFO  2026-04-23T15:22:23 +0ms service=project directory=C:\Users\Administrator\AppData\Local\Temp\opencode-test-iau9ums0a3 fromDirectory
+INFO  2026-04-23T15:22:23 +2ms service=config path=C:\Users\ADMINI~1\AppData\Local\Temp\opencode-test-data-20000\config\opencode\config.json loading
+INFO  2026-04-23T15:22:23 +0ms service=config path=C:\Users\ADMINI~1\AppData\Local\Temp\opencode-test-data-20000\config\opencode\opencode.json loading
+INFO  2026-04-23T15:22:23 +0ms service=config path=C:\Users\ADMINI~1\AppData\Local\Temp\opencode-test-data-20000\config\opencode\opencode.jsonc loading
+INFO  2026-04-23T15:22:23 +2ms service=config path=C:\Users\Administrator\AppData\Local\Temp\opencode-test-iau9ums0a3\opencode.json loading
+INFO  2026-04-23T15:22:23 +4ms service=plugin name=CodexAuthPlugin loading internal plugin
+INFO  2026-04-23T15:22:23 +0ms service=plugin name=CopilotAuthPlugin loading internal plugin
+INFO  2026-04-23T15:22:23 +0ms service=plugin name=gitlabAuthPlugin loading internal plugin
+INFO  2026-04-23T15:22:23 +0ms service=plugin name=PoeAuthPlugin loading internal plugin
+INFO  2026-04-23T15:22:23 +0ms service=plugin name=CloudflareWorkersAuthPlugin loading internal plugin
+INFO  2026-04-23T15:22:23 +0ms service=plugin name=CloudflareAIGatewayAuthPlugin loading internal plugin
+INFO  2026-04-23T15:22:23 +0ms service=plugin name=OhMyOpenCodePlugin loading internal plugin
+INFO  2026-04-23T15:22:23 +136ms service=plugin path=file:///C:/Users/Administrator/AppData/Local/Temp/opencode-test-iau9ums0a3/plugin.ts loading plugin
+ERROR 2026-04-23T15:22:23 +2ms service=plugin path=file:///C:/Users/Administrator/AppData/Local/Temp/opencode-test-iau9ums0a3/plugin.ts error=Plugin file:///C:/Users/Administrator/AppData/Local/Temp/opencode-test-iau9ums0a3/plugin.ts must default export either server() or tui(), not both failed to load plugin
+INFO  2026-04-23T15:22:23 +228ms service=bus type=* subscribing
+INFO  2026-04-23T15:22:23 +1ms service=server-proxy disposing all instances
+INFO  2026-04-23T15:22:23 +0ms service=server-proxy directory=C:\Users\Administrator\AppData\Local\Temp\opencode-test-iau9ums0a3 disposing instance
+INFO  2026-04-23T15:22:23 +4ms service=server-proxy directory=C:\Users\Administrator\AppData\Local\Temp\opencode-test-rur1wcw3smc creating instance
+INFO  2026-04-23T15:22:23 +0ms service=project directory=C:\Users\Administrator\AppData\Local\Temp\opencode-test-rur1wcw3smc fromDirectory
+INFO  2026-04-23T15:22:23 +2ms service=config path=C:\Users\ADMINI~1\AppData\Local\Temp\opencode-test-data-20000\config\opencode\config.json loading
+INFO  2026-04-23T15:22:23 +0ms service=config path=C:\Users\ADMINI~1\AppData\Local\Temp\opencode-test-data-20000\config\opencode\opencode.json loading
+INFO  2026-04-23T15:22:23 +0ms service=config path=C:\Users\ADMINI~1\AppData\Local\Temp\opencode-test-data-20000\config\opencode\opencode.jsonc loading
+INFO  2026-04-23T15:22:23 +2ms service=config path=C:\Users\Administrator\AppData\Local\Temp\opencode-test-rur1wcw3smc\opencode.json loading
+INFO  2026-04-23T15:22:23 +5ms service=plugin name=CodexAuthPlugin loading internal plugin
+INFO  2026-04-23T15:22:23 +0ms service=plugin name=CopilotAuthPlugin loading internal plugin
+INFO  2026-04-23T15:22:23 +0ms service=plugin name=gitlabAuthPlugin loading internal plugin
+INFO  2026-04-23T15:22:23 +0ms service=plugin name=PoeAuthPlugin loading internal plugin
+INFO  2026-04-23T15:22:23 +0ms service=plugin name=CloudflareWorkersAuthPlugin loading internal plugin
+INFO  2026-04-23T15:22:23 +0ms service=plugin name=CloudflareAIGatewayAuthPlugin loading internal plugin
+INFO  2026-04-23T15:22:23 +0ms service=plugin name=OhMyOpenCodePlugin loading internal plugin
+INFO  2026-04-23T15:22:23 +132ms service=plugin path=acme-plugin loading plugin
+INFO  2026-04-23T15:22:23 +0ms service=plugin path=scope-plugin@2.3.4 loading plugin
+INFO  2026-04-23T15:22:23 +240ms service=bus type=* subscribing
+INFO  2026-04-23T15:22:23 +5ms service=server-proxy disposing all instances
+INFO  2026-04-23T15:22:23 +0ms service=server-proxy directory=C:\Users\Administrator\AppData\Local\Temp\opencode-test-rur1wcw3smc disposing instance
+INFO  2026-04-23T15:22:23 +4ms service=server-proxy directory=C:\Users\Administrator\AppData\Local\Temp\opencode-test-4x84ab3bo83 creating instance
+INFO  2026-04-23T15:22:23 +0ms service=project directory=C:\Users\Administrator\AppData\Local\Temp\opencode-test-4x84ab3bo83 fromDirectory
+INFO  2026-04-23T15:22:23 +2ms service=config path=C:\Users\ADMINI~1\AppData\Local\Temp\opencode-test-data-20000\config\opencode\config.json loading
+INFO  2026-04-23T15:22:23 +0ms service=config path=C:\Users\ADMINI~1\AppData\Local\Temp\opencode-test-data-20000\config\opencode\opencode.json loading
+INFO  2026-04-23T15:22:23 +1ms service=config path=C:\Users\ADMINI~1\AppData\Local\Temp\opencode-test-data-20000\config\opencode\opencode.jsonc loading
+INFO  2026-04-23T15:22:23 +1ms service=config path=C:\Users\Administrator\AppData\Local\Temp\opencode-test-4x84ab3bo83\opencode.json loading
+INFO  2026-04-23T15:22:23 +5ms service=plugin name=CodexAuthPlugin loading internal plugin
+INFO  2026-04-23T15:22:23 +0ms service=plugin name=CopilotAuthPlugin loading internal plugin
+INFO  2026-04-23T15:22:23 +0ms service=plugin name=gitlabAuthPlugin loading internal plugin
+INFO  2026-04-23T15:22:23 +0ms service=plugin name=PoeAuthPlugin loading internal plugin
+INFO  2026-04-23T15:22:23 +0ms service=plugin name=CloudflareWorkersAuthPlugin loading internal plugin
+INFO  2026-04-23T15:22:23 +0ms service=plugin name=CloudflareAIGatewayAuthPlugin loading internal plugin
+INFO  2026-04-23T15:22:23 +0ms service=plugin name=OhMyOpenCodePlugin loading internal plugin
+INFO  2026-04-23T15:22:24 +150ms service=plugin path=acme-plugin@1.0.0 loading plugin
+INFO  2026-04-23T15:22:24 +233ms service=bus type=* subscribing
+INFO  2026-04-23T15:22:24 +3ms service=server-proxy disposing all instances
+INFO  2026-04-23T15:22:24 +0ms service=server-proxy directory=C:\Users\Administrator\AppData\Local\Temp\opencode-test-4x84ab3bo83 disposing instance
+INFO  2026-04-23T15:22:24 +5ms service=server-proxy directory=C:\Users\Administrator\AppData\Local\Temp\opencode-test-1k51jv5dg0m creating instance
+INFO  2026-04-23T15:22:24 +0ms service=project directory=C:\Users\Administrator\AppData\Local\Temp\opencode-test-1k51jv5dg0m fromDirectory
+INFO  2026-04-23T15:22:24 +2ms service=config path=C:\Users\ADMINI~1\AppData\Local\Temp\opencode-test-data-20000\config\opencode\config.json loading
+INFO  2026-04-23T15:22:24 +0ms service=config path=C:\Users\ADMINI~1\AppData\Local\Temp\opencode-test-data-20000\config\opencode\opencode.json loading
+INFO  2026-04-23T15:22:24 +1ms service=config path=C:\Users\ADMINI~1\AppData\Local\Temp\opencode-test-data-20000\config\opencode\opencode.jsonc loading
+INFO  2026-04-23T15:22:24 +1ms service=config path=C:\Users\Administrator\AppData\Local\Temp\opencode-test-1k51jv5dg0m\opencode.json loading
+INFO  2026-04-23T15:22:24 +6ms service=plugin name=CodexAuthPlugin loading internal plugin
+INFO  2026-04-23T15:22:24 +0ms service=plugin name=CopilotAuthPlugin loading internal plugin
+INFO  2026-04-23T15:22:24 +0ms service=plugin name=gitlabAuthPlugin loading internal plugin
+INFO  2026-04-23T15:22:24 +0ms service=plugin name=PoeAuthPlugin loading internal plugin
+INFO  2026-04-23T15:22:24 +0ms service=plugin name=CloudflareWorkersAuthPlugin loading internal plugin
+INFO  2026-04-23T15:22:24 +0ms service=plugin name=CloudflareAIGatewayAuthPlugin loading internal plugin
+INFO  2026-04-23T15:22:24 +0ms service=plugin name=OhMyOpenCodePlugin loading internal plugin
+INFO  2026-04-23T15:22:24 +134ms service=plugin path=acme-plugin@1.0.0 loading plugin
+INFO  2026-04-23T15:22:24 +230ms service=bus type=* subscribing
+INFO  2026-04-23T15:22:24 +3ms service=server-proxy disposing all instances
+INFO  2026-04-23T15:22:24 +0ms service=server-proxy directory=C:\Users\Administrator\AppData\Local\Temp\opencode-test-1k51jv5dg0m disposing instance
+INFO  2026-04-23T15:22:24 +3ms service=server-proxy directory=C:\Users\Administrator\AppData\Local\Temp\opencode-test-bd08to7h2do creating instance
+INFO  2026-04-23T15:22:24 +1ms service=project directory=C:\Users\Administrator\AppData\Local\Temp\opencode-test-bd08to7h2do fromDirectory
+INFO  2026-04-23T15:22:24 +2ms service=config path=C:\Users\ADMINI~1\AppData\Local\Temp\opencode-test-data-20000\config\opencode\config.json loading
+INFO  2026-04-23T15:22:24 +0ms service=config path=C:\Users\ADMINI~1\AppData\Local\Temp\opencode-test-data-20000\config\opencode\opencode.json loading
+INFO  2026-04-23T15:22:24 +1ms service=config path=C:\Users\ADMINI~1\AppData\Local\Temp\opencode-test-data-20000\config\opencode\opencode.jsonc loading
+INFO  2026-04-23T15:22:24 +1ms service=config path=C:\Users\Administrator\AppData\Local\Temp\opencode-test-bd08to7h2do\opencode.json loading
+INFO  2026-04-23T15:22:24 +6ms service=plugin name=CodexAuthPlugin loading internal plugin
+INFO  2026-04-23T15:22:24 +0ms service=plugin name=CopilotAuthPlugin loading internal plugin
+INFO  2026-04-23T15:22:24 +0ms service=plugin name=gitlabAuthPlugin loading internal plugin
+INFO  2026-04-23T15:22:24 +0ms service=plugin name=PoeAuthPlugin loading internal plugin
+INFO  2026-04-23T15:22:24 +0ms service=plugin name=CloudflareWorkersAuthPlugin loading internal plugin
+INFO  2026-04-23T15:22:24 +0ms service=plugin name=CloudflareAIGatewayAuthPlugin loading internal plugin
+INFO  2026-04-23T15:22:24 +0ms service=plugin name=OhMyOpenCodePlugin loading internal plugin
+INFO  2026-04-23T15:22:24 +140ms service=plugin path=acme-plugin@1.0.0 loading plugin
+INFO  2026-04-23T15:22:25 +247ms service=bus type=* subscribing
+INFO  2026-04-23T15:22:25 +3ms service=server-proxy disposing all instances
+INFO  2026-04-23T15:22:25 +0ms service=server-proxy directory=C:\Users\Administrator\AppData\Local\Temp\opencode-test-bd08to7h2do disposing instance
+INFO  2026-04-23T15:22:25 +3ms service=server-proxy directory=C:\Users\Administrator\AppData\Local\Temp\opencode-test-sunoa7oj3rs creating instance
+INFO  2026-04-23T15:22:25 +0ms service=project directory=C:\Users\Administrator\AppData\Local\Temp\opencode-test-sunoa7oj3rs fromDirectory
+INFO  2026-04-23T15:22:25 +2ms service=config path=C:\Users\ADMINI~1\AppData\Local\Temp\opencode-test-data-20000\config\opencode\config.json loading
+INFO  2026-04-23T15:22:25 +1ms service=config path=C:\Users\ADMINI~1\AppData\Local\Temp\opencode-test-data-20000\config\opencode\opencode.json loading
+INFO  2026-04-23T15:22:25 +0ms service=config path=C:\Users\ADMINI~1\AppData\Local\Temp\opencode-test-data-20000\config\opencode\opencode.jsonc loading
+INFO  2026-04-23T15:22:25 +1ms service=config path=C:\Users\Administrator\AppData\Local\Temp\opencode-test-sunoa7oj3rs\opencode.json loading
+INFO  2026-04-23T15:22:25 +5ms service=plugin name=CodexAuthPlugin loading internal plugin
+INFO  2026-04-23T15:22:25 +0ms service=plugin name=CopilotAuthPlugin loading internal plugin
+INFO  2026-04-23T15:22:25 +0ms service=plugin name=gitlabAuthPlugin loading internal plugin
+INFO  2026-04-23T15:22:25 +0ms service=plugin name=PoeAuthPlugin loading internal plugin
+INFO  2026-04-23T15:22:25 +0ms service=plugin name=CloudflareWorkersAuthPlugin loading internal plugin
+INFO  2026-04-23T15:22:25 +0ms service=plugin name=CloudflareAIGatewayAuthPlugin loading internal plugin
+INFO  2026-04-23T15:22:25 +0ms service=plugin name=OhMyOpenCodePlugin loading internal plugin
+INFO  2026-04-23T15:22:25 +131ms service=plugin path=acme-plugin@1.0.0 loading plugin
+WARN  2026-04-23T15:22:25 +2ms service=plugin path=acme-plugin@1.0.0 message=Plugin acme-plugin@1.0.0 does not expose a server entrypoint plugin has no server entrypoint
+INFO  2026-04-23T15:22:25 +229ms service=bus type=* subscribing
+INFO  2026-04-23T15:22:25 +2ms service=server-proxy disposing all instances
+INFO  2026-04-23T15:22:25 +0ms service=server-proxy directory=C:\Users\Administrator\AppData\Local\Temp\opencode-test-sunoa7oj3rs disposing instance
+INFO  2026-04-23T15:22:25 +4ms service=server-proxy directory=C:\Users\Administrator\AppData\Local\Temp\opencode-test-vli9pq4zqks creating instance
+INFO  2026-04-23T15:22:25 +0ms service=project directory=C:\Users\Administrator\AppData\Local\Temp\opencode-test-vli9pq4zqks fromDirectory
+INFO  2026-04-23T15:22:25 +3ms service=config path=C:\Users\ADMINI~1\AppData\Local\Temp\opencode-test-data-20000\config\opencode\config.json loading
+INFO  2026-04-23T15:22:25 +0ms service=config path=C:\Users\ADMINI~1\AppData\Local\Temp\opencode-test-data-20000\config\opencode\opencode.json loading
+INFO  2026-04-23T15:22:25 +0ms service=config path=C:\Users\ADMINI~1\AppData\Local\Temp\opencode-test-data-20000\config\opencode\opencode.jsonc loading
+INFO  2026-04-23T15:22:25 +1ms service=config path=C:\Users\Administrator\AppData\Local\Temp\opencode-test-vli9pq4zqks\opencode.json loading
+INFO  2026-04-23T15:22:25 +6ms service=plugin name=CodexAuthPlugin loading internal plugin
+INFO  2026-04-23T15:22:25 +0ms service=plugin name=CopilotAuthPlugin loading internal plugin
+INFO  2026-04-23T15:22:25 +0ms service=plugin name=gitlabAuthPlugin loading internal plugin
+INFO  2026-04-23T15:22:25 +0ms service=plugin name=PoeAuthPlugin loading internal plugin
+INFO  2026-04-23T15:22:25 +0ms service=plugin name=CloudflareWorkersAuthPlugin loading internal plugin
+INFO  2026-04-23T15:22:25 +0ms service=plugin name=CloudflareAIGatewayAuthPlugin loading internal plugin
+INFO  2026-04-23T15:22:25 +0ms service=plugin name=OhMyOpenCodePlugin loading internal plugin
+INFO  2026-04-23T15:22:25 +139ms service=plugin path=acme-plugin loading plugin
+ERROR 2026-04-23T15:22:25 +2ms service=plugin path=acme-plugin error=Plugin acme-plugin resolved server entry outside plugin directory failed to resolve plugin server entry
+INFO  2026-04-23T15:22:25 +0ms service=bus type=session.error publishing
+INFO  2026-04-23T15:22:25 +226ms service=bus type=* subscribing
+INFO  2026-04-23T15:22:25 +4ms service=server-proxy disposing all instances
+INFO  2026-04-23T15:22:25 +6ms service=server-proxy directory=C:\Users\Administrator\AppData\Local\Temp\opencode-test-vli9pq4zqks disposing instance
+INFO  2026-04-23T15:22:25 +2ms service=server-proxy directory=C:\Users\Administrator\AppData\Local\Temp\opencode-test-sjlf8tuit6k creating instance
+INFO  2026-04-23T15:22:25 +0ms service=project directory=C:\Users\Administrator\AppData\Local\Temp\opencode-test-sjlf8tuit6k fromDirectory
+INFO  2026-04-23T15:22:25 +3ms service=config path=C:\Users\ADMINI~1\AppData\Local\Temp\opencode-test-data-20000\config\opencode\config.json loading
+INFO  2026-04-23T15:22:25 +0ms service=config path=C:\Users\ADMINI~1\AppData\Local\Temp\opencode-test-data-20000\config\opencode\opencode.json loading
+INFO  2026-04-23T15:22:25 +0ms service=config path=C:\Users\ADMINI~1\AppData\Local\Temp\opencode-test-data-20000\config\opencode\opencode.jsonc loading
+INFO  2026-04-23T15:22:25 +2ms service=config path=C:\Users\Administrator\AppData\Local\Temp\opencode-test-sjlf8tuit6k\opencode.json loading
+INFO  2026-04-23T15:22:25 +5ms service=plugin name=CodexAuthPlugin loading internal plugin
+INFO  2026-04-23T15:22:25 +0ms service=plugin name=CopilotAuthPlugin loading internal plugin
+INFO  2026-04-23T15:22:25 +0ms service=plugin name=gitlabAuthPlugin loading internal plugin
+INFO  2026-04-23T15:22:25 +0ms service=plugin name=PoeAuthPlugin loading internal plugin
+INFO  2026-04-23T15:22:25 +0ms service=plugin name=CloudflareWorkersAuthPlugin loading internal plugin
+INFO  2026-04-23T15:22:25 +0ms service=plugin name=CloudflareAIGatewayAuthPlugin loading internal plugin
+INFO  2026-04-23T15:22:25 +0ms service=plugin name=OhMyOpenCodePlugin loading internal plugin
+INFO  2026-04-23T15:22:26 +134ms service=plugin path=regular-plugin@1.0.0 loading plugin
+ERROR 2026-04-23T15:22:26 +0ms service=plugin pkg=regular-plugin version=1.0.0 error=Plugin regular-plugin@1.0.0 target is empty failed to install plugin
+INFO  2026-04-23T15:22:26 +0ms service=bus type=session.error publishing
+INFO  2026-04-23T15:22:26 +228ms service=bus type=* subscribing
+INFO  2026-04-23T15:22:26 +1ms service=server-proxy disposing all instances
+INFO  2026-04-23T15:22:26 +0ms service=server-proxy directory=C:\Users\Administrator\AppData\Local\Temp\opencode-test-sjlf8tuit6k disposing instance
+INFO  2026-04-23T15:22:26 +2ms service=server-proxy directory=C:\Users\Administrator\AppData\Local\Temp\opencode-test-wddcxs5dwg creating instance
+INFO  2026-04-23T15:22:26 +0ms service=project directory=C:\Users\Administrator\AppData\Local\Temp\opencode-test-wddcxs5dwg fromDirectory
+INFO  2026-04-23T15:22:26 +2ms service=config path=C:\Users\ADMINI~1\AppData\Local\Temp\opencode-test-data-20000\config\opencode\config.json loading
+INFO  2026-04-23T15:22:26 +0ms service=config path=C:\Users\ADMINI~1\AppData\Local\Temp\opencode-test-data-20000\config\opencode\opencode.json loading
+INFO  2026-04-23T15:22:26 +0ms service=config path=C:\Users\ADMINI~1\AppData\Local\Temp\opencode-test-data-20000\config\opencode\opencode.jsonc loading
+INFO  2026-04-23T15:22:26 +2ms service=config path=C:\Users\Administrator\AppData\Local\Temp\opencode-test-wddcxs5dwg\opencode.json loading
+INFO  2026-04-23T15:22:26 +4ms service=plugin name=CodexAuthPlugin loading internal plugin
+INFO  2026-04-23T15:22:26 +0ms service=plugin name=CopilotAuthPlugin loading internal plugin
+INFO  2026-04-23T15:22:26 +0ms service=plugin name=gitlabAuthPlugin loading internal plugin
+INFO  2026-04-23T15:22:26 +0ms service=plugin name=PoeAuthPlugin loading internal plugin
+INFO  2026-04-23T15:22:26 +0ms service=plugin name=CloudflareWorkersAuthPlugin loading internal plugin
+INFO  2026-04-23T15:22:26 +0ms service=plugin name=CloudflareAIGatewayAuthPlugin loading internal plugin
+INFO  2026-04-23T15:22:26 +0ms service=plugin name=OhMyOpenCodePlugin loading internal plugin
+INFO  2026-04-23T15:22:26 +133ms service=plugin path=broken-plugin@9.9.9 loading plugin
+INFO  2026-04-23T15:22:26 +1ms service=plugin path=file:///C:/Users/Administrator/AppData/Local/Temp/opencode-test-wddcxs5dwg/ok.ts loading plugin
+ERROR 2026-04-23T15:22:26 +0ms service=plugin pkg=broken-plugin version=9.9.9 error=boom failed to install plugin
+INFO  2026-04-23T15:22:26 +0ms service=bus type=session.error publishing
+INFO  2026-04-23T15:22:26 +236ms service=bus type=* subscribing
+INFO  2026-04-23T15:22:26 +2ms service=server-proxy disposing all instances
+INFO  2026-04-23T15:22:26 +0ms service=server-proxy directory=C:\Users\Administrator\AppData\Local\Temp\opencode-test-wddcxs5dwg disposing instance
+INFO  2026-04-23T15:22:26 +3ms service=server-proxy directory=C:\Users\Administrator\AppData\Local\Temp\opencode-test-27bo0nhcacc creating instance
+INFO  2026-04-23T15:22:26 +0ms service=project directory=C:\Users\Administrator\AppData\Local\Temp\opencode-test-27bo0nhcacc fromDirectory
+INFO  2026-04-23T15:22:26 +2ms service=config path=C:\Users\ADMINI~1\AppData\Local\Temp\opencode-test-data-20000\config\opencode\config.json loading
+INFO  2026-04-23T15:22:26 +1ms service=config path=C:\Users\ADMINI~1\AppData\Local\Temp\opencode-test-data-20000\config\opencode\opencode.json loading
+INFO  2026-04-23T15:22:26 +0ms service=config path=C:\Users\ADMINI~1\AppData\Local\Temp\opencode-test-data-20000\config\opencode\opencode.jsonc loading
+INFO  2026-04-23T15:22:26 +1ms service=config path=C:\Users\Administrator\AppData\Local\Temp\opencode-test-27bo0nhcacc\opencode.json loading
+INFO  2026-04-23T15:22:26 +5ms service=plugin name=CodexAuthPlugin loading internal plugin
+INFO  2026-04-23T15:22:26 +0ms service=plugin name=CopilotAuthPlugin loading internal plugin
+INFO  2026-04-23T15:22:26 +0ms service=plugin name=gitlabAuthPlugin loading internal plugin
+INFO  2026-04-23T15:22:26 +0ms service=plugin name=PoeAuthPlugin loading internal plugin
+INFO  2026-04-23T15:22:26 +0ms service=plugin name=CloudflareWorkersAuthPlugin loading internal plugin
+INFO  2026-04-23T15:22:26 +0ms service=plugin name=CloudflareAIGatewayAuthPlugin loading internal plugin
+INFO  2026-04-23T15:22:26 +0ms service=plugin name=OhMyOpenCodePlugin loading internal plugin
+INFO  2026-04-23T15:22:26 +142ms service=plugin path=file:///C:/Users/Administrator/AppData/Local/Temp/opencode-test-27bo0nhcacc/throws.ts loading plugin
+INFO  2026-04-23T15:22:26 +0ms service=plugin path=file:///C:/Users/Administrator/AppData/Local/Temp/opencode-test-27bo0nhcacc/ok.ts loading plugin
+ERROR 2026-04-23T15:22:26 +4ms service=plugin path=file:///C:/Users/Administrator/AppData/Local/Temp/opencode-test-27bo0nhcacc/throws.ts error=explode failed to load plugin
+INFO  2026-04-23T15:22:27 +238ms service=bus type=* subscribing
+INFO  2026-04-23T15:22:27 +4ms service=server-proxy disposing all instances
+INFO  2026-04-23T15:22:27 +0ms service=server-proxy directory=C:\Users\Administrator\AppData\Local\Temp\opencode-test-27bo0nhcacc disposing instance
+INFO  2026-04-23T15:22:27 +2ms service=server-proxy directory=C:\Users\Administrator\AppData\Local\Temp\opencode-test-wwdx02yhhpp creating instance
+INFO  2026-04-23T15:22:27 +0ms service=project directory=C:\Users\Administrator\AppData\Local\Temp\opencode-test-wwdx02yhhpp fromDirectory
+INFO  2026-04-23T15:22:27 +3ms service=config path=C:\Users\ADMINI~1\AppData\Local\Temp\opencode-test-data-20000\config\opencode\config.json loading
+INFO  2026-04-23T15:22:27 +1ms service=config path=C:\Users\ADMINI~1\AppData\Local\Temp\opencode-test-data-20000\config\opencode\opencode.json loading
+INFO  2026-04-23T15:22:27 +0ms service=config path=C:\Users\ADMINI~1\AppData\Local\Temp\opencode-test-data-20000\config\opencode\opencode.jsonc loading
+INFO  2026-04-23T15:22:27 +2ms service=config path=C:\Users\Administrator\AppData\Local\Temp\opencode-test-wwdx02yhhpp\opencode.json loading
+INFO  2026-04-23T15:22:27 +5ms service=plugin name=CodexAuthPlugin loading internal plugin
+INFO  2026-04-23T15:22:27 +0ms service=plugin name=CopilotAuthPlugin loading internal plugin
+INFO  2026-04-23T15:22:27 +0ms service=plugin name=gitlabAuthPlugin loading internal plugin
+INFO  2026-04-23T15:22:27 +0ms service=plugin name=PoeAuthPlugin loading internal plugin
+INFO  2026-04-23T15:22:27 +0ms service=plugin name=CloudflareWorkersAuthPlugin loading internal plugin
+INFO  2026-04-23T15:22:27 +0ms service=plugin name=CloudflareAIGatewayAuthPlugin loading internal plugin
+INFO  2026-04-23T15:22:27 +0ms service=plugin name=OhMyOpenCodePlugin loading internal plugin
+INFO  2026-04-23T15:22:27 +134ms service=plugin path=file:///C:/Users/Administrator/AppData/Local/Temp/opencode-test-wwdx02yhhpp/invalid.ts loading plugin
+INFO  2026-04-23T15:22:27 +0ms service=plugin path=file:///C:/Users/Administrator/AppData/Local/Temp/opencode-test-wwdx02yhhpp/ok.ts loading plugin
+ERROR 2026-04-23T15:22:27 +3ms service=plugin path=file:///C:/Users/Administrator/AppData/Local/Temp/opencode-test-wwdx02yhhpp/invalid.ts error=Plugin file:///C:/Users/Administrator/AppData/Local/Temp/opencode-test-wwdx02yhhpp/invalid.ts must default export an object with server() failed to load plugin
+INFO  2026-04-23T15:22:27 +224ms service=bus type=* subscribing
+INFO  2026-04-23T15:22:27 +2ms service=server-proxy disposing all instances
+INFO  2026-04-23T15:22:27 +1ms service=server-proxy directory=C:\Users\Administrator\AppData\Local\Temp\opencode-test-wwdx02yhhpp disposing instance
+INFO  2026-04-23T15:22:27 +2ms service=server-proxy directory=C:\Users\Administrator\AppData\Local\Temp\opencode-test-eu27emfbdb creating instance
+INFO  2026-04-23T15:22:27 +0ms service=project directory=C:\Users\Administrator\AppData\Local\Temp\opencode-test-eu27emfbdb fromDirectory
+INFO  2026-04-23T15:22:27 +2ms service=config path=C:\Users\ADMINI~1\AppData\Local\Temp\opencode-test-data-20000\config\opencode\config.json loading
+INFO  2026-04-23T15:22:27 +0ms service=config path=C:\Users\ADMINI~1\AppData\Local\Temp\opencode-test-data-20000\config\opencode\opencode.json loading
+INFO  2026-04-23T15:22:27 +0ms service=config path=C:\Users\ADMINI~1\AppData\Local\Temp\opencode-test-data-20000\config\opencode\opencode.jsonc loading
+INFO  2026-04-23T15:22:27 +2ms service=config path=C:\Users\Administrator\AppData\Local\Temp\opencode-test-eu27emfbdb\opencode.json loading
+INFO  2026-04-23T15:22:27 +4ms service=plugin name=CodexAuthPlugin loading internal plugin
+INFO  2026-04-23T15:22:27 +0ms service=plugin name=CopilotAuthPlugin loading internal plugin
+INFO  2026-04-23T15:22:27 +0ms service=plugin name=gitlabAuthPlugin loading internal plugin
+INFO  2026-04-23T15:22:27 +0ms service=plugin name=PoeAuthPlugin loading internal plugin
+INFO  2026-04-23T15:22:27 +0ms service=plugin name=CloudflareWorkersAuthPlugin loading internal plugin
+INFO  2026-04-23T15:22:27 +0ms service=plugin name=CloudflareAIGatewayAuthPlugin loading internal plugin
+INFO  2026-04-23T15:22:27 +0ms service=plugin name=OhMyOpenCodePlugin loading internal plugin
+INFO  2026-04-23T15:22:27 +130ms service=plugin path=file:///C:/Users/Administrator/AppData/Local/Temp/opencode-test-eu27emfbdb/missing-plugin.ts loading plugin
+INFO  2026-04-23T15:22:27 +0ms service=plugin path=file:///C:/Users/Administrator/AppData/Local/Temp/opencode-test-eu27emfbdb/ok.ts loading plugin
+ERROR 2026-04-23T15:22:27 +3ms service=plugin path=file:///C:/Users/Administrator/AppData/Local/Temp/opencode-test-eu27emfbdb/missing-plugin.ts target=file:///C:/Users/Administrator/AppData/Local/Temp/opencode-test-eu27emfbdb/missing-plugin.ts error=Cannot find module 'C:\Users\Administrator\AppData\Local\Temp\opencode-test-eu27emfbdb\missing-plugin.ts' from 'D:\sources\poc\ai\opencode\packages\opencode\src\plugin\loader.ts' failed to load plugin
+INFO  2026-04-23T15:22:27 +0ms service=bus type=session.error publishing
+INFO  2026-04-23T15:22:27 +237ms service=bus type=* subscribing
+INFO  2026-04-23T15:22:27 +2ms service=server-proxy disposing all instances
+INFO  2026-04-23T15:22:27 +1ms service=server-proxy directory=C:\Users\Administrator\AppData\Local\Temp\opencode-test-eu27emfbdb disposing instance
+INFO  2026-04-23T15:22:27 +2ms service=server-proxy directory=C:\Users\Administrator\AppData\Local\Temp\opencode-test-eqlizdwzl6p creating instance
+INFO  2026-04-23T15:22:27 +0ms service=project directory=C:\Users\Administrator\AppData\Local\Temp\opencode-test-eqlizdwzl6p fromDirectory
+INFO  2026-04-23T15:22:27 +2ms service=config path=C:\Users\ADMINI~1\AppData\Local\Temp\opencode-test-data-20000\config\opencode\config.json loading
+INFO  2026-04-23T15:22:27 +1ms service=config path=C:\Users\ADMINI~1\AppData\Local\Temp\opencode-test-data-20000\config\opencode\opencode.json loading
+INFO  2026-04-23T15:22:27 +0ms service=config path=C:\Users\ADMINI~1\AppData\Local\Temp\opencode-test-data-20000\config\opencode\opencode.jsonc loading
+INFO  2026-04-23T15:22:27 +1ms service=config path=C:\Users\Administrator\AppData\Local\Temp\opencode-test-eqlizdwzl6p\opencode.json loading
+INFO  2026-04-23T15:22:27 +5ms service=plugin name=CodexAuthPlugin loading internal plugin
+INFO  2026-04-23T15:22:27 +0ms service=plugin name=CopilotAuthPlugin loading internal plugin
+INFO  2026-04-23T15:22:27 +0ms service=plugin name=gitlabAuthPlugin loading internal plugin
+INFO  2026-04-23T15:22:27 +0ms service=plugin name=PoeAuthPlugin loading internal plugin
+INFO  2026-04-23T15:22:27 +0ms service=plugin name=CloudflareWorkersAuthPlugin loading internal plugin
+INFO  2026-04-23T15:22:27 +0ms service=plugin name=CloudflareAIGatewayAuthPlugin loading internal plugin
+INFO  2026-04-23T15:22:27 +0ms service=plugin name=OhMyOpenCodePlugin loading internal plugin
+INFO  2026-04-23T15:22:27 +139ms service=plugin path=file:///C:/Users/Administrator/AppData/Local/Temp/opencode-test-eqlizdwzl6p/object-plugin.ts loading plugin
+INFO  2026-04-23T15:22:28 +227ms service=bus type=* subscribing
+INFO  2026-04-23T15:22:28 +2ms service=server-proxy disposing all instances
+INFO  2026-04-23T15:22:28 +1ms service=server-proxy directory=C:\Users\Administrator\AppData\Local\Temp\opencode-test-eqlizdwzl6p disposing instance
+INFO  2026-04-23T15:22:28 +2ms service=server-proxy directory=C:\Users\Administrator\AppData\Local\Temp\opencode-test-ha7n7en11kv creating instance
+INFO  2026-04-23T15:22:28 +0ms service=project directory=C:\Users\Administrator\AppData\Local\Temp\opencode-test-ha7n7en11kv fromDirectory
+INFO  2026-04-23T15:22:28 +2ms service=config path=C:\Users\ADMINI~1\AppData\Local\Temp\opencode-test-data-20000\config\opencode\config.json loading
+INFO  2026-04-23T15:22:28 +0ms service=config path=C:\Users\ADMINI~1\AppData\Local\Temp\opencode-test-data-20000\config\opencode\opencode.json loading
+INFO  2026-04-23T15:22:28 +0ms service=config path=C:\Users\ADMINI~1\AppData\Local\Temp\opencode-test-data-20000\config\opencode\opencode.jsonc loading
+INFO  2026-04-23T15:22:28 +2ms service=config path=C:\Users\Administrator\AppData\Local\Temp\opencode-test-ha7n7en11kv\opencode.json loading
+INFO  2026-04-23T15:22:28 +5ms service=plugin name=CodexAuthPlugin loading internal plugin
+INFO  2026-04-23T15:22:28 +0ms service=plugin name=CopilotAuthPlugin loading internal plugin
+INFO  2026-04-23T15:22:28 +0ms service=plugin name=gitlabAuthPlugin loading internal plugin
+INFO  2026-04-23T15:22:28 +0ms service=plugin name=PoeAuthPlugin loading internal plugin
+INFO  2026-04-23T15:22:28 +0ms service=plugin name=CloudflareWorkersAuthPlugin loading internal plugin
+INFO  2026-04-23T15:22:28 +0ms service=plugin name=CloudflareAIGatewayAuthPlugin loading internal plugin
+INFO  2026-04-23T15:22:28 +0ms service=plugin name=OhMyOpenCodePlugin loading internal plugin
+INFO  2026-04-23T15:22:28 +135ms service=plugin path=file:///C:/Users/Administrator/AppData/Local/Temp/opencode-test-ha7n7en11kv/options-plugin.ts loading plugin
+INFO  2026-04-23T15:22:28 +231ms service=bus type=* subscribing
+INFO  2026-04-23T15:22:28 +2ms service=server-proxy disposing all instances
+INFO  2026-04-23T15:22:28 +0ms service=server-proxy directory=C:\Users\Administrator\AppData\Local\Temp\opencode-test-ha7n7en11kv disposing instance
+INFO  2026-04-23T15:22:28 +3ms service=server-proxy directory=C:\Users\Administrator\AppData\Local\Temp\opencode-test-zcumwjxkzec creating instance
+INFO  2026-04-23T15:22:28 +0ms service=project directory=C:\Users\Administrator\AppData\Local\Temp\opencode-test-zcumwjxkzec fromDirectory
+INFO  2026-04-23T15:22:28 +2ms service=config path=C:\Users\ADMINI~1\AppData\Local\Temp\opencode-test-data-20000\config\opencode\config.json loading
+INFO  2026-04-23T15:22:28 +0ms service=config path=C:\Users\ADMINI~1\AppData\Local\Temp\opencode-test-data-20000\config\opencode\opencode.json loading
+INFO  2026-04-23T15:22:28 +1ms service=config path=C:\Users\ADMINI~1\AppData\Local\Temp\opencode-test-data-20000\config\opencode\opencode.jsonc loading
+INFO  2026-04-23T15:22:28 +1ms service=config path=C:\Users\Administrator\AppData\Local\Temp\opencode-test-zcumwjxkzec\opencode.json loading
+INFO  2026-04-23T15:22:28 +5ms service=plugin name=CodexAuthPlugin loading internal plugin
+INFO  2026-04-23T15:22:28 +0ms service=plugin name=CopilotAuthPlugin loading internal plugin
+INFO  2026-04-23T15:22:28 +0ms service=plugin name=gitlabAuthPlugin loading internal plugin
+INFO  2026-04-23T15:22:28 +0ms service=plugin name=PoeAuthPlugin loading internal plugin
+INFO  2026-04-23T15:22:28 +0ms service=plugin name=CloudflareWorkersAuthPlugin loading internal plugin
+INFO  2026-04-23T15:22:28 +0ms service=plugin name=CloudflareAIGatewayAuthPlugin loading internal plugin
+INFO  2026-04-23T15:22:28 +0ms service=plugin name=OhMyOpenCodePlugin loading internal plugin
+INFO  2026-04-23T15:22:28 +134ms service=plugin path=file:///C:/Users/Administrator/AppData/Local/Temp/opencode-test-zcumwjxkzec/a-plugin.ts loading plugin
+INFO  2026-04-23T15:22:28 +0ms service=plugin path=file:///C:/Users/Administrator/AppData/Local/Temp/opencode-test-zcumwjxkzec/b-plugin.ts loading plugin
+INFO  2026-04-23T15:22:28 +272ms service=bus type=* subscribing
+INFO  2026-04-23T15:22:28 +4ms service=server-proxy disposing all instances
+INFO  2026-04-23T15:22:28 +6ms service=server-proxy directory=C:\Users\Administrator\AppData\Local\Temp\opencode-test-zcumwjxkzec disposing instance
+INFO  2026-04-23T15:22:28 +2ms service=server-proxy directory=C:\Users\Administrator\AppData\Local\Temp\opencode-test-a26n3t8nqtj creating instance
+INFO  2026-04-23T15:22:28 +0ms service=project directory=C:\Users\Administrator\AppData\Local\Temp\opencode-test-a26n3t8nqtj fromDirectory
+INFO  2026-04-23T15:22:28 +3ms service=config path=C:\Users\ADMINI~1\AppData\Local\Temp\opencode-test-data-20000\config\opencode\config.json loading
+INFO  2026-04-23T15:22:28 +0ms service=config path=C:\Users\ADMINI~1\AppData\Local\Temp\opencode-test-data-20000\config\opencode\opencode.json loading
+INFO  2026-04-23T15:22:28 +0ms service=config path=C:\Users\ADMINI~1\AppData\Local\Temp\opencode-test-data-20000\config\opencode\opencode.jsonc loading
+INFO  2026-04-23T15:22:28 +1ms service=config path=C:\Users\Administrator\AppData\Local\Temp\opencode-test-a26n3t8nqtj\opencode.json loading
+INFO  2026-04-23T15:22:29 +6ms service=plugin name=CodexAuthPlugin loading internal plugin
+INFO  2026-04-23T15:22:29 +0ms service=plugin name=CopilotAuthPlugin loading internal plugin
+INFO  2026-04-23T15:22:29 +0ms service=plugin name=gitlabAuthPlugin loading internal plugin
+INFO  2026-04-23T15:22:29 +0ms service=plugin name=PoeAuthPlugin loading internal plugin
+INFO  2026-04-23T15:22:29 +0ms service=plugin name=CloudflareWorkersAuthPlugin loading internal plugin
+INFO  2026-04-23T15:22:29 +0ms service=plugin name=CloudflareAIGatewayAuthPlugin loading internal plugin
+INFO  2026-04-23T15:22:29 +0ms service=plugin name=OhMyOpenCodePlugin loading internal plugin
+INFO  2026-04-23T15:22:29 +135ms service=plugin count=1 skipping external plugins in pure mode
+INFO  2026-04-23T15:22:29 +229ms service=bus type=* subscribing
+INFO  2026-04-23T15:22:29 +1ms service=server-proxy disposing all instances
+INFO  2026-04-23T15:22:29 +0ms service=server-proxy directory=C:\Users\Administrator\AppData\Local\Temp\opencode-test-a26n3t8nqtj disposing instance
+INFO  2026-04-23T15:22:29 +4ms service=server-proxy disposing all instances
+INFO  2026-04-23T15:22:29 +4ms service=server-proxy disposing all instances
+INFO  2026-04-23T15:22:29 +6ms service=server-proxy disposing all instances
+INFO  2026-04-23T15:22:29 +3ms service=server-proxy disposing all instances
+INFO  2026-04-23T15:22:29 +7ms service=server-proxy disposing all instances
+INFO  2026-04-23T15:22:29 +3ms service=server-proxy disposing all instances
+INFO  2026-04-23T15:22:29 +0ms service=server-proxy disposing all instances
+INFO  2026-04-23T15:22:31 +1718ms service=server-proxy directory=C:\Users\Administrator\AppData\Local\Temp\opencode-test-gkns2axsvik creating instance
+INFO  2026-04-23T15:22:31 +0ms service=project directory=C:\Users\Administrator\AppData\Local\Temp\opencode-test-gkns2axsvik fromDirectory
+INFO  2026-04-23T15:22:31 +3ms service=config path=C:\Users\ADMINI~1\AppData\Local\Temp\opencode-test-data-20000\config\opencode\config.json loading
+INFO  2026-04-23T15:22:31 +0ms service=config path=C:\Users\ADMINI~1\AppData\Local\Temp\opencode-test-data-20000\config\opencode\opencode.json loading
+INFO  2026-04-23T15:22:31 +0ms service=config path=C:\Users\ADMINI~1\AppData\Local\Temp\opencode-test-data-20000\config\opencode\opencode.jsonc loading
+INFO  2026-04-23T15:22:31 +2ms service=config path=C:\Users\Administrator\AppData\Local\Temp\opencode-test-gkns2axsvik\opencode.json loading
+INFO  2026-04-23T15:22:31 +5ms service=plugin name=CodexAuthPlugin loading internal plugin
+INFO  2026-04-23T15:22:31 +0ms service=plugin name=CopilotAuthPlugin loading internal plugin
+INFO  2026-04-23T15:22:31 +0ms service=plugin name=gitlabAuthPlugin loading internal plugin
+INFO  2026-04-23T15:22:31 +0ms service=plugin name=PoeAuthPlugin loading internal plugin
+INFO  2026-04-23T15:22:31 +0ms service=plugin name=CloudflareWorkersAuthPlugin loading internal plugin
+INFO  2026-04-23T15:22:31 +0ms service=plugin name=CloudflareAIGatewayAuthPlugin loading internal plugin
+INFO  2026-04-23T15:22:31 +0ms service=plugin name=OhMyOpenCodePlugin loading internal plugin
+INFO  2026-04-23T15:22:31 +133ms service=plugin path=file:///C:/Users/Administrator/AppData/Local/Temp/opencode-test-gkns2axsvik/plugin.ts loading plugin
+INFO  2026-04-23T15:22:31 +228ms service=bus type=* subscribing
+INFO  2026-04-23T15:22:31 +0ms service=bus publishing
+INFO  2026-04-23T15:22:31 +1ms service=server-proxy disposing all instances
+INFO  2026-04-23T15:22:31 +0ms service=server-proxy directory=C:\Users\Administrator\AppData\Local\Temp\opencode-test-gkns2axsvik disposing instance
+INFO  2026-04-23T15:22:31 +2ms service=server-proxy directory=C:\Users\Administrator\AppData\Local\Temp\opencode-test-blgnb0o6mj9 creating instance
+INFO  2026-04-23T15:22:31 +0ms service=project directory=C:\Users\Administrator\AppData\Local\Temp\opencode-test-blgnb0o6mj9 fromDirectory
+INFO  2026-04-23T15:22:31 +3ms service=config path=C:\Users\ADMINI~1\AppData\Local\Temp\opencode-test-data-20000\config\opencode\config.json loading
+INFO  2026-04-23T15:22:31 +0ms service=config path=C:\Users\ADMINI~1\AppData\Local\Temp\opencode-test-data-20000\config\opencode\opencode.json loading
+INFO  2026-04-23T15:22:31 +0ms service=config path=C:\Users\ADMINI~1\AppData\Local\Temp\opencode-test-data-20000\config\opencode\opencode.jsonc loading
+INFO  2026-04-23T15:22:31 +2ms service=config path=C:\Users\Administrator\AppData\Local\Temp\opencode-test-blgnb0o6mj9\opencode.json loading
+INFO  2026-04-23T15:22:31 +4ms service=plugin name=CodexAuthPlugin loading internal plugin
+INFO  2026-04-23T15:22:31 +0ms service=plugin name=CopilotAuthPlugin loading internal plugin
+INFO  2026-04-23T15:22:31 +0ms service=plugin name=gitlabAuthPlugin loading internal plugin
+INFO  2026-04-23T15:22:31 +0ms service=plugin name=PoeAuthPlugin loading internal plugin
+INFO  2026-04-23T15:22:31 +0ms service=plugin name=CloudflareWorkersAuthPlugin loading internal plugin
+INFO  2026-04-23T15:22:31 +0ms service=plugin name=CloudflareAIGatewayAuthPlugin loading internal plugin
+INFO  2026-04-23T15:22:31 +0ms service=plugin name=OhMyOpenCodePlugin loading internal plugin
+INFO  2026-04-23T15:22:31 +135ms service=plugin path=file:///C:/Users/Administrator/AppData/Local/Temp/opencode-test-blgnb0o6mj9/plugin.ts loading plugin
+INFO  2026-04-23T15:22:31 +230ms service=bus type=* subscribing
+INFO  2026-04-23T15:22:31 +0ms service=bus publishing
+INFO  2026-04-23T15:22:31 +7ms service=bus type=* unsubscribing
+INFO  2026-04-23T15:22:31 +1ms service=server-proxy disposing all instances
+INFO  2026-04-23T15:22:31 +0ms service=server-proxy directory=C:\Users\Administrator\AppData\Local\Temp\opencode-test-blgnb0o6mj9 disposing instance
+INFO  2026-04-23T15:22:31 +10ms service=server-proxy directory=C:\Users\Administrator\AppData\Local\Temp\opencode-test-ssfgf4v4qo creating instance
+INFO  2026-04-23T15:22:31 +0ms service=project directory=C:\Users\Administrator\AppData\Local\Temp\opencode-test-ssfgf4v4qo fromDirectory
+INFO  2026-04-23T15:22:31 +3ms service=config path=C:\Users\ADMINI~1\AppData\Local\Temp\opencode-test-data-20000\config\opencode\config.json loading
+INFO  2026-04-23T15:22:31 +0ms service=config path=C:\Users\ADMINI~1\AppData\Local\Temp\opencode-test-data-20000\config\opencode\opencode.json loading
+INFO  2026-04-23T15:22:31 +0ms service=config path=C:\Users\ADMINI~1\AppData\Local\Temp\opencode-test-data-20000\config\opencode\opencode.jsonc loading
+INFO  2026-04-23T15:22:31 +1ms service=config path=C:\Users\Administrator\AppData\Local\Temp\opencode-test-ssfgf4v4qo\opencode.json loading
+INFO  2026-04-23T15:22:31 +5ms service=plugin name=CodexAuthPlugin loading internal plugin
+INFO  2026-04-23T15:22:31 +0ms service=plugin name=CopilotAuthPlugin loading internal plugin
+INFO  2026-04-23T15:22:31 +0ms service=plugin name=gitlabAuthPlugin loading internal plugin
+INFO  2026-04-23T15:22:31 +0ms service=plugin name=PoeAuthPlugin loading internal plugin
+INFO  2026-04-23T15:22:31 +0ms service=plugin name=CloudflareWorkersAuthPlugin loading internal plugin
+INFO  2026-04-23T15:22:31 +0ms service=plugin name=CloudflareAIGatewayAuthPlugin loading internal plugin
+INFO  2026-04-23T15:22:31 +0ms service=plugin name=OhMyOpenCodePlugin loading internal plugin
+INFO  2026-04-23T15:22:32 +134ms service=plugin path=file:///C:/Users/Administrator/AppData/Local/Temp/opencode-test-ssfgf4v4qo/plugin.ts loading plugin
+INFO  2026-04-23T15:22:32 +248ms service=bus type=* subscribing
+INFO  2026-04-23T15:22:32 +6ms service=server-proxy disposing all instances
+INFO  2026-04-23T15:22:32 +0ms service=server-proxy directory=C:\Users\Administrator\AppData\Local\Temp\opencode-test-ssfgf4v4qo disposing instance
+System.Management.Automation.RemoteException
+test\pty\pty-output-isolation.test.ts:
+167 | 			Buffer.from(`${cwd}\0`, "utf8"),
+168 | 			Buffer.from(`${envStr}\0`, "utf8"),
+169 | 			this._cols,
+170 | 			this._rows,
+171 | 		);
+172 | 		if (this.handle < 0) throw new Error("PTY spawn failed");
+                                       ^
+error: PTY spawn failed
+      at new Terminal (D:\sources\poc\ai\opencode\node_modules\.bun\bun-pty@0.4.8\node_modules\bun-pty\src\terminal.ts:172:34)
+      at spawn (D:\sources\poc\ai\opencode\node_modules\.bun\bun-pty@0.4.8\node_modules\bun-pty\src\index.ts:18:12)
+      at spawn (D:\sources\poc\ai\opencode\packages\opencode\src\pty\pty.bun.ts:7:15)
+      at ~effect/Effect/evaluate (D:\sources\poc\ai\opencode\node_modules\.bun\effect@4.0.0-beta.48\node_modules\effect\dist\internal\effect.js:625:24)
+      at runLoop (D:\sources\poc\ai\opencode\node_modules\.bun\effect@4.0.0-beta.48\node_modules\effect\dist\internal\effect.js:444:98)
+      at evaluate (D:\sources\poc\ai\opencode\node_modules\.bun\effect@4.0.0-beta.48\node_modules\effect\dist\internal\effect.js:412:23)
+      at <anonymous> (D:\sources\poc\ai\opencode\node_modules\.bun\effect@4.0.0-beta.48\node_modules\effect\dist\internal\effect.js:719:15)
+(fail) pty > does not leak output when websocket objects are reused [860.00ms]
+167 | 			Buffer.from(`${cwd}\0`, "utf8"),
+168 | 			Buffer.from(`${envStr}\0`, "utf8"),
+169 | 			this._cols,
+170 | 			this._rows,
+171 | 		);
+172 | 		if (this.handle < 0) throw new Error("PTY spawn failed");
+                                       ^
+error: PTY spawn failed
+      at new Terminal (D:\sources\poc\ai\opencode\node_modules\.bun\bun-pty@0.4.8\node_modules\bun-pty\src\terminal.ts:172:34)
+      at spawn (D:\sources\poc\ai\opencode\node_modules\.bun\bun-pty@0.4.8\node_modules\bun-pty\src\index.ts:18:12)
+      at spawn (D:\sources\poc\ai\opencode\packages\opencode\src\pty\pty.bun.ts:7:15)
+      at ~effect/Effect/evaluate (D:\sources\poc\ai\opencode\node_modules\.bun\effect@4.0.0-beta.48\node_modules\effect\dist\internal\effect.js:625:24)
+      at runLoop (D:\sources\poc\ai\opencode\node_modules\.bun\effect@4.0.0-beta.48\node_modules\effect\dist\internal\effect.js:444:98)
+      at evaluate (D:\sources\poc\ai\opencode\node_modules\.bun\effect@4.0.0-beta.48\node_modules\effect\dist\internal\effect.js:412:23)
+      at <anonymous> (D:\sources\poc\ai\opencode\node_modules\.bun\effect@4.0.0-beta.48\node_modules\effect\dist\internal\effect.js:719:15)
+(fail) pty > does not leak output when Bun recycles websocket objects before re-connect [859.00ms]
+167 | 			Buffer.from(`${cwd}\0`, "utf8"),
+168 | 			Buffer.from(`${envStr}\0`, "utf8"),
+169 | 			this._cols,
+170 | 			this._rows,
+171 | 		);
+172 | 		if (this.handle < 0) throw new Error("PTY spawn failed");
+                                       ^
+error: PTY spawn failed
+      at Terminal (D:\sources\poc\ai\opencode\node_modules\.bun\bun-pty@0.4.8\node_modules\bun-pty\src\terminal.ts:172:34)
+      at spawn (D:\sources\poc\ai\opencode\node_modules\.bun\bun-pty@0.4.8\node_modules\bun-pty\src\index.ts:18:16)
+      at spawn (D:\sources\poc\ai\opencode\packages\opencode\src\pty\pty.bun.ts:11:14)
+      at ~effect/Effect/evaluate (D:\sources\poc\ai\opencode\node_modules\.bun\effect@4.0.0-beta.48\node_modules\effect\dist\internal\effect.js:612:37)
+      at runLoop (D:\sources\poc\ai\opencode\node_modules\.bun\effect@4.0.0-beta.48\node_modules\effect\dist\internal\effect.js:420:66)
+      at evaluate (D:\sources\poc\ai\opencode\node_modules\.bun\effect@4.0.0-beta.48\node_modules\effect\dist\internal\effect.js:380:14)
+      at D:\sources\poc\ai\opencode\node_modules\.bun\effect@4.0.0-beta.48\node_modules\effect\dist\internal\effect.js:732:11
+      at processTicksAndRejections (unknown:7:39)
+(fail) pty > treats in-place socket data mutation as the same connection [859.00ms]
+System.Management.Automation.RemoteException
+test\session\llm.test.ts:
+388 |         const maxTokens = (body.max_tokens as number | undefined) ?? (body.max_output_tokens as number | undefined)
+389 |         const expectedMaxTokens = ProviderTransform.maxOutputTokens(resolved)
+390 |         expect(maxTokens).toBe(expectedMaxTokens)
+391 | 
+392 |         const reasoning = (body.reasoningEffort as string | undefined) ?? (body.reasoning_effort as string | undefined)
+393 |         expect(reasoning).toBe("high")
+                                ^
+error: expect(received).toBe(expected)
+System.Management.Automation.RemoteException
+Expected: "high"
+Received: undefined
+System.Management.Automation.RemoteException
+      at <anonymous> (D:\sources\poc\ai\opencode\packages\opencode\test\session\llm.test.ts:393:27)
+(fail) session.llm.stream > sends temperature, tokens, and reasoning options for openai-compatible models [844.00ms]
+System.Management.Automation.RemoteException
+test\session\prompt-effect.test.ts:
+[15:25:29.567] ERROR (#34234): 659 |               (part): part is MessageV2.ToolPart => part.type === "tool" && part.tool === "task",
+660 |             )
+661 |             if (tool?.state.status === "running" && tool.state.metadata?.sessionId) return tool
+662 |             await new Promise((done) => setTimeout(done, 20))
+663 |           }
+664 |           throw new Error("timed out waiting for running task metadata")
+                          ^
+error: timed out waiting for running task metadata
+      at D:\sources\poc\ai\opencode\packages\opencode\test\session\prompt-effect.test.ts:664:21
+      at processTicksAndRejections (native:7:39)
+
+659 |               (part): part is MessageV2.ToolPart => part.type === "tool" && part.tool === "task",
+660 |             )
+661 |             if (tool?.state.status === "running" && tool.state.metadata?.sessionId) return tool
+662 |             await new Promise((done) => setTimeout(done, 20))
+663 |           }
+664 |           throw new Error("timed out waiting for running task metadata")
+                          ^
+error: timed out waiting for running task metadata
+      at D:\sources\poc\ai\opencode\packages\opencode\test\session\prompt-effect.test.ts:664:21
+      at processTicksAndRejections (native:7:39)
+(fail) running task tool preserves metadata after tool-call transition [5969.00ms]
+System.Management.Automation.RemoteException
+test\session\prompt.test.ts:
+[15:25:59.111] INFO (#41851): loop {
+  service: "session.prompt",
+  "session.id": "ses_2450d55d5ffeQ7QVc5hDNiJvG0",
+  step: 0,
+}
+[15:26:00.035] INFO (#41851): loop {
+  service: "session.prompt",
+  "session.id": "ses_2450d55d5ffeQ7QVc5hDNiJvG0",
+  step: 1,
+}
+[15:26:00.035] INFO (#41851): exiting loop {
+  service: "session.prompt",
+  "session.id": "ses_2450d55d5ffeQ7QVc5hDNiJvG0",
+}
+[15:26:00.996] INFO (#42016): loop {
+  service: "session.prompt",
+  "session.id": "ses_2450d4e89ffeogceIjJUEK95AF",
+  step: 0,
+}
+[15:26:01.584] INFO (#41997): cancel {
+  service: "session.prompt",
+  "session.id": "ses_2450d4e89ffeogceIjJUEK95AF",
+}
+[15:26:04.216] INFO (#42286): command {
+  service: "session.prompt",
+  "session.id": "ses_2450d4048ffepvRAmji8AIGS2W",
+  command: "nonexistent-command-xyz",
+}
+System.Management.Automation.RemoteException
+test\snapshot\snapshot.test.ts:
+500 |     fn: async () => {
+501 |       const before = await run(tmp.path, (snapshot) => snapshot.track())
+502 |       expect(before).toBeTruthy()
+503 | 
+504 |       // Change permissions multiple times
+505 |       await $`chmod 600 ${tmp.path}/a.txt`.quiet()
+                     ^
+ShellError: Failed with exit code 1
+ exitCode: 1,
+   stdout: "",
+   stderr: "bun: command not found: chmod\n",
+System.Management.Automation.RemoteException
+      at new ShellPromise (75:16)
+      at BunShell2 (190:36)
+      at <anonymous> (D:\sources\poc\ai\opencode\packages\opencode\test\snapshot\snapshot.test.ts:505:13)
+(fail) file permissions and ownership changes [1265.00ms]
+System.Management.Automation.RemoteException
+test\tool\bash.test.ts:
+251 |               capture(requests, err),
+252 |             ),
+253 |           ),
+254 |         ).rejects.toThrow(err.message)
+255 |         const extDirReq = requests.find((r) => r.permission === "external_directory")
+256 |         expect(extDirReq).toBeDefined()
+                                ^
+error: expect(received).toBeDefined()
+System.Management.Automation.RemoteException
+Received: undefined
+System.Management.Automation.RemoteException
+      at <anonymous> (D:\sources\poc\ai\opencode\packages\opencode\test\tool\bash.test.ts:256:27)
+(fail) tool.bash permissions > asks for external_directory permission for wildcard external paths [bash]
+251 |               capture(requests, err),
+252 |             ),
+253 |           ),
+254 |         ).rejects.toThrow(err.message)
+255 |         const extDirReq = requests.find((r) => r.permission === "external_directory")
+256 |         expect(extDirReq).toBeDefined()
+                                ^
+error: expect(received).toBeDefined()
+System.Management.Automation.RemoteException
+Received: undefined
+System.Management.Automation.RemoteException
+      at <anonymous> (D:\sources\poc\ai\opencode\packages\opencode\test\tool\bash.test.ts:256:27)
+(fail) tool.bash permissions > asks for external_directory permission for wildcard external paths [powershell]
+251 |               capture(requests, err),
+252 |             ),
+253 |           ),
+254 |         ).rejects.toThrow(err.message)
+255 |         const extDirReq = requests.find((r) => r.permission === "external_directory")
+256 |         expect(extDirReq).toBeDefined()
+                                ^
+error: expect(received).toBeDefined()
+System.Management.Automation.RemoteException
+Received: undefined
+System.Management.Automation.RemoteException
+      at <anonymous> (D:\sources\poc\ai\opencode\packages\opencode\test\tool\bash.test.ts:256:27)
+(fail) tool.bash permissions > asks for external_directory permission for wildcard external paths [cmd]
+284 |                   capture(requests),
+285 |                 ),
+286 |               )
+287 |               const extDirReq = requests.find((r) => r.permission === "external_directory")
+288 |               const bashReq = requests.find((r) => r.permission === "bash")
+289 |               expect(extDirReq).toBeDefined()
+                                      ^
+error: expect(received).toBeDefined()
+System.Management.Automation.RemoteException
+Received: undefined
+System.Management.Automation.RemoteException
+      at <anonymous> (D:\sources\poc\ai\opencode\packages\opencode\test\tool\bash.test.ts:289:33)
+(fail) tool.bash permissions > asks for nested bash command permissions [bash] [78.00ms]
+318 |                     capture(requests, err),
+319 |                   ),
+320 |                 ),
+321 |               ).rejects.toThrow(err.message)
+322 |               const extDirReq = requests.find((r) => r.permission === "external_directory")
+323 |               expect(extDirReq).toBeDefined()
+                                      ^
+error: expect(received).toBeDefined()
+System.Management.Automation.RemoteException
+Received: undefined
+System.Management.Automation.RemoteException
+      at <anonymous> (D:\sources\poc\ai\opencode\packages\opencode\test\tool\bash.test.ts:323:33)
+(fail) tool.bash permissions > asks for external_directory permission for PowerShell paths after switches [powershell]
+347 |                   capture(requests),
+348 |                 ),
+349 |               )
+350 |               const extDirReq = requests.find((r) => r.permission === "external_directory")
+351 |               const bashReq = requests.find((r) => r.permission === "bash")
+352 |               expect(extDirReq).toBeDefined()
+                                      ^
+error: expect(received).toBeDefined()
+System.Management.Automation.RemoteException
+Received: undefined
+System.Management.Automation.RemoteException
+      at <anonymous> (D:\sources\poc\ai\opencode\packages\opencode\test\tool\bash.test.ts:352:33)
+(fail) tool.bash permissions > asks for nested PowerShell command permissions [powershell] [204.00ms]
+409 |                     },
+410 |                     capture(requests, err),
+411 |                   ),
+412 |                 ),
+413 |               ).rejects.toThrow(err.message)
+414 |               expect(requests[0]?.permission).toBe("external_directory")
+                                                    ^
+error: expect(received).toBe(expected)
+System.Management.Automation.RemoteException
+Expected: "external_directory"
+Received: "bash"
+System.Management.Automation.RemoteException
+      at <anonymous> (D:\sources\poc\ai\opencode\packages\opencode\test\tool\bash.test.ts:414:47)
+(fail) tool.bash permissions > asks for external_directory permission for $HOME PowerShell paths [powershell]
+470 |                     },
+471 |                     capture(requests, err),
+472 |                   ),
+473 |                 ),
+474 |               ).rejects.toThrow(err.message)
+475 |               expect(requests[0]?.permission).toBe("external_directory")
+                                                    ^
+error: expect(received).toBe(expected)
+System.Management.Automation.RemoteException
+Expected: "external_directory"
+Received: "bash"
+System.Management.Automation.RemoteException
+      at <anonymous> (D:\sources\poc\ai\opencode\packages\opencode\test\tool\bash.test.ts:475:47)
+(fail) tool.bash permissions > asks for external_directory permission for $PSHOME PowerShell paths [powershell]
+506 |                       capture(requests, err),
+507 |                     ),
+508 |                   ),
+509 |                 ).rejects.toThrow(err.message)
+510 |                 const extDirReq = requests.find((r) => r.permission === "external_directory")
+511 |                 expect(extDirReq).toBeDefined()
+                                        ^
+error: expect(received).toBeDefined()
+System.Management.Automation.RemoteException
+Received: undefined
+System.Management.Automation.RemoteException
+      at <anonymous> (D:\sources\poc\ai\opencode\packages\opencode\test\tool\bash.test.ts:511:35)
+(fail) tool.bash permissions > asks for external_directory permission for missing PowerShell env paths [powershell]
+537 |                   },
+538 |                   capture(requests),
+539 |                 ),
+540 |               )
+541 |               const extDirReq = requests.find((r) => r.permission === "external_directory")
+542 |               expect(extDirReq).toBeDefined()
+                                      ^
+error: expect(received).toBeDefined()
+System.Management.Automation.RemoteException
+Received: undefined
+System.Management.Automation.RemoteException
+      at <anonymous> (D:\sources\poc\ai\opencode\packages\opencode\test\tool\bash.test.ts:542:33)
+(fail) tool.bash permissions > asks for external_directory permission for PowerShell env paths [powershell] [156.00ms]
+568 |                     },
+569 |                     capture(requests, err),
+570 |                   ),
+571 |                 ),
+572 |               ).rejects.toThrow(err.message)
+573 |               expect(requests[0]?.permission).toBe("external_directory")
+                                                    ^
+error: expect(received).toBe(expected)
+System.Management.Automation.RemoteException
+Expected: "external_directory"
+Received: "bash"
+System.Management.Automation.RemoteException
+      at <anonymous> (D:\sources\poc\ai\opencode\packages\opencode\test\tool\bash.test.ts:573:47)
+(fail) tool.bash permissions > asks for external_directory permission for PowerShell FileSystem paths [powershell] [16.00ms]
+600 |                     },
+601 |                     capture(requests, err),
+602 |                   ),
+603 |                 ),
+604 |               ).rejects.toThrow(err.message)
+605 |               expect(requests[0]?.permission).toBe("external_directory")
+                                                    ^
+error: expect(received).toBe(expected)
+System.Management.Automation.RemoteException
+Expected: "external_directory"
+Received: "bash"
+System.Management.Automation.RemoteException
+      at <anonymous> (D:\sources\poc\ai\opencode\packages\opencode\test\tool\bash.test.ts:605:47)
+(fail) tool.bash permissions > asks for external_directory permission for braced PowerShell env paths [powershell]
+631 |                   capture(requests),
+632 |                 ),
+633 |               )
+634 |               const extDirReq = requests.find((r) => r.permission === "external_directory")
+635 |               const bashReq = requests.find((r) => r.permission === "bash")
+636 |               expect(extDirReq).toBeDefined()
+                                      ^
+error: expect(received).toBeDefined()
+System.Management.Automation.RemoteException
+Received: undefined
+System.Management.Automation.RemoteException
+      at <anonymous> (D:\sources\poc\ai\opencode\packages\opencode\test\tool\bash.test.ts:636:33)
+(fail) tool.bash permissions > treats Set-Location like cd for permissions [powershell] [156.00ms]
+783 |                     },
+784 |                     capture(requests, err),
+785 |                   ),
+786 |                 ),
+787 |               ).rejects.toThrow(err.message)
+788 |               expect(requests[0]).toMatchObject({
+                                        ^
+error: expect(received).toMatchObject(expected)
+System.Management.Automation.RemoteException
+@@ -2,9 +2,9 @@
+    "always": [
+-     "C:\Users\Administrator\AppData\Local\Temp\*",
++     "echo *",
+    ],
++   "metadata": {},
+    "patterns": [
+-     "C:\Users\Administrator\AppData\Local\Temp\*",
++     "echo ok",
+    ],
+-   "permission": "external_directory",
++   "permission": "bash",
+  }
+System.Management.Automation.RemoteException
+- Expected  - 3
++ Received  + 4
+System.Management.Automation.RemoteException
+      at <anonymous> (D:\sources\poc\ai\opencode\packages\opencode\test\tool\bash.test.ts:788:35)
+(fail) tool.bash permissions > uses Git Bash /tmp semantics for external workdir [547.00ms]
+814 |                     },
+815 |                     capture(requests, err),
+816 |                   ),
+817 |                 ),
+818 |               ).rejects.toThrow(err.message)
+819 |               expect(requests[0]).toMatchObject({
+                                        ^
+error: expect(received).toMatchObject(expected)
+System.Management.Automation.RemoteException
+@@ -2,9 +2,9 @@
+    "always": [
+-     "C:\Users\Administrator\AppData\Local\Temp\*",
++     "cat *",
+    ],
++   "metadata": {},
+    "patterns": [
+-     "C:\Users\Administrator\AppData\Local\Temp\*",
++     "cat /tmp/opencode-does-not-exist",
+    ],
+-   "permission": "external_directory",
++   "permission": "bash",
+  }
+System.Management.Automation.RemoteException
+- Expected  - 3
++ Received  + 4
+System.Management.Automation.RemoteException
+      at <anonymous> (D:\sources\poc\ai\opencode\packages\opencode\test\tool\bash.test.ts:819:35)
+(fail) tool.bash permissions > uses Git Bash /tmp semantics for external file paths [547.00ms]
+1021 |             },
+1022 |             ctx,
+1023 |           ),
+1024 |         )
+1025 |         expect(result.output).toContain("started")
+1026 |         expect(result.output).toContain("bash tool terminated command after exceeding timeout")
+                                     ^
+error: expect(received).toContain(expected)
+System.Management.Automation.RemoteException
+Expected to contain: "bash tool terminated command after exceeding timeout"
+Received: "��ġ ��:1 ����:14\r\n+ echo started && sleep 60\r\n+              ~~\r\n'&&' ��ū�� �� �������� �ùٸ� �� ���� ��ȣ�� �ƴմϴ�.\r\n    + CategoryInfo          : ParserError: (:) [], ParentContainsErrorRecordException\r\n    + FullyQualifiedErrorId : InvalidEndOfLine\r\n \r\n"
+System.Management.Automation.RemoteException
+      at <anonymous> (D:\sources\poc\ai\opencode\packages\opencode\test\tool\bash.test.ts:1026:31)
+(fail) tool.bash abort > terminates command on timeout [172.00ms]
+System.Management.Automation.RemoteException
+test\tool\external-directory.test.ts:
+138 |         },
+139 |       })
+140 | 
+141 |       const req = requests.find((r) => r.permission === "external_directory")
+142 |       const expected = glob(path.join(outerTmp.path, "*"))
+143 |       expect(req).toBeDefined()
+                        ^
+error: expect(received).toBeDefined()
+System.Management.Automation.RemoteException
+Received: undefined
+System.Management.Automation.RemoteException
+      at <anonymous> (D:\sources\poc\ai\opencode\packages\opencode\test\tool\external-directory.test.ts:143:19)
+(fail) tool.assertExternalDirectory > normalizes Windows path variants to one glob [500.00ms]
+System.Management.Automation.RemoteException
+test\tool\read.test.ts:
+[15:28:39.677] ERROR (#60770): 53 |         return yield* Effect.fail(
+54 |           new Error(`File not found: ${filepath}\n\nDid you mean one of these?\n${items.join("\n")}`),
+55 |         )
+56 |       }
+57 | 
+58 |       return yield* Effect.fail(new Error(`File not found: ${filepath}`))
+                                         ^
+error: File not found: D:\users\administrator\appdata\local\temp\opencode-test-52j96ewa22k\test.txt
+      at D:\sources\poc\ai\opencode\packages\opencode\src\tool\read.ts:58:37
+      at ReadToolTest.exec (D:\sources\poc\ai\opencode\packages\opencode\test\tool\read.test.ts:242:17)
+      at ReadToolTest.exec (definition) (D:\sources\poc\ai\opencode\packages\opencode\test\tool\read.test.ts:95:5)
+
+53 |         return yield* Effect.fail(
+54 |           new Error(`File not found: ${filepath}\n\nDid you mean one of these?\n${items.join("\n")}`),
+55 |         )
+56 |       }
+57 | 
+58 |       return yield* Effect.fail(new Error(`File not found: ${filepath}`))
+                                         ^
+error: File not found: D:\users\administrator\appdata\local\temp\opencode-test-52j96ewa22k\test.txt
+      at D:\sources\poc\ai\opencode\packages\opencode\src\tool\read.ts:58:37
+      at ~effect/Effect/successCont (D:\sources\poc\ai\opencode\node_modules\.bun\effect@4.0.0-beta.48\node_modules\effect\dist\internal\effect.js:913:22)
+      at runLoop (D:\sources\poc\ai\opencode\node_modules\.bun\effect@4.0.0-beta.48\node_modules\effect\dist\internal\effect.js:420:66)
+      at evaluate (D:\sources\poc\ai\opencode\node_modules\.bun\effect@4.0.0-beta.48\node_modules\effect\dist\internal\effect.js:380:14)
+      at D:\sources\poc\ai\opencode\node_modules\.bun\effect@4.0.0-beta.48\node_modules\effect\dist\internal\effect.js:732:11
+      at processTicksAndRejections (native:7:39)
+(fail) tool.read external_directory permission > normalizes read permission paths on Windows [1141.00ms]
+System.Management.Automation.RemoteException
+test\cli\tui\plugin-add.test.ts:
+[tui.plugin] failed to resolve tui plugin: Plugin directory C:\Users\Administrator\AppData\Local\Temp\opencode-test-rjsqhp2bdi\retry-plugin is missing package.json or index file {
+  path: "file:///C:/Users/Administrator/AppData/Local/Temp/opencode-test-rjsqhp2bdi/retry-plugin",
+  retry: false,
+  error: {
+    type: "Error",
+    message: "Plugin directory C:\\Users\\Administrator\\AppData\\Local\\Temp\\opencode-test-rjsqhp2bdi\\retry-plugin is missing package.json or index file",
+    stack: "Error: Plugin directory C:\\Users\\Administrator\\AppData\\Local\\Temp\\opencode-test-rjsqhp2bdi\\retry-plugin is missing package.json or index file\n    at resolvePathPluginTarget (D:\\sources\\poc\\ai\\opencode\\packages\\opencode\\src\\plugin\\shared.ts:191:13)\n    at processTicksAndRejections (native)\n    at toBe (native)\n    at <anonymous> (D:\\sources\\poc\\ai\\opencode\\packages\\opencode\\test\\cli\\tui\\plugin-add.test.ts:101:71)\n    at processTicksAndRejections (native)",
+    cause: undefined,
+    formatted: "Error: Plugin directory C:\\Users\\Administrator\\AppData\\Local\\Temp\\opencode-test-rjsqhp2bdi\\retry-plugin is missing package.json or index file\n    at resolvePathPluginTarget (D:\\sources\\poc\\ai\\opencode\\packages\\opencode\\src\\plugin\\shared.ts:191:13)\n    at processTicksAndRejections (native)\n    at toBe (native)\n    at <anonymous> (D:\\sources\\poc\\ai\\opencode\\packages\\opencode\\test\\cli\\tui\\plugin-add.test.ts:101:71)\n    at processTicksAndRejections (native)",
+  },
+}
+System.Management.Automation.RemoteException
+test\cli\tui\plugin-lifecycle.test.ts:
+[tui.plugin] failed to initialize tui plugin: bad plugin {
+  path: "file:///C:/Users/Administrator/AppData/Local/Temp/opencode-test-w6vbw7wman/bad-plugin.ts",
+  id: "demo.bad",
+  error: {
+    type: "Error",
+    message: "bad plugin",
+    stack: "Error: bad plugin\n    at tui (C:\\Users\\Administrator\\AppData\\Local\\Temp\\opencode-test-w6vbw7wman\\bad-plugin.ts:8:15)\n    at <anonymous> (D:\\sources\\poc\\ai\\opencode\\packages\\opencode\\src\\cli\\cmd\\tui\\plugin\\runtime.ts:443:20)\n    at processTicksAndRejections (native)",
+    cause: undefined,
+    formatted: "Error: bad plugin\n    at tui (C:\\Users\\Administrator\\AppData\\Local\\Temp\\opencode-test-w6vbw7wman\\bad-plugin.ts:8:15)\n    at <anonymous> (D:\\sources\\poc\\ai\\opencode\\packages\\opencode\\src\\cli\\cmd\\tui\\plugin\\runtime.ts:443:20)\n    at processTicksAndRejections (native)",
+  },
+}
+[tui.plugin] timed out cleaning up tui plugin {
+  path: "file:///C:/Users/Administrator/AppData/Local/Temp/opencode-test-5mw4vvz84r/timeout-plugin.ts",
+  id: "demo.timeout",
+  timeout: 5000,
+}
+System.Management.Automation.RemoteException
+test\cli\tui\plugin-loader-entrypoint.test.ts:
+[tui.plugin] tui plugin has no entrypoint {
+  path: "acme-plugin@1.0.0",
+  retry: false,
+  message: "Plugin acme-plugin@1.0.0 does not expose a tui entrypoint",
+}
+[tui.plugin] failed to resolve tui plugin entry: Plugin acme-plugin@1.0.0 resolved tui entry outside plugin directory {
+  path: "acme-plugin@1.0.0",
+  retry: false,
+  error: {
+    type: "Error",
+    message: "Plugin acme-plugin@1.0.0 resolved tui entry outside plugin directory",
+    stack: "Error: Plugin acme-plugin@1.0.0 resolved tui entry outside plugin directory\n    at resolvePackageFile (D:\\sources\\poc\\ai\\opencode\\packages\\opencode\\src\\plugin\\shared.ts:94:15)\n    at resolvePackagePath (D:\\sources\\poc\\ai\\opencode\\packages\\opencode\\src\\plugin\\shared.ts:100:24)\n    at resolvePluginEntrypoint (D:\\sources\\poc\\ai\\opencode\\packages\\opencode\\src\\plugin\\shared.ts:142:17)\n    at createPluginEntry (D:\\sources\\poc\\ai\\opencode\\packages\\opencode\\src\\plugin\\shared.ts:228:23)\n    at processTicksAndRejections (native)",
+    cause: undefined,
+    formatted: "Error: Plugin acme-plugin@1.0.0 resolved tui entry outside plugin directory\n    at resolvePackageFile (D:\\sources\\poc\\ai\\opencode\\packages\\opencode\\src\\plugin\\shared.ts:94:15)\n    at resolvePackagePath (D:\\sources\\poc\\ai\\opencode\\packages\\opencode\\src\\plugin\\shared.ts:100:24)\n    at resolvePluginEntrypoint (D:\\sources\\poc\\ai\\opencode\\packages\\opencode\\src\\plugin\\shared.ts:142:17)\n    at createPluginEntry (D:\\sources\\poc\\ai\\opencode\\packages\\opencode\\src\\plugin\\shared.ts:228:23)\n    at processTicksAndRejections (native)",
+  },
+}
+[tui.plugin] failed to load tui plugin: Plugin acme-plugin@1.0.0 must default export either server() or tui(), not both {
+  path: "acme-plugin@1.0.0",
+  target: "file:///C:/Users/Administrator/AppData/Local/Temp/opencode-test-v68705swd4h/mods/acme-plugin/tui.js",
+  retry: false,
+  error: {
+    type: "TypeError",
+    message: "Plugin acme-plugin@1.0.0 must default export either server() or tui(), not both",
+    stack: "Error: Plugin acme-plugin@1.0.0 must default export either server() or tui(), not both\n    at readV1Plugin (D:\\sources\\poc\\ai\\opencode\\packages\\opencode\\src\\plugin\\shared.ts:294:15)\n    at processTicksAndRejections (native)",
+    cause: undefined,
+    formatted: "Error: Plugin acme-plugin@1.0.0 must default export either server() or tui(), not both\n    at readV1Plugin (D:\\sources\\poc\\ai\\opencode\\packages\\opencode\\src\\plugin\\shared.ts:294:15)\n    at processTicksAndRejections (native)",
+  },
+}
+[tui.plugin] tui plugin has no entrypoint {
+  path: "file:///C:/Users/Administrator/AppData/Local/Temp/opencode-test-hnn0lw9oeq/mods/dir-plugin",
+  retry: false,
+  message: "Plugin file:///C:/Users/Administrator/AppData/Local/Temp/opencode-test-hnn0lw9oeq/mods/dir-plugin does not expose a tui entrypoint",
+}
+[tui.plugin] tui plugin has no entrypoint {
+  path: "file:///C:/Users/Administrator/AppData/Local/Temp/opencode-test-hnn0lw9oeq/mods/dir-plugin",
+  retry: true,
+  message: "Plugin file:///C:/Users/Administrator/AppData/Local/Temp/opencode-test-hnn0lw9oeq/mods/dir-plugin does not expose a tui entrypoint",
+}
+System.Management.Automation.RemoteException
+ 2024 pass
+ 17 skip
+ 1 todo
+ 30 fail
+ 10103 expect() calls
+Ran 2072 tests across 161 files. [541.18s]

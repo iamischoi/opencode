@@ -1,0 +1,5 @@
+timestamp=2026-04-23T21:33:46.7428167+09:00
+cwd=D:\sources\poc\ai\opencode\packages\opencode
+bun=1.3.13
+scope=read-only diagnostics; no source edits
+evidence_pattern=.sisyphus/evidence/task-{N}-{slug}.txt

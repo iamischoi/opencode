@@ -1,0 +1,2 @@
+scope ok: D:\sources\poc\ai\opencode\packages\opencode
+read-only diagnostics; no source edits

@@ -1,0 +1,7 @@
+exit_code=0
+bun test v1.3.13 (bf2e2cec)
+System.Management.Automation.RemoteException
+ 25 pass
+ 0 fail
+ 59 expect() calls
+Ran 25 tests across 1 file. [2.78s]

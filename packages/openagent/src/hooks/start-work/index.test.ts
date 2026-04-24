@@ -418,6 +418,42 @@ You are starting a Sisyphus work session.
   })
 
   describe("session agent management", () => {
+    test("should prefer command arguments over stale boulder state in command.execute.before", async () => {
+      // given
+      const plansDir = join(testDir, ".sisyphus", "plans")
+      mkdirSync(plansDir, { recursive: true })
+
+      const oldPlanPath = join(plansDir, "old-plan.md")
+      writeFileSync(oldPlanPath, "# Old Plan\n- [ ] Old Task 1")
+
+      const newPlanPath = join(plansDir, "new-plan.md")
+      writeFileSync(newPlanPath, "# New Plan\n- [ ] New Task 1")
+
+      writeBoulderState(testDir, {
+        active_plan: oldPlanPath,
+        started_at: "2026-01-01T10:00:00Z",
+        session_ids: ["old-session"],
+        plan_name: "old-plan",
+      })
+
+      const hook = createStartWorkHook(createMockPluginInput())
+      const output = {
+        parts: [{ type: "text", text: createStartWorkPrompt({ sessionContext: "Session: $SESSION_ID" }) }],
+      }
+
+      // when
+      await hook["command.execute.before"](
+        { sessionID: "session-123", command: "start-work", arguments: "new-plan" },
+        output,
+      )
+
+      // then
+      expect(output.parts[0].text).toContain("new-plan")
+      expect(output.parts[0].text).not.toContain("RESUMING")
+      expect(output.parts[0].text).not.toContain("old-plan")
+      expect(readBoulderState(testDir)?.plan_name).toBe("new-plan")
+    })
+
     test("should update session agent to Atlas when start-work command is triggered", async () => {
       // given
       const updateSpy = spyOn(sessionState, "updateSessionAgent")

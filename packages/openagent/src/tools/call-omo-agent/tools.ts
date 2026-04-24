@@ -27,41 +27,71 @@ function resolveModelAndFallbackChain(args: {
     ?? (agentOverrides
       ? Object.entries(agentOverrides).find(([key]) => key.toLowerCase() === agentConfigKey)?.[1]
       : undefined)
-  const agentCategoryModel = agentOverride?.category
-    ? userCategories?.[agentOverride.category]?.model
+  const category = agentOverride?.category
+  const agentCategoryModel = category
+    ? userCategories?.[category]?.model
     : undefined
-  const agentCategoryVariant = agentOverride?.category
-    ? userCategories?.[agentOverride.category]?.variant
+  const agentCategoryVariant = category
+    ? userCategories?.[category]?.variant
     : undefined
 
   let model: DelegatedModelConfig | undefined
-  if (agentOverride?.model) {
-    const normalized = parseModelString(agentOverride.model)
-    if (normalized) {
-      model = agentOverride.variant ? { ...normalized, variant: agentOverride.variant } : normalized
-      log("[call_omo_agent] Resolved model override from agent config", {
-        agent: subagentType,
-        model: agentOverride.model,
-        variant: agentOverride.variant,
-      })
+  
+  // 1. Check for global environment variable override (highest priority for server users)
+  const envModels = process.env.OPENCODE_AGENT_MODELS
+  if (envModels) {
+    const envMap: Record<string, string> = {}
+    for (const s of envModels.split(",")) {
+      const trimmed = s.trim()
+      if (!trimmed) continue
+      const [rawAgent, rawModel] = trimmed.split(":")
+      if (rawAgent && rawModel) {
+        envMap[getAgentConfigKey(rawAgent.trim())] = rawModel.trim()
+      }
     }
-  } else if (agentCategoryModel) {
-    const normalized = parseModelString(agentCategoryModel)
-    if (normalized) {
-      const variantToUse = agentOverride?.variant ?? agentCategoryVariant
-      model = variantToUse ? { ...normalized, variant: variantToUse } : normalized
-      log("[call_omo_agent] Resolved model override from agent category", {
-        agent: subagentType,
-        category: agentOverride?.category,
-        model: agentCategoryModel,
-        variant: variantToUse,
-      })
+    const envModelStr = envMap[agentConfigKey]
+    if (envModelStr) {
+      const normalized = parseModelString(envModelStr)
+      if (normalized) {
+        model = normalized
+        log("[call_omo_agent] Resolved model override from OPENCODE_AGENT_MODELS", {
+          agent: subagentType,
+          model: envModelStr,
+        })
+      }
+    }
+  }
+
+  // 2. Fallback to existing config-based overrides
+  if (!model) {
+    if (agentOverride?.model) {
+      const normalized = parseModelString(agentOverride.model)
+      if (normalized) {
+        model = agentOverride.variant ? { ...normalized, variant: agentOverride.variant } : normalized
+        log("[call_omo_agent] Resolved model override from agent config", {
+          agent: subagentType,
+          model: agentOverride.model,
+          variant: agentOverride.variant,
+        })
+      }
+    } else if (agentCategoryModel) {
+      const normalized = parseModelString(agentCategoryModel)
+      if (normalized) {
+        const variantToUse = agentOverride?.variant ?? agentCategoryVariant
+        model = variantToUse ? { ...normalized, variant: variantToUse } : normalized
+        log("[call_omo_agent] Resolved model override from agent category", {
+          agent: subagentType,
+          category: agentOverride?.category,
+          model: agentCategoryModel,
+          variant: variantToUse,
+        })
+      }
     }
   }
 
   const normalizedFallbackModels = normalizeFallbackModels(
     agentOverride?.fallback_models
-    ?? (agentOverride?.category ? userCategories?.[agentOverride.category]?.fallback_models : undefined)
+    ?? (category ? userCategories?.[category]?.fallback_models : undefined)
   )
   const defaultProviderID = model?.providerID
     ?? agentRequirement?.fallbackChain?.[0]?.providers?.[0]
@@ -81,10 +111,7 @@ export function createCallOmoAgent(
   agentOverrides?: AgentOverrides,
   userCategories?: CategoriesConfig,
 ): ToolDefinition {
-  const agentDescriptions = ALLOWED_AGENTS.map(
-    (name) => `- ${name}: Specialized agent for ${name} tasks`
-  ).join("\n")
-  const description = CALL_OMO_AGENT_DESCRIPTION.replace("{agents}", agentDescriptions)
+  const description = CALL_OMO_AGENT_DESCRIPTION.replace("{agents}", ALLOWED_AGENTS.join(", "))
 
   return tool({
     description,

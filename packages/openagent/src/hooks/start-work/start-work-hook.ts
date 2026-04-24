@@ -45,6 +45,17 @@ interface StartWorkHookOutput {
   parts: Array<{ type: string; text?: string }>
 }
 
+function isStartWorkCommandExecuteBeforeInput(
+  input: StartWorkHookInput | StartWorkCommandExecuteBeforeInput,
+): input is StartWorkCommandExecuteBeforeInput {
+  return "command" in input && input.command === "start-work"
+}
+
+function parseCommandArguments(argumentsText: string | undefined) {
+  if (!argumentsText?.trim()) return { planName: null, explicitWorktreePath: null }
+  return parseUserRequest(`<user-request>${argumentsText}</user-request>`)
+}
+
 function resolveWorktreeContext(
   explicitWorktreePath: string | null,
 ): { worktreePath: string | undefined; block: string } {
@@ -108,7 +119,12 @@ export function createStartWorkHook(ctx: PluginInput) {
     const sessionId = input.sessionID
     const timestamp = new Date().toISOString()
 
-    const { planName: explicitPlanName, explicitWorktreePath } = parseUserRequest(promptText)
+    const parsedPromptRequest = parseUserRequest(promptText)
+    const parsedCommandArguments = isStartWorkCommandExecuteBeforeInput(input)
+      ? parseCommandArguments(input.arguments)
+      : { planName: null, explicitWorktreePath: null }
+    const explicitPlanName = parsedCommandArguments.planName ?? parsedPromptRequest.planName
+    const explicitWorktreePath = parsedCommandArguments.explicitWorktreePath ?? parsedPromptRequest.explicitWorktreePath
     const { worktreePath, block: worktreeBlock } = resolveWorktreeContext(explicitWorktreePath)
 
     const contextInfo = buildStartWorkContextInfo({

@@ -1,0 +1,6 @@
+command=bun run typecheck
+cwd_normalized=D:/sources/poc/ai/opencode/packages/opencode
+exit_code=0
+output:
+$ tsgo --noEmit
+audit_note=No `error TS` lines were present in the captured task output.

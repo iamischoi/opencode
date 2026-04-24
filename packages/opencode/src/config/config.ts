@@ -41,6 +41,7 @@ import { ConfigProvider } from "./provider"
 import { ConfigServer } from "./server"
 import { ConfigSkills } from "./skills"
 import { ConfigVariable } from "./variable"
+import { ConfigGitlab } from "./gitlab"
 import { Npm } from "@/npm"
 
 const log = Log.create({ service: "config" })
@@ -234,6 +235,9 @@ const InfoSchema = Schema.Struct({
       }),
     }),
   ),
+  gitlab: Schema.optional(ConfigGitlab.Gitlab).annotate({
+    description: "GitLab auto-clone and config mappings",
+  }),
 })
 
 // Schema.Struct produces readonly types by default, but the service code

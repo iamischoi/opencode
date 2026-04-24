@@ -1,0 +1,20 @@
+version: "3"
+services:
+  opencode-server:
+    # ⚠️ 사용하시는 실제 OpenCode Server 컨테이너 이미지 이름으로 변경해주세요
+    image: opencode-server:latest 
+    container_name: opencode-server
+    restart: unless-stopped
+    ports:
+      # 외부 포트 3000 -> 컨테이너 내부 포트 3000 매핑
+      - "3000:3000" 
+    env_file:
+      # env_file 옵션을 통해 opencode-server.properties의 내용이 컨테이너의 환경 변수로 들어갑니다.
+      - ./opencode-server.properties
+    volumes:
+      # 호스트의 실제 저장소 경로(예: /data/my_repos)를 컨테이너의 REPOSITORY_BASE_PATH(/swdata/repository)와 연결합니다.
+      # 이 경로를 통해 컨테이너가 GitLab 리포지토리를 다운로드하고 저장합니다.
+      - /host/path/to/swdata/repository:/swdata/repository
+      
+      # 추가적으로 properties 파일을 컨테이너 내부(작업 디렉토리 기준)에 읽기 전용으로 직접 마운트할 수도 있습니다 (선택 사항)
+      # - ./opencode-server.properties:/app/opencode-server.properties:ro

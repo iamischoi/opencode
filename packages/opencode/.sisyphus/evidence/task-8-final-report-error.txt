@@ -1,0 +1,32 @@
+# Diagnostic Verdict: REAL ISSUE
+
+All commands were executed from `D:/sources/poc/ai/opencode/packages/opencode`.
+
+| Task | Command / Tool | Exit code / diagnostics | Bun final summary seen | Evidence |
+|---|---|---:|---|---|
+| 2 | `bun run typecheck` | `0` | n/a | `.sisyphus/evidence/task-2-typecheck.txt` |
+| 3 | `lsp_diagnostics(src, error)` | `0 diagnostics` | n/a | `.sisyphus/evidence/task-3-lsp-errors.txt` |
+| 4 | repo file reads for semantics | `6 rules + explicit classification note` | n/a | `.sisyphus/evidence/task-4-semantics.txt` |
+| 5 | `bun test --timeout 30000 test/util/log.test.ts` | `0` | yes, passing | `.sisyphus/evidence/task-5-log-test.txt` |
+| 6 | `bun test --timeout 30000 test/effect/runner.test.ts` | `0` | yes, passing | `.sisyphus/evidence/task-6-runner-test.txt` |
+| 7 | `bun test --timeout 30000` | `exit_code=1; 30 fail` | yes, failing | `.sisyphus/evidence/task-7-full-suite.txt` and `.sisyphus/evidence/task-7-full-suite-timeout.txt` |
+
+## Verdict
+REAL ISSUE
+
+## Verdict Basis
+- Static gate is clean: typecheck passed.
+- LSP corroboration is clean: zero error diagnostics in scanned `src` files.
+- Targeted noisy canaries are clean: both targeted test files passed with final Bun summaries.
+- Full-suite gate completed with Bun's final summary and reported `30 fail` with `exit_code=1`.
+- Under the plan's stop rules, a completed full-suite run with a failing Bun summary is authoritative and classifies the package as REAL ISSUE.
+
+## First observed partial failure signals from the full suite
+- `test/effect/cross-spawn-spawner.test.ts` — `captures stdout via .all when no stderr` failed with `Expected: "hello from stdout"` and `Received: "\"hello from stdout\""`.
+- `test/file/path-traversal.test.ts` — `Instance.containsPath` treated `/etc/passwd` as inside scope when `false` was expected.
+- `test/format/format.test.ts` — sequential formatter test failed with `Expected: "xAB"` and `Received: "x"`.
+
+## Noise Classification Notes
+- Plugin load errors during the full suite were not used as verdict evidence by themselves.
+- The decisive blocker against a CLEAN verdict is the completed full-suite failing summary.
+- The decisive support for a REAL ISSUE verdict is the plan rule that a failing full-suite summary is authoritative.

@@ -2,19 +2,27 @@ import { Hono } from "hono"
 import { streamSSE } from "hono/streaming"
 import { describeRoute, validator, resolver } from "hono-openapi"
 import z from "zod"
-import { SessionID, MessageID } from "@/session/schema"
+import { SessionID, MessageID, PartID } from "@/session/schema"
 import { Session } from "@/session"
 import { SessionPrompt } from "@/session/prompt"
 import { Bus } from "@/bus"
 import { Agent } from "@/agent/agent"
 import { jsonRequest, runRequest } from "./trace"
 import { Auth } from "@/auth"
+import { Plugin } from "@/plugin"
 import { Effect, Option } from "effect"
 import { AppRuntime } from "@/effect/app-runtime"
 import { MessageV2 } from "@/session/message-v2"
 import { Instance } from "@/project/instance"
 import { ProviderID, ModelID } from "@/provider/schema"
 import { Log } from "@/util"
+import { START_WORK_TEMPLATE } from "../../../../../openagent/src/features/builtin-commands/templates/start-work"
+import {
+  findPrometheusPlans,
+  getPlanName,
+  getPlanProgress,
+} from "../../../../../openagent/src/features/boulder-state/storage"
+import { statSync } from "node:fs"
 
 const log = Log.create({ service: "server.openai" })
 
@@ -125,29 +133,57 @@ export const OpenAiRoutes = () => {
         const promptSvc = yield* SessionPrompt.Service
         const agentSvc = yield* Agent.Service
         const authSvc = yield* Auth.Service
+        const pluginSvc = yield* Plugin.Service
 
         const auths = yield* authSvc.all()
         const isLoggedIn = Object.values(auths).some(auth => auth.type === "oauth")
 
-        // 1. Resolve internal agent (sisyphus is the primary default for external API clients)
-        let agentName = "sisyphus"
+        // 1. Resolve internal agent
         const useCustomProviders = process.env.OPENCODE_USE_CUSTOM_PROVIDERS?.toLowerCase() === "true"
+        const agentTypesEnv = process.env.OPENCODE_API_TYPES || ""
+        const agentModelsEnv = process.env.OPENCODE_AGENT_MODELS || ""
 
-        // Check if the model is one of our dynamic aliases
-        const isDynamicModel = model && (model.endsWith(" AGENT") || model === "SHLIFE-CODE-AGENT")
-
-        if (model && !isDynamicModel) {
-          const exit = yield* Effect.exit(agentSvc.get(model))
-          if (exit._tag === "Success" && exit.value) {
-            agentName = exit.value.name
+        // Parse OPENCODE_AGENT_MODELS once up-front (format: agentName:provider/model,...).
+        // Previously the map was rebuilt on every resolveAgentModel() call — wasteful when the
+        // function is called multiple times (prometheus + sisyphus handover).
+        const agentModelMap: Record<string, string> = {}
+        for (const s of agentModelsEnv.split(",")) {
+          const trimmed = s.trim()
+          if (!trimmed) continue
+          const [rawAgent, rawModel] = trimmed.split(":")
+          if (rawAgent && rawModel) {
+            agentModelMap[rawAgent.trim().toLowerCase()] = rawModel.trim()
           }
         }
 
+        const resolveAgentModel = (name: string) => {
+          const modelStr = agentModelMap[name.toLowerCase()]
+          if (!modelStr) return undefined
+          const splitIdx = modelStr.indexOf("/")
+          if (splitIdx <= 0) return undefined
+          return {
+            providerID: ProviderID.make(modelStr.substring(0, splitIdx)),
+            modelID: ModelID.make(modelStr.substring(splitIdx + 1))
+          }
+        }
+
+        const agentTypesMap: Record<string, boolean> = {}
+        for (const s of agentTypesEnv.split(",")) {
+          const trimmed = s.trim()
+          if (!trimmed) continue
+          const [intent, mode] = trimmed.split(":")
+          if (intent && mode) {
+            agentTypesMap[intent.trim()] = mode.trim().toLowerCase() === "auto"
+          }
+        }
+
+        let agentName = "sisyphus"
         let promptModelOverride: { providerID: ProviderID; modelID: ModelID } | undefined = undefined
+        let autoHandover = false
 
         if (model && (model.includes(" AGENT") || model === "SHLIFE-CODE-AGENT")) {
           log.info("detected dynamic agent request", { model })
-          
+
           let agentType = "default"
           if (model.endsWith(" AGENT")) {
             const parts = model.split(" ")
@@ -156,52 +192,29 @@ export const OpenAiRoutes = () => {
             }
           }
 
-          const agentModelsEnv = process.env.OPENCODE_AGENT_MODELS || ""
-          const agentModelsMap = Object.fromEntries(
-            agentModelsEnv.split(",")
-              .map(s => s.trim())
-              .filter(Boolean)
-              .map(s => s.split(":"))
-              .filter(parts => parts.length >= 2)
-              .map(parts => {
-                const k = parts[0].trim()
-                const v = parts.length === 3 
-                    ? { overrideAgent: parts[1].trim(), targetModelStr: parts[2].trim() }
-                    : { overrideAgent: null, targetModelStr: parts[1].trim() }
-                return [k, v]
-              })
-          )
-
-          const mapping = agentModelsMap[agentType] || agentModelsMap["default"]
-          if (mapping) {
-            const { overrideAgent, targetModelStr } = mapping
-            
-            if (overrideAgent) {
-              const exit = yield* Effect.exit(agentSvc.get(overrideAgent))
-              if (exit._tag === "Success" && exit.value) {
-                agentName = exit.value.name
-                log.info("applied agent route override", { agentType, overrideAgent })
-              } else {
-                log.warn("failed to apply agent route override because agent was not found", { agentType, overrideAgent })
-              }
-            }
-
-            if (targetModelStr && (useCustomProviders || isLoggedIn)) {
-              const splitIdx = targetModelStr.indexOf("/")
-              if (splitIdx > 0) {
-                promptModelOverride = {
-                  providerID: ProviderID.make(targetModelStr.substring(0, splitIdx)),
-                  modelID: ModelID.make(targetModelStr.substring(splitIdx + 1))
-                }
-                log.info("applied agent model override", { agentType, targetModelStr })
-              }
-            }
+          autoHandover = agentTypesMap[agentType] ?? agentTypesMap["default"] ?? false
+          agentName = "prometheus"
+          // Only apply OPENCODE_AGENT_MODELS mapping when custom providers are explicitly enabled.
+          // When useCustomProviders=false the corp endpoints are not active, so mapping to them
+          // would point at an unreachable provider regardless of what AGENT_MODELS says.
+          if (useCustomProviders) {
+            promptModelOverride = resolveAgentModel("prometheus")
           }
+
+          log.info("resolved agent configuration", { agentType, agentName, autoHandover, hasModelOverride: !!promptModelOverride })
+        } else if (useCustomProviders) {
+          // Mirror the same guard for the default sisyphus path.
+          promptModelOverride = resolveAgentModel("sisyphus")
         }
 
-        // If no model override is found, and we are not using custom providers AND not logged in, enforce the default free model
-        if (!promptModelOverride && !useCustomProviders && !isLoggedIn) {
-          log.info("No custom provider and no explicit model override. Falling back to default free model.")
+        // Model selection when custom providers are disabled:
+        //  - OAuth active (isLoggedIn=true)  → leave promptModelOverride as undefined so the
+        //    prompt service picks the model saved in the user's opencode configuration
+        //    (i.e. the recently-used / default model from the authenticated provider).
+        //  - No OAuth                        → force the public free model so the request does
+        //    not fail with an unauthenticated provider.
+        if (!useCustomProviders && !isLoggedIn) {
+          log.info("Custom providers disabled and no OAuth session. Falling back to free model.")
           promptModelOverride = {
             providerID: ProviderID.make("opencode"),
             modelID: ModelID.make("minimax-m2.5-free")
@@ -213,11 +226,31 @@ export const OpenAiRoutes = () => {
         if (result1._tag === "Success" && result1.value) {
           agent = result1.value
         } else {
-          const result2 = yield* Effect.exit(agentSvc.get("sisyphus"))
-          if (result2._tag === "Success" && result2.value) {
-            agent = result2.value
+          const planResult = yield* Effect.exit(agentSvc.get("plan"))
+          if (planResult._tag === "Success" && planResult.value) {
+            agent = planResult.value
           } else {
-            agent = yield* agentSvc.get("build")
+            const result2 = yield* Effect.exit(agentSvc.get("sisyphus"))
+            if (result2._tag === "Success" && result2.value) {
+              agent = result2.value
+            } else {
+              agent = yield* agentSvc.get("build")
+            }
+          }
+        }
+
+        let executionAgent = agent
+        if (autoHandover) {
+          const atlasResult = yield* Effect.exit(agentSvc.get("atlas"))
+          if (atlasResult._tag === "Success" && atlasResult.value) {
+            executionAgent = atlasResult.value
+          } else {
+            const sisyphusResult = yield* Effect.exit(agentSvc.get("sisyphus"))
+            if (sisyphusResult._tag === "Success" && sisyphusResult.value) {
+              executionAgent = sisyphusResult.value
+            } else {
+              executionAgent = yield* agentSvc.get("build")
+            }
           }
         }
 
@@ -227,12 +260,109 @@ export const OpenAiRoutes = () => {
         // rely on recent sessions or a fresh one. Here we create a new one to be clean.
         const session = yield* sessionSvc.create({})
         const sessionID = session.id
+        const projectDirectory = Instance.directory
+        const snapshotPrometheusPlans = () => new Map(
+          findPrometheusPlans(projectDirectory).map((planPath) => [planPath, statSync(planPath).mtimeMs]),
+        )
+        const findRunnablePrometheusPlan = (before: Map<string, number>) => findPrometheusPlans(projectDirectory).find((planPath) => {
+          const previousMtime = before.get(planPath)
+          if (previousMtime === undefined) return false
+          const nextMtime = statSync(planPath).mtimeMs
+          if (nextMtime <= previousMtime) return false
+          return true
+        }) ?? findPrometheusPlans(projectDirectory).find((planPath) => {
+          if (before.has(planPath)) return false
+          return true
+        })
+        const buildStartWorkParts = Effect.fn("OpenAiRoutes.buildStartWorkParts")(function* (planName: string) {
+          return yield* pluginSvc.trigger(
+            "command.execute.before",
+            { command: "start-work", sessionID, arguments: planName },
+            {
+              parts: [{
+                type: "text" as const,
+                text: `<command-instruction>
+${START_WORK_TEMPLATE}
+</command-instruction>
+
+<session-context>
+Session ID: $SESSION_ID
+Timestamp: $TIMESTAMP
+</session-context>
+
+<user-request>
+${planName}
+</user-request>`,
+              }],
+            },
+          )
+        })
+
+        // Inject conversation history into the session for multi-turn support (OpenWebUI)
+        if (messages.length > 1) {
+          let currentParentID: MessageID | undefined = undefined;
+          for (let i = 0; i < messages.length - 1; i++) {
+            const msg = messages[i];
+            const msgID = MessageID.ascending();
+            yield* sessionSvc.updateMessage({
+              id: msgID,
+              sessionID: sessionID,
+              role: msg.role === "assistant" ? "assistant" : "user",
+              time: { created: Date.now(), updated: Date.now() },
+              parentID: currentParentID
+            } as any);
+            
+            yield* sessionSvc.updatePart({
+              id: PartID.ascending(),
+              messageID: msgID,
+              sessionID: sessionID,
+              type: "text",
+              text: msg.content,
+              time: { created: Date.now(), updated: Date.now() }
+            } as any);
+            currentParentID = msgID;
+          }
+        }
 
         if (shouldStream) {
           c.header("X-Accel-Buffering", "no")
           return streamSSE(c, async (sseStream) => {
             const created = Math.floor(Date.now() / 1000)
             const modelName = model || "SHLIFE-CODE-AGENT"
+
+            // helper to format status
+            const formatStatus = (msg: string) => `\n> ${msg}\n`
+
+            // Helper to send deduplicated status update
+            let lastSentStatus = "" // Move up for sendStatusUpdate
+            const sendStatusUpdate = async (msg: string, asContent = false) => {
+              if (msg === lastSentStatus) return
+              lastSentStatus = msg
+              
+              const delta: any = {}
+
+              if (asContent) {
+                // For activity status, send to the main content stream
+                delta.content = msg
+              } else {
+                // For internal thoughts, send to reasoning fields
+                delta.reasoning_content = msg
+                delta.thought = msg
+                delta.thinking = msg
+                delta.reasoning = msg
+              }
+
+              await sseStream.writeSSE({
+                data: JSON.stringify({
+                  id: sessionID, object: "chat.completion.chunk", created, model: modelName,
+                  choices: [{
+                    index: 0,
+                    delta,
+                    finish_reason: null
+                  }]
+                })
+              })
+            }
 
             await sseStream.writeSSE({
               data: JSON.stringify({
@@ -253,11 +383,10 @@ export const OpenAiRoutes = () => {
             const toolCalls = new Map<string, { id: string, index: number, name: string, args: string }>()
             let toolCallCount = 0
             let lastActivity: "prompt" | "tool" | "agent" | "planning" | "none" = "prompt"
-            let lastSentStatus = "" // For deduplication
-            let currentAgentDisplayName = "Sisyphus"
-            let currentTaskSummary = ""
-
             // Phase tracking: route intermediate LLM text to reasoning, final answer to content
+            const agentDisplayNameRaw = agent?.name || agentName || "Sisyphus"
+            let currentAgentDisplayName = agentDisplayNameRaw.charAt(0).toUpperCase() + agentDisplayNameRaw.slice(1)
+            let currentTaskSummary = ""
             let hasToolCallsInSession = false   // true once any tool is called in this turn
             let currentStepHasTools = false      // true if current step has tool calls
             let lastStepHadTools = false          // true if the previous step had tool calls
@@ -283,39 +412,6 @@ export const OpenAiRoutes = () => {
               log.debug("captured bus event", { type: event.type, properties: event.properties })
 
               try {
-                // helper to format status
-                const formatStatus = (msg: string) => `\n> ${msg}\n`
-
-                // Helper to send deduplicated status update
-                const sendStatusUpdate = async (msg: string, asContent = false) => {
-                  if (msg === lastSentStatus) return
-                  lastSentStatus = msg
-                  
-                  const delta: any = {}
-
-                  if (asContent) {
-                    // For activity status, send to the main content stream
-                    delta.content = msg
-                  } else {
-                    // For internal thoughts, send to reasoning fields
-                    delta.reasoning_content = msg
-                    delta.thought = msg
-                    delta.thinking = msg
-                    delta.reasoning = msg
-                  }
-
-                  await sseStream.writeSSE({
-                    data: JSON.stringify({
-                      id: sessionID, object: "chat.completion.chunk", created, model: modelName,
-                      choices: [{
-                        index: 0,
-                        delta,
-                        finish_reason: null
-                      }]
-                    })
-                  })
-                }
-
                 // 1. Session Status Updates (Busy, Retry, etc.)
                 if (event.type === "session.status") {
                   const { status } = event.properties
@@ -632,15 +728,65 @@ export const OpenAiRoutes = () => {
             })
 
             // Trigger prompt asynchronously
+            log.info("starting prompt", {
+              sessionID,
+              agent: agent.name,
+              modelOverride: promptModelOverride
+                ? `${promptModelOverride.providerID}/${promptModelOverride.modelID}`
+                : "(default - will use configured/recently-used model)",
+              isLoggedIn,
+              useCustomProviders,
+            })
             try {
+              const plansBeforePrompt = autoHandover ? snapshotPrometheusPlans() : undefined
+              const finalParts: any[] = [{ type: "text", text: lastMessage }]
+              
+              if (autoHandover && agentName === "prometheus") {
+                finalParts.unshift({ 
+                  type: "text", 
+                  text: "<system-reminder>\nYOU ARE IN AUTOMATED MODE. Do not interview the user. Do not ask for confirmation. Use your tools to gather context and generate a complete .sisyphus/plans/*.md file immediately. Once the plan is saved, conclude your turn.\n</system-reminder>" 
+                })
+              }
+
               await AppRuntime.runPromise(
                 promptSvc.prompt({
                   sessionID,
-                  parts: [{ type: "text", text: lastMessage }],
+                  parts: finalParts,
                   agent: agent.name,
                   model: promptModelOverride,
                 })
               )
+
+              // Auto-handover to Sisyphus if Prometheus finished planning
+              if (autoHandover && agentName === "prometheus") {
+                const verifiedPlanPath = plansBeforePrompt
+                  ? findRunnablePrometheusPlan(plansBeforePrompt)
+                  : undefined
+
+                if (verifiedPlanPath) {
+                  log.info("triggering automatic handover to execution agent", {
+                    sessionID,
+                    executionAgent: executionAgent.name,
+                    verifiedPlanPath,
+                  })
+                  await sendStatusUpdate(formatStatus(`🚀 계획 파일 확인 완료 (${getPlanName(verifiedPlanPath)}). 자동으로 개발 작업을 시작합니다...`))
+
+                  await AppRuntime.runPromise(
+                    Effect.gen(function* () {
+                      const startWork = yield* buildStartWorkParts(getPlanName(verifiedPlanPath))
+                      return yield* promptSvc.prompt({
+                        sessionID,
+                        parts: startWork.parts,
+                        agent: executionAgent.name,
+                        model: useCustomProviders ? resolveAgentModel(executionAgent.name) : undefined,
+                      })
+                    })
+                  )
+                } else {
+                  log.warn("skipping automatic handover because no runnable prometheus plan was verified", { sessionID, projectDirectory })
+                  await sendStatusUpdate(formatStatus("⚠️ 계획은 끝났지만 실행 가능한 Prometheus plan 파일을 확인하지 못해 자동 개발 단계는 건너뜁니다."))
+                }
+              }
 
               // After the turn is FULLY complete (all tool loops done)
               // Flush any remaining buffered text as the final answer
@@ -677,27 +823,70 @@ export const OpenAiRoutes = () => {
               await sseStream.writeSSE({ data: "[DONE]" })
             } catch (err) {
               log.error("prompt failed", { err })
+              // Send error chunk + [DONE] so the client doesn't hang waiting
+              try {
+                await sseStream.writeSSE({
+                  data: JSON.stringify({
+                    id: sessionID,
+                    object: "chat.completion.chunk",
+                    created,
+                    model: modelName,
+                    choices: [{
+                      index: 0,
+                      delta: { content: `\n\n⚠️ 처리 중 오류가 발생했습니다: ${err instanceof Error ? err.message : String(err)}` },
+                      finish_reason: "stop"
+                    }]
+                  })
+                })
+                await sseStream.writeSSE({ data: "[DONE]" })
+              } catch (writeErr) {
+                log.error("failed to write error SSE", { writeErr })
+              }
             } finally {
               finished = true
               unsub()
-            }
-
-            // Connection keep-alive while awaiting turn completion
-            while (!finished) {
-              await new Promise(resolve => setTimeout(resolve, 500))
             }
           })
         }
 
         // Non-streaming
+        const plansBeforePrompt = autoHandover ? snapshotPrometheusPlans() : undefined
+        const finalParts: any[] = [{ type: "text", text: lastMessage }]
+        if (autoHandover && agentName === "prometheus") {
+          finalParts.unshift({ 
+            type: "text", 
+            text: "<system-reminder>\nYOU ARE IN AUTOMATED MODE. Do not interview the user. Do not ask for confirmation. Use your tools to gather context and generate a complete .sisyphus/plans/*.md file immediately. Once the plan is saved, conclude your turn.\n</system-reminder>" 
+          })
+        }
+
         const msg = yield* promptSvc.prompt({
           sessionID,
-          parts: [{ type: "text", text: lastMessage }],
+          parts: finalParts,
           agent: agent.name,
           model: promptModelOverride,
         })
 
-        const content = msg.parts
+        let finalMessage = msg
+
+        if (autoHandover && agentName === "prometheus") {
+          const verifiedPlanPath = plansBeforePrompt
+            ? findRunnablePrometheusPlan(plansBeforePrompt)
+            : undefined
+
+          if (verifiedPlanPath) {
+            const startWork = yield* buildStartWorkParts(getPlanName(verifiedPlanPath))
+            finalMessage = yield* promptSvc.prompt({
+              sessionID,
+              parts: startWork.parts,
+              agent: executionAgent.name,
+              model: useCustomProviders ? resolveAgentModel(executionAgent.name) : undefined,
+            })
+          } else {
+            log.warn("skipping automatic handover because no runnable prometheus plan was verified", { sessionID, projectDirectory })
+          }
+        }
+
+        const content = finalMessage.parts
           .filter((p): p is MessageV2.TextPart => p.type === "text")
           .map(p => p.text)
           .join("")

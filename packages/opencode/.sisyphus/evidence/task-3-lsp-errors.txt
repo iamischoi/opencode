@@ -1,0 +1,4 @@
+files_scanned=50 (capped at 50)
+files_with_errors=0
+total_diagnostics=0
+scope=corroboration only; not sole source of truth

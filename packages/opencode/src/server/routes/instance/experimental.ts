@@ -15,7 +15,8 @@ import { AccountID, OrgID } from "@/account/schema"
 import { errors } from "../../error"
 import { lazy } from "@/util/lazy"
 import { Effect, Option } from "effect"
-import { Agent } from "@/agent/agent"
+import { Agent, AgentAnalysis } from "@/agent"
+import { Gitlab } from "@/gitlab"
 import { jsonRequest, runRequest } from "./trace"
 
 const ConsoleOrgOption = z.object({
@@ -321,6 +322,52 @@ export const ExperimentalRoutes = lazy(() =>
           const svc = yield* Worktree.Service
           yield* svc.reset(body)
           return true
+        }),
+    )
+    .post(
+      "/project/analyze",
+      describeRoute({
+        summary: "Analyze project",
+        description: "Clone GitLab repositories based on application config and generate an analysis plan.",
+        operationId: "project.analyze",
+        responses: {
+          200: {
+            description: "Analysis plan",
+            content: {
+              "application/json": {
+                schema: resolver(z.object({
+                  status: z.string(),
+                  plan: z.string(),
+                })),
+              },
+            },
+          },
+        },
+      }),
+      validator("json", z.object({ appName: z.string() })),
+      async (c) =>
+        jsonRequest("ExperimentalRoutes.project.analyze", c, function* () {
+          const body = c.req.valid("json")
+          
+          const gitlabSvc = yield* Gitlab.Service
+          const analysisSvc = yield* AgentAnalysis.Service
+          
+          // Map appName to groupCode
+          const groupCode = yield* gitlabSvc.getGroupCode(body.appName)
+          
+          // Determine target directory inside the Linux path
+          const targetDir = `/swdata/repository/${groupCode}`
+          
+          // Clone
+          yield* gitlabSvc.cloneRepositoriesForGroup(groupCode, targetDir)
+          
+          // Analyze
+          const planContent = yield* analysisSvc.analyzeDirectory(targetDir)
+          
+          return {
+            status: "success",
+            plan: planContent
+          }
         }),
     )
     .get(

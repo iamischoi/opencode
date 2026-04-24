@@ -1,0 +1,4 @@
+result=reviewed
+reviewer=deep
+status=pass_with_note
+summary=No repo source/config/package files were mutated outside .sisyphus. An external tool-output artifact path was referenced during evidence capture, but repo mutations stayed within .sisyphus and boulder state.

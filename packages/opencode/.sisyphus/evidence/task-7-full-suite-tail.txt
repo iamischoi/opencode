@@ -1,0 +1,33 @@
+outer_timeout=true
+source_artifact=.sisyphus/evidence/task-7-full-suite.txt
+excerpt_note=Last visible lines captured from the readable full-suite artifact after the outer 600000ms timeout.
+INFO  2026-04-23T12:09:43 +0ms service=plugin name=CopilotAuthPlugin loading internal plugin
+INFO  2026-04-23T12:09:43 +0ms service=plugin name=gitlabAuthPlugin loading internal plugin
+INFO  2026-04-23T12:09:43 +0ms service=plugin name=PoeAuthPlugin loading internal plugin
+INFO  2026-04-23T12:09:43 +0ms service=plugin name=CloudflareWorkersAuthPlugin loading internal plugin
+INFO  2026-04-23T12:09:43 +0ms service=plugin name=CloudflareAIGatewayAuthPlugin loading internal plugin
+INFO  2026-04-23T12:09:43 +0ms service=plugin name=OhMyOpenCodePlugin loading internal plugin
+INFO  2026-04-23T12:09:43 +190ms service=plugin path=file:///C:/Users/Administrator/AppData/Local/Temp/opencode-test-5316mlx5p8i/plugin.ts loading plugin
+INFO  2026-04-23T12:09:44 +337ms service=bus type=* subscribing
+INFO  2026-04-23T12:09:44 +1ms service=bus publishing
+INFO  2026-04-23T12:09:44 +16ms service=bus type=* unsubscribing
+INFO  2026-04-23T12:09:44 +1ms service=server-proxy disposing all instances
+INFO  2026-04-23T12:09:44 +0ms service=server-proxy directory=C:\Users\Administrator\AppData\Local\Temp\opencode-test-5316mlx5p8i disposing instance
+INFO  2026-04-23T12:09:44 +8ms service=server-proxy directory=C:\Users\Administrator\AppData\Local\Temp\opencode-test-gsygd8upot creating instance
+INFO  2026-04-23T12:09:44 +0ms service=project directory=C:\Users\Administrator\AppData\Local\Temp\opencode-test-gsygd8upot fromDirectory
+INFO  2026-04-23T12:09:44 +3ms service=config path=C:\Users\ADMINI~1\AppData\Local\Temp\opencode-test-data-27000\config\opencode\config.json loading
+INFO  2026-04-23T12:09:44 +0ms service=config path=C:\Users\ADMINI~1\AppData\Local\Temp\opencode-test-data-27000\config\opencode\opencode.json loading
+INFO  2026-04-23T12:09:44 +0ms service=config path=C:\Users\ADMINI~1\AppData\Local\Temp\opencode-test-data-27000\config\opencode\opencode.jsonc loading
+INFO  2026-04-23T12:09:44 +2ms service=config path=C:\Users\Administrator\AppData\Local\Temp\opencode-test-gsygd8upot\opencode.json loading
+INFO  2026-04-23T12:09:44 +4ms service=plugin name=CodexAuthPlugin loading internal plugin
+INFO  2026-04-23T12:09:44 +0ms service=plugin name=CopilotAuthPlugin loading internal plugin
+INFO  2026-04-23T12:09:44 +0ms service=plugin name=gitlabAuthPlugin loading internal plugin
+INFO  2026-04-23T12:09:44 +0ms service=plugin name=PoeAuthPlugin loading internal plugin
+INFO  2026-04-23T12:09:44 +0ms service=plugin name=CloudflareWorkersAuthPlugin loading internal plugin
+INFO  2026-04-23T12:09:44 +0ms service=plugin name=CloudflareAIGatewayAuthPlugin loading internal plugin
+INFO  2026-04-23T12:09:44 +0ms service=plugin name=OhMyOpenCodePlugin loading internal plugin
+INFO  2026-04-23T12:09:44 +201ms service=plugin path=file:///C:/Users/Administrator/AppData/Local/Temp/opencode-test-gsygd8upot/plugin.ts loading plugin
+INFO  2026-04-23T12:09:44 +334ms service=bus type=* subscribing
+INFO  2026-04-23T12:09:44 +6ms service=server-proxy disposing all instances
+INFO  2026-04-23T12:09:44 +0ms service=server-proxy directory=C:\Users\Administrator\AppData\Local\Temp\opencode-test-gsygd8upot disposing instance
+observation=No final Bun pass/fail summary line appears in this excerpt.

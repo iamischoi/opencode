@@ -47,10 +47,14 @@ import { Installation } from "@/installation"
 import { ShareNext } from "@/share"
 import { SessionShare } from "@/share"
 import { Npm } from "@/npm"
+import { Gitlab } from "@/gitlab"
+import { AgentAnalysis } from "@/agent"
 import { memoMap } from "./memo-map"
 
 export const AppLayer = Layer.mergeAll(
   Npm.defaultLayer,
+  Gitlab.defaultLayer,
+  AgentAnalysis.defaultLayer,
   AppFileSystem.defaultLayer,
   Bus.defaultLayer,
   Auth.defaultLayer,

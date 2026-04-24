@@ -1,0 +1,24 @@
+VERDICT: REAL ISSUE
+
+| Task | Command/Tool | Result | Summary Present | Evidence |
+|---|---|---|---|---|
+| 2 | bun run typecheck | exit_code=0 | n/a | .sisyphus/evidence/task-2-typecheck.txt |
+| 3 | lsp_diagnostics(src, error) | total_diagnostics=0 (50 files scanned, capped) | n/a | .sisyphus/evidence/task-3-lsp-errors.txt |
+| 4 | Read diagnostic/test semantics | rules captured | n/a | .sisyphus/evidence/task-4-semantics.txt |
+| 5 | bun test --timeout 30000 test/util/log.test.ts | exit_code=0; 1 pass; 0 fail | yes | .sisyphus/evidence/task-5-log-test.txt |
+| 6 | bun test --timeout 30000 test/effect/runner.test.ts | exit_code=0; 25 pass; 0 fail | yes | .sisyphus/evidence/task-6-runner-test.txt |
+| 7 | bun test --timeout 30000 | exit_code=1; explicit failing assertions; final Bun summary present | yes | .sisyphus/evidence/task-7-full-suite.txt |
+
+Authoritative classification basis:
+- task-4-semantics.txt says stderr/plugin/timing logs alone are non-authoritative without non-zero exit or failing Bun summary.
+- task-5-log-test.txt and task-6-runner-test.txt show System.Management.Automation.RemoteException can appear in passing runs.
+- task-7-full-suite.txt records exit_code=1 and explicit assertion failures, including:
+  - test/effect/cross-spawn-spawner.test.ts: expected stderr output but received empty string
+  - test/file/path-traversal.test.ts: expected Instance.containsPath('/etc/passwd') to be false but received true
+  - test/format/format.test.ts: expected formatted file content 'xAB' but received 'x'
+- Oracle audit: REAL ISSUE is supported because full-suite failures are real test failures with incidental stderr noise.
+- Evidence QA audit: evidence package is sufficient for REAL ISSUE, though the LSP artifact is corroborative rather than exhaustive.
+
+Scope note:
+- This verdict proves packages/opencode has reproducible failing tests in this environment.
+- It does not prove root cause or cross-platform universality.
