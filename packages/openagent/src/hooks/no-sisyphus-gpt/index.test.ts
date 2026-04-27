@@ -38,12 +38,12 @@ describe("no-sisyphus-gpt hook", () => {
 
     // then - toast is shown for every message
     expect(showToast).toHaveBeenCalledTimes(2)
-    expect(output1.message.agent).toBe(HEPHAESTUS_DISPLAY)
-    expect(output2.message.agent).toBe(HEPHAESTUS_DISPLAY)
+    expect(output1.message.agent).toBe("hephaestus")
+    expect(output2.message.agent).toBe("hephaestus")
     expect(showToast.mock.calls[0]?.[0]).toMatchObject({
       body: {
         title: "NEVER Use Sisyphus with GPT",
-        message: expect.stringContaining("For GPT models (other than 5.4), always use Hephaestus."),
+        message: expect.stringContaining("For other GPT models, always use Hephaestus."),
         variant: "error",
       },
     })
@@ -70,6 +70,27 @@ describe("no-sisyphus-gpt hook", () => {
     expect(output.message.agent).toBeUndefined()
   })
 
+  test("does not show toast for gpt-5.5 model (native Sisyphus support)", async () => {
+    // given - sisyphus with gpt-5.5 model (should be allowed)
+    const showToast = spyOn({ fn: async () => ({}) }, "fn")
+    const hook = createNoSisyphusGptHook({
+      client: { tui: { showToast } },
+    } as any)
+
+    const output = createOutput()
+
+    // when - chat.message runs with gpt-5.5
+    await hook["chat.message"]?.({
+      sessionID: "ses_gpt55",
+      agent: SISYPHUS_DISPLAY,
+      model: { providerID: "openai", modelID: "gpt-5.5" },
+    }, output)
+
+    // then - no toast, agent NOT switched to Hephaestus
+    expect(showToast).toHaveBeenCalledTimes(0)
+    expect(output.message.agent).toBeUndefined()
+  })
+
   test("does not show toast for non-gpt model", async () => {
     // given - sisyphus with claude model
     const showToast = spyOn({ fn: async () => ({}) }, "fn")
@@ -83,7 +104,7 @@ describe("no-sisyphus-gpt hook", () => {
     await hook["chat.message"]?.({
       sessionID: "ses_2",
       agent: SISYPHUS_DISPLAY,
-      model: { providerID: "anthropic", modelID: "claude-opus-4-6" },
+      model: { providerID: "anthropic", modelID: "claude-opus-4-7" },
     }, output)
 
     // then - no toast
@@ -131,6 +152,6 @@ describe("no-sisyphus-gpt hook", () => {
 
     // then - toast shown via session-agent fallback
     expect(showToast).toHaveBeenCalledTimes(1)
-    expect(output.message.agent).toBe(HEPHAESTUS_DISPLAY)
+    expect(output.message.agent).toBe("hephaestus")
   })
 })

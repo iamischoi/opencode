@@ -79,7 +79,7 @@ describe("atlas hook", () => {
     }
     const messageData = {
       agent,
-      model: { providerID: "anthropic", modelID: "claude-opus-4-6" },
+      model: { providerID: "anthropic", modelID: "claude-opus-4-7" },
     }
     writeFileSync(join(messageDir, "msg_test001.json"), JSON.stringify(messageData))
   }
@@ -957,7 +957,8 @@ session_id: ses_untrusted_999
       const updatedState = readBoulderState(TEST_DIR)
       expect(updatedState?.task_sessions?.["todo:1"]).toBeUndefined()
       expect(output.output).not.toContain('task(session_id="ses_untrusted_999"')
-      expect(output.output).toContain('task(session_id="<session_id>"')
+      expect(output.output).not.toContain('task(task_id="ses_untrusted_999"')
+      expect(output.output).toContain('task(task_id="<session_id>"')
 
       cleanupMessageStorage(sessionID)
     })
@@ -1817,10 +1818,10 @@ session_id: ses_untrusted_999
         started_at: "2026-01-02T10:00:00Z",
         session_ids: [MAIN_SESSION_ID],
         plan_name: "test-plan",
-        agent: "Atlas (Plan Executor)",
+        agent: "Atlas - Plan Executor",
       }
       writeBoulderState(TEST_DIR, state)
-      registerAgentName("Atlas (Plan Executor)")
+      registerAgentName("Atlas - Plan Executor")
 
       const mockInput = createMockPluginInput()
       const hook = createAtlasHook(mockInput)
@@ -1836,7 +1837,7 @@ session_id: ses_untrusted_999
       // then
       expect(mockInput._promptMock).toHaveBeenCalled()
       const callArgs = mockInput._promptMock.mock.calls[0][0]
-      expect(callArgs.body.agent).toBe("Atlas (Plan Executor)")
+      expect(callArgs.body.agent).toBe("Atlas - Plan Executor")
       expect(callArgs.body.agent).not.toBe("atlas")
     })
 

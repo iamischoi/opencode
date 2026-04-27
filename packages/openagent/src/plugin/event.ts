@@ -15,6 +15,7 @@ import {
   clearSessionFallbackChain,
   setSessionFallbackChain,
   setPendingModelFallback,
+  type ModelFallbackHook,
 } from "../hooks/model-fallback/hook";
 import { getRawFallbackModels } from "../hooks/runtime-fallback/fallback-models";
 import {
@@ -33,10 +34,10 @@ import { clearSessionModel, getSessionModel, setSessionModel } from "../shared/s
 import { clearSessionPromptParams } from "../shared/session-prompt-params-state";
 import { deleteSessionTools } from "../shared/session-tools-store";
 import { lspManager } from "../tools";
+import { dispatchOpenClawEvent } from "../openclaw/runtime-dispatch";
 
 import type { CreatedHooks } from "../create-hooks";
 import type { Managers } from "../create-managers";
-import { isTmuxIntegrationEnabled } from "../create-runtime-tmux-config";
 import { pruneRecentSyntheticIdles } from "./recent-synthetic-idles";
 import { normalizeSessionStatusToIdle } from "./session-status-normalizer";
 
@@ -111,6 +112,7 @@ function extractProviderModelFromErrorMessage(message: string): { providerID?: s
   return {};
 }
 function applyUserConfiguredFallbackChain(
+  modelFallback: Pick<ModelFallbackHook, "setSessionFallbackChain"> | null | undefined,
   sessionID: string,
   agentName: string,
   currentProviderID: string,
@@ -123,7 +125,9 @@ function applyUserConfiguredFallbackChain(
   const fallbackChain = buildFallbackChainFromModels(rawFallbackModels, currentProviderID);
 
   if (fallbackChain && fallbackChain.length > 0) {
-    setSessionFallbackChain(sessionID, fallbackChain);
+    if (modelFallback) {
+      setSessionFallbackChain(modelFallback, sessionID, fallbackChain);
+    }
   }
 }
 
@@ -140,7 +144,7 @@ export function createEventHandler(args: {
   hooks: CreatedHooks;
 }): (input: EventInput) => Promise<void> {
   const { ctx, pluginConfig, firstMessageVariantGate, managers, hooks } = args;
-  const tmuxIntegrationEnabled = isTmuxIntegrationEnabled(pluginConfig)
+  const tmuxIntegrationEnabled = pluginConfig.tmux?.enabled ?? false;
   const pluginContext = ctx as {
     directory: string;
     client: {
@@ -170,6 +174,7 @@ export function createEventHandler(args: {
 
   const isModelFallbackEnabled =
     hooks.modelFallback !== null && hooks.modelFallback !== undefined;
+  const modelFallback = hooks.modelFallback;
 
   // Avoid triggering multiple abort+continue cycles for the same failing assistant message.
   const lastHandledModelErrorMessageID = new Map<string, string>();
@@ -323,7 +328,6 @@ export function createEventHandler(args: {
         const emittedAt = recentSyntheticIdles.get(sessionID);
         if (emittedAt && Date.now() - emittedAt < DEDUP_WINDOW_MS) {
           recentSyntheticIdles.delete(sessionID);
-          return;
         }
         recentRealIdles.set(sessionID, Date.now());
       }
@@ -341,6 +345,17 @@ export function createEventHandler(args: {
       }
       recentSyntheticIdles.set(sessionID, Date.now());
       await dispatchToHooks(syntheticIdle as EventInput);
+      if (pluginConfig.openclaw) {
+        await dispatchOpenClawEvent({
+          config: pluginConfig.openclaw,
+          rawEvent: "session.idle",
+          context: {
+            sessionId: sessionID,
+            projectPath: pluginContext.directory,
+            tmuxPaneId: managers.tmuxSessionManager.getTrackedPaneId?.(sessionID) ?? process.env.TMUX_PANE,
+          },
+        });
+      }
     }
 
     const { event } = input;
@@ -369,6 +384,21 @@ export function createEventHandler(args: {
           },
         );
       }
+
+      // Skip subagent sessions — they are dispatched by specialized callbacks
+      // in create-managers.ts (async) and tool-registry.ts (sync)
+      const isSubagentSession = !!sessionInfo?.parentID;
+      if (pluginConfig.openclaw && sessionInfo?.id && !isSubagentSession) {
+        await dispatchOpenClawEvent({
+          config: pluginConfig.openclaw,
+          rawEvent: event.type,
+          context: {
+            sessionId: sessionInfo.id,
+            projectPath: pluginContext.directory,
+            tmuxPaneId: managers.tmuxSessionManager.getTrackedPaneId?.(sessionInfo.id) ?? process.env.TMUX_PANE,
+          },
+        });
+      }
     }
 
     if (event.type === "session.deleted") {
@@ -383,8 +413,10 @@ export function createEventHandler(args: {
         lastHandledModelErrorMessageID.delete(sessionInfo.id);
         lastHandledRetryStatusKey.delete(sessionInfo.id);
         lastKnownModelBySession.delete(sessionInfo.id);
-        clearPendingModelFallback(sessionInfo.id);
-        clearSessionFallbackChain(sessionInfo.id);
+        if (modelFallback) {
+          clearPendingModelFallback(modelFallback, sessionInfo.id);
+          clearSessionFallbackChain(modelFallback, sessionInfo.id);
+        }
         resetMessageCursor(sessionInfo.id);
         clearBackgroundOutputConsumptionsForParentSession(sessionInfo.id);
         clearBackgroundOutputConsumptionsForTaskSession(sessionInfo.id);
@@ -392,6 +424,17 @@ export function createEventHandler(args: {
         clearSessionModel(sessionInfo.id);
         clearSessionPromptParams(sessionInfo.id);
         syncSubagentSessions.delete(sessionInfo.id);
+        if (pluginConfig.openclaw) {
+          await dispatchOpenClawEvent({
+            config: pluginConfig.openclaw,
+            rawEvent: event.type,
+            context: {
+              sessionId: sessionInfo.id,
+              projectPath: pluginContext.directory,
+              tmuxPaneId: managers.tmuxSessionManager.getTrackedPaneId?.(sessionInfo.id) ?? process.env.TMUX_PANE,
+            },
+          });
+        }
         if (wasSyncSubagentSession) {
           subagentSessions.delete(sessionInfo.id);
         }
@@ -410,6 +453,21 @@ export function createEventHandler(args: {
       const messageID = props?.messageID as string | undefined;
       const sessionID = props?.sessionID as string | undefined;
       restoreBackgroundOutputConsumption(sessionID, messageID);
+    }
+
+    if (event.type === "session.idle" && pluginConfig.openclaw) {
+      const sessionID = props?.sessionID as string | undefined;
+      if (sessionID) {
+        await dispatchOpenClawEvent({
+          config: pluginConfig.openclaw,
+          rawEvent: event.type,
+          context: {
+            sessionId: sessionID,
+            projectPath: pluginContext.directory,
+            tmuxPaneId: managers.tmuxSessionManager.getTrackedPaneId?.(sessionID) ?? process.env.TMUX_PANE,
+          },
+        });
+      }
     }
 
     if (event.type === "message.updated") {
@@ -464,11 +522,13 @@ export function createEventHandler(args: {
                   sessionID,
                   info?.providerID as string | undefined,
                 );
-                const rawModel = (info?.modelID as string | undefined) ?? "claude-opus-4-6";
+                const rawModel = (info?.modelID as string | undefined) ?? "claude-opus-4-7";
                 const currentModel = normalizeFallbackModelID(rawModel);
-                applyUserConfiguredFallbackChain(sessionID, agentName, currentProvider, args.pluginConfig);
+                applyUserConfiguredFallbackChain(modelFallback, sessionID, agentName, currentProvider, args.pluginConfig);
 
-                const setFallback = setPendingModelFallback(sessionID, agentName, currentProvider, currentModel);
+                const setFallback = modelFallback
+                  ? setPendingModelFallback(modelFallback, sessionID, agentName, currentProvider, currentModel)
+                  : false;
 
                 if (
                   setFallback &&
@@ -527,11 +587,13 @@ export function createEventHandler(args: {
               const parsed = extractProviderModelFromErrorMessage(retryMessage);
               const lastKnown = lastKnownModelBySession.get(sessionID);
               const currentProvider = resolveFallbackProviderID(sessionID, parsed.providerID);
-              let currentModel = parsed.modelID ?? lastKnown?.modelID ?? "claude-opus-4-6";
+              let currentModel = parsed.modelID ?? lastKnown?.modelID ?? "claude-opus-4-7";
               currentModel = normalizeFallbackModelID(currentModel);
-              applyUserConfiguredFallbackChain(sessionID, agentName, currentProvider, args.pluginConfig);
+              applyUserConfiguredFallbackChain(modelFallback, sessionID, agentName, currentProvider, args.pluginConfig);
 
-              const setFallback = setPendingModelFallback(sessionID, agentName, currentProvider, currentModel);
+              const setFallback = modelFallback
+                ? setPendingModelFallback(modelFallback, sessionID, agentName, currentProvider, currentModel)
+                : false;
 
               if (
                 setFallback &&
@@ -613,11 +675,13 @@ export function createEventHandler(args: {
               sessionID,
               (props?.providerID as string | undefined) || parsed.providerID,
             );
-            let currentModel = (props?.modelID as string) || parsed.modelID || "claude-opus-4-6";
+            let currentModel = (props?.modelID as string) || parsed.modelID || "claude-opus-4-7";
             currentModel = normalizeFallbackModelID(currentModel);
-            applyUserConfiguredFallbackChain(sessionID, agentName, currentProvider, args.pluginConfig);
+            applyUserConfiguredFallbackChain(modelFallback, sessionID, agentName, currentProvider, args.pluginConfig);
 
-            const setFallback = setPendingModelFallback(sessionID, agentName, currentProvider, currentModel);
+            const setFallback = modelFallback
+              ? setPendingModelFallback(modelFallback, sessionID, agentName, currentProvider, currentModel)
+              : false;
 
             if (
               setFallback &&

@@ -12,13 +12,8 @@ import {
 } from "../../features/boulder-state"
 import { log } from "../../shared/logger"
 import {
-  getAgentConfigKey,
-  getAgentDisplayName,
-  getAgentListDisplayName,
-} from "../../shared/agent-display-names"
-import {
-  getSessionAgent,
   isAgentRegistered,
+  resolveRegisteredAgentName,
   updateSessionAgent,
 } from "../../features/claude-code-session-state"
 import { detectWorktreePath } from "./worktree-detector"
@@ -43,17 +38,6 @@ interface StartWorkCommandExecuteBeforeInput {
 interface StartWorkHookOutput {
   message?: Record<string, unknown>
   parts: Array<{ type: string; text?: string }>
-}
-
-function isStartWorkCommandExecuteBeforeInput(
-  input: StartWorkHookInput | StartWorkCommandExecuteBeforeInput,
-): input is StartWorkCommandExecuteBeforeInput {
-  return "command" in input && input.command === "start-work"
-}
-
-function parseCommandArguments(argumentsText: string | undefined) {
-  if (!argumentsText?.trim()) return { planName: null, explicitWorktreePath: null }
-  return parseUserRequest(`<user-request>${argumentsText}</user-request>`)
 }
 
 function resolveWorktreeContext(
@@ -95,36 +79,19 @@ export function createStartWorkHook(ctx: PluginInput) {
     }
 
     log(`[${HOOK_NAME}] Processing start-work command`, { sessionID: input.sessionID })
-    const currentSessionAgent = getSessionAgent(input.sessionID)
-    const currentSessionAgentKey = currentSessionAgent
-      ? getAgentConfigKey(currentSessionAgent)
-      : undefined
-    const activeAgent = currentSessionAgent
-      && currentSessionAgentKey
-      && currentSessionAgentKey !== "prometheus"
-      && currentSessionAgentKey !== "atlas"
-        ? currentSessionAgent
-        : isAgentRegistered("atlas")
-          ? "atlas"
-          : "sisyphus"
-    const activeAgentDisplayName = activeAgent === "atlas"
-      ? getAgentListDisplayName(activeAgent)
-      : getAgentDisplayName(activeAgent)
+    const activeAgent = isAgentRegistered("atlas")
+      ? "atlas"
+      : "sisyphus"
     updateSessionAgent(input.sessionID, activeAgent)
     if (output.message) {
-      output.message["agent"] = activeAgentDisplayName
+      output.message["agent"] = resolveRegisteredAgentName(activeAgent) ?? activeAgent
     }
 
     const existingState = readBoulderState(ctx.directory)
     const sessionId = input.sessionID
     const timestamp = new Date().toISOString()
 
-    const parsedPromptRequest = parseUserRequest(promptText)
-    const parsedCommandArguments = isStartWorkCommandExecuteBeforeInput(input)
-      ? parseCommandArguments(input.arguments)
-      : { planName: null, explicitWorktreePath: null }
-    const explicitPlanName = parsedCommandArguments.planName ?? parsedPromptRequest.planName
-    const explicitWorktreePath = parsedCommandArguments.explicitWorktreePath ?? parsedPromptRequest.explicitWorktreePath
+    const { planName: explicitPlanName, explicitWorktreePath } = parseUserRequest(promptText)
     const { worktreePath, block: worktreeBlock } = resolveWorktreeContext(explicitWorktreePath)
 
     const contextInfo = buildStartWorkContextInfo({

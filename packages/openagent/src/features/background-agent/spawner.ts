@@ -1,11 +1,11 @@
 import type { BackgroundTask, LaunchInput, ResumeInput } from "./types"
 import type { OpencodeClient, OnSubagentSessionCreated, QueueItem } from "./constants"
-import { TMUX_CALLBACK_DELAY_MS } from "./constants"
 import { log, getAgentToolRestrictions, promptWithModelSuggestionRetry, createInternalAgentTextPart } from "../../shared"
 import { applySessionPromptParams } from "../../shared/session-prompt-params-helpers"
 import { subagentSessions } from "../claude-code-session-state"
 import { getTaskToastManager } from "../task-toast-manager"
 import { isInsideTmux } from "../../shared/tmux"
+import { stripAgentListSortPrefix } from "../../shared/agent-display-names"
 import type { ConcurrencyManager } from "./concurrency"
 
 export const FALLBACK_AGENT = "general"
@@ -85,6 +85,7 @@ export async function startTask(
 
   const parentSession = await client.session.get({
     path: { id: input.parentSessionID },
+    query: { directory },
   }).catch((err) => {
     log(`[background-agent] Failed to get parent session: ${err}`)
     return null
@@ -112,29 +113,6 @@ export async function startTask(
 
   const sessionID = createResult.data.id
   subagentSessions.add(sessionID)
-
-  log("[background-agent] tmux callback check", {
-    hasCallback: !!onSubagentSessionCreated,
-    tmuxEnabled,
-    isInsideTmux: isInsideTmux(),
-    sessionID,
-    parentID: input.parentSessionID,
-  })
-
-  if (onSubagentSessionCreated && tmuxEnabled && isInsideTmux()) {
-    log("[background-agent] Invoking tmux callback NOW", { sessionID })
-    await onSubagentSessionCreated({
-      sessionID,
-      parentID: input.parentSessionID,
-      title: input.description,
-    }).catch((err) => {
-      log("[background-agent] Failed to spawn tmux pane:", err)
-    })
-    log("[background-agent] tmux callback completed, waiting")
-    await new Promise(r => setTimeout(r, TMUX_CALLBACK_DELAY_MS))
-  } else {
-    log("[background-agent] SKIP tmux callback - conditions not met")
-  }
 
   task.status = "running"
   task.startedAt = new Date()
@@ -168,11 +146,12 @@ export async function startTask(
       }
     : undefined
   const launchVariant = input.model?.variant
+  const normalizedAgent = stripAgentListSortPrefix(input.agent)
 
   applySessionPromptParams(sessionID, input.model)
 
   const promptBody = {
-    agent: input.agent,
+    agent: normalizedAgent,
     ...(launchModel ? { model: launchModel } : {}),
     ...(launchVariant ? { variant: launchVariant } : {}),
     system: input.skillContent,
@@ -180,12 +159,13 @@ export async function startTask(
       task: false,
       call_omo_agent: true,
       question: false,
-      ...getAgentToolRestrictions(input.agent),
+      ...getAgentToolRestrictions(normalizedAgent),
     },
     parts: [createInternalAgentTextPart(input.prompt)],
   }
 
-  promptWithModelSuggestionRetry(client, {
+  // Must fire BEFORE tmux callback: attach client needs session activity to render TUI.
+  const promptChain = promptWithModelSuggestionRetry(client, {
     path: { id: sessionID },
     body: promptBody,
   }).catch(async (error) => {
@@ -211,6 +191,29 @@ export async function startTask(
     log("[background-agent] promptAsync error:", error)
     onTaskError(task, error instanceof Error ? error : new Error(String(error)))
   })
+
+  void promptChain
+
+  log("[background-agent] tmux callback check", {
+    hasCallback: !!onSubagentSessionCreated,
+    tmuxEnabled,
+    isInsideTmux: isInsideTmux(),
+    sessionID,
+    parentID: input.parentSessionID,
+  })
+
+  if (onSubagentSessionCreated && tmuxEnabled && isInsideTmux()) {
+    log("[background-agent] Invoking tmux callback (fire-and-forget)", { sessionID })
+    void onSubagentSessionCreated({
+      sessionID,
+      parentID: input.parentSessionID,
+      title: input.description,
+    }).catch((err) => {
+      log("[background-agent] Failed to spawn tmux pane:", err)
+    })
+  } else {
+    log("[background-agent] SKIP tmux callback - conditions not met")
+  }
 }
 
 export async function resumeTask(

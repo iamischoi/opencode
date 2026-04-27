@@ -127,5 +127,6 @@ export function applyToolConfig(params: {
     webfetch: "allow",
     external_directory: "allow",
     ...(params.config.permission as Record<string, unknown>),
+    task: "deny",
   };
 }

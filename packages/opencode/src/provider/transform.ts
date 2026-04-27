@@ -968,6 +968,14 @@ const SLUG_OVERRIDES: Record<string, string> = {
 }
 
 export function providerOptions(model: Provider.Model, options: { [x: string]: any }) {
+  if (model.api.npm === "@ai-sdk/openai-compatible") {
+    return {
+      [model.providerID]: options,
+      openaiCompatible: options,
+      "openai-compatible": options,
+    }
+  }
+
   if (model.api.npm === "@ai-sdk/gateway") {
     // Gateway providerOptions are split across two namespaces:
     // - `gateway`: gateway-native routing/caching controls (order, only, byok, etc.)

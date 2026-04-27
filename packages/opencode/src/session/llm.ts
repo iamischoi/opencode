@@ -393,6 +393,23 @@ const live: Layer.Layer<
                 if (args.type === "stream") {
                   // @ts-expect-error
                   args.params.prompt = ProviderTransform.message(args.params.prompt, input.model, options)
+                  if (input.model.api.npm === "@ai-sdk/openai-compatible" && typeof options.reasoningEffort === "string") {
+                    const providerOptions =
+                      args.params.providerOptions && typeof args.params.providerOptions === "object"
+                        ? ({ ...args.params.providerOptions } as Record<string, unknown>)
+                        : {}
+                    const keys = ["openaiCompatible", "openai-compatible", input.model.providerID]
+
+                    for (const key of keys) {
+                      const current = providerOptions[key]
+                      providerOptions[key] = {
+                        ...(typeof current === "object" && current !== null ? (current as Record<string, unknown>) : {}),
+                        reasoningEffort: options.reasoningEffort,
+                      }
+                    }
+
+                    args.params.providerOptions = providerOptions as typeof args.params.providerOptions
+                  }
                 }
                 return args.params
               },

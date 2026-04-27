@@ -1,5 +1,6 @@
 /** Generic GPT Hephaestus prompt - fallback for GPT models without a model-specific variant */
 
+import { GPT_APPLY_PATCH_GUIDANCE } from "../gpt-apply-patch-guard"
 import type {
   AvailableAgent,
   AvailableTool,
@@ -276,11 +277,11 @@ After delegation, ALWAYS verify: works as expected? follows codebase pattern? MU
 
 ### Session Continuity
 
-Every \`task()\` output includes a session_id. **USE IT for follow-ups.**
+Every \`task()\` output includes a task_id. **USE IT for follow-ups.**
 
-- **Task failed/incomplete** - \`session_id="{id}", prompt="Fix: {error}"\`
-- **Follow-up on result** - \`session_id="{id}", prompt="Also: {question}"\`
-- **Verification failed** - \`session_id="{id}", prompt="Failed: {error}. Fix."\`
+- **Task failed/incomplete** - \`task_id="{id}", prompt="Fix: {error}"\`
+- **Follow-up on result** - \`task_id="{id}", prompt="Also: {question}"\`
+- **Verification failed** - \`task_id="{id}", prompt="Failed: {error}. Fix."\`
 
 ${
   oracleSection
@@ -311,6 +312,7 @@ ${oracleSection}
 1. SEARCH existing codebase for similar patterns/styles
 2. Match naming, indentation, import styles, error handling conventions
 3. Default to ASCII. Add comments only for non-obvious blocks
+4. ${GPT_APPLY_PATCH_GUIDANCE}
 
 ### After Implementation (MANDATORY - DO NOT SKIP)
 

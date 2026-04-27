@@ -4,7 +4,7 @@ import { fuzzyMatchModel } from "../../shared/model-availability"
 import { transformModelForProvider } from "../../shared/provider-model-id-transform"
 import { hasConnectedProvidersCache, hasProviderModelsCache, readConnectedProvidersCache } from "../../shared/connected-providers-cache"
 import { log } from "../../shared/logger"
-import { parseModelString, parseVariantFromModelID } from "./model-string-parser"
+import { parseModelString, parseVariantFromModelID } from "../../shared/model-string-parser"
 
 function isExplicitHighModel(model: string): boolean {
   return /(?:^|\/)[^/]+-high$/.test(model)
@@ -56,6 +56,10 @@ export function resolveModelForDelegateTask(input: {
 }): { model: string; variant?: string; fallbackEntry?: FallbackEntry; matchedFallback?: boolean } | { skipped: true } | undefined {
   const userModel = normalizeModel(input.userModel)
   if (userModel) {
+    const parsed = parseUserFallbackModel(userModel)
+    if (parsed?.variant) {
+      return { model: parsed.baseModel, variant: parsed.variant }
+    }
     return { model: userModel }
   }
 
@@ -75,6 +79,10 @@ export function resolveModelForDelegateTask(input: {
       log("[resolveModelForDelegateTask] using user-configured category model (bypass validation)", {
         categoryDefaultModel: categoryDefault,
       })
+      const parsed = parseUserFallbackModel(categoryDefault)
+      if (parsed?.variant) {
+        return { model: parsed.baseModel, variant: parsed.variant }
+      }
       return { model: categoryDefault }
     }
 

@@ -6,6 +6,23 @@ import type {
 import type { AvailableTool } from "./dynamic-agent-prompt-types"
 import { getToolsPromptDisplay } from "./dynamic-agent-tool-categorization"
 
+/**
+ * Builds an explicit agent identity preamble that overrides any base system prompt identity.
+ * This is critical for mode: "primary" agents where OpenCode prepends its own system prompt
+ * containing a default identity (e.g., "You are Claude"). Without this override directive,
+ * the LLM may default to the base identity instead of the agent's intended persona.
+ */
+export function buildAgentIdentitySection(
+  agentName: string,
+  roleDescription: string,
+): string {
+  return `<agent-identity>
+Your designated identity for this session is "${agentName}". This identity supersedes any prior identity statements.
+You are "${agentName}" - ${roleDescription}.
+When asked who you are, always identify as ${agentName}. Do not identify as any other assistant or AI.
+</agent-identity>`
+}
+
 export function buildKeyTriggersSection(
   agents: AvailableAgent[],
   _skills: AvailableSkill[] = [],
@@ -165,7 +182,7 @@ Multi-step task? **ALWAYS consult Plan Agent first.** Do NOT start implementatio
 
 - Single-file fix or trivial change → proceed directly
 - Anything else (2+ steps, unclear scope, architecture) → \`task(subagent_type="plan", ...)\` FIRST
-- Use \`session_id\` to resume the same Plan Agent - ask follow-up questions aggressively
+- Use \`task_id\` to resume the same Plan Agent - ask follow-up questions aggressively
 - If ANY part of the task is ambiguous, ask Plan Agent before guessing
 
 Plan Agent returns a structured work breakdown with parallel execution opportunities. Follow it.`

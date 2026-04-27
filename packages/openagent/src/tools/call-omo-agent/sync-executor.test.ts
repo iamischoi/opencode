@@ -115,6 +115,27 @@ describe("executeSync", () => {
     expect(promptInput?.body.parts).toEqual([{ type: "text", text: "find something" }])
   })
 
+  test("removes invisible agent characters before sending the sync prompt", async () => {
+    //#given
+    const executeSync = await importExecuteSync()
+    const deps = createDependencies()
+    const toolContext = createToolContext()
+    const recorder = createPromptAsyncRecorder()
+    const args = {
+      subagent_type: "\u200BSisyphus\u200B - Ultraworker",
+      description: "test task",
+      prompt: "find something",
+      run_in_background: false,
+    }
+
+    //#when
+    await executeSync(args, toolContext, createContext(recorder.promptAsync) as never, deps)
+
+    //#then
+    const promptInput = recorder.getCapturedInput()
+    expect(promptInput?.body.agent).toBe("Sisyphus - Ultraworker")
+  })
+
   test("returns processed response with task metadata footer", async () => {
     //#given
     const executeSync = await importExecuteSync()
@@ -190,10 +211,10 @@ describe("executeSync", () => {
     expect(promptInput?.body.temperature).toBe(0.12)
     expect(promptInput?.body.topP).toBe(0.34)
     expect(promptInput?.body.options).toEqual({
-      maxTokens: 5678,
       reasoningEffort: "medium",
       thinking: { type: "disabled" },
     })
+    expect(promptInput?.body.maxOutputTokens).toBe(5678)
   })
 
   test("records metadata with description and created session id", async () => {
@@ -278,6 +299,27 @@ describe("executeSync", () => {
     expect(result).toContain("session_id: ses-missing-agent")
     expect(deps.waitForCompletion).not.toHaveBeenCalled()
     expect(deps.processMessages).not.toHaveBeenCalled()
+  })
+
+  test("strips invisible sort prefixes before sending sync prompts", async () => {
+    //#given
+    const executeSync = await importExecuteSync()
+    const deps = createDependencies()
+    const toolContext = createToolContext()
+    const recorder = createPromptAsyncRecorder()
+    const args = {
+      subagent_type: "\u200BSisyphus - Ultraworker",
+      description: "prefixed agent",
+      prompt: "find something",
+      run_in_background: false,
+    }
+
+    //#when
+    await executeSync(args, toolContext, createContext(recorder.promptAsync) as never, deps)
+
+    //#then
+    const promptInput = recorder.getCapturedInput()
+    expect(promptInput?.body.agent).toBe("Sisyphus - Ultraworker")
   })
 
   test("returns generic prompt failure with task metadata", async () => {

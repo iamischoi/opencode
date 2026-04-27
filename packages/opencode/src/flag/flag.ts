@@ -52,8 +52,18 @@ export const Flag = {
   OPENCODE_SERVER_PASSWORD: process.env["OPENCODE_SERVER_PASSWORD"],
   OPENCODE_SERVER_USERNAME: process.env["OPENCODE_SERVER_USERNAME"],
   OPENCODE_ENABLE_QUESTION_TOOL: truthy("OPENCODE_ENABLE_QUESTION_TOOL"),
-  OPENCODE_APP_CONFIG: process.env["OPENCODE_APP_CONFIG"],
-  OPENCODE_AGENT_TYPES: process.env["OPENCODE_AGENT_TYPES"],
+  get OPENCODE_APP_CONFIG() {
+    return process.env["OPENCODE_APP_CONFIG"]
+  },
+  get OPENCODE_AGENT_TYPES() {
+    return process.env["OPENCODE_AGENT_TYPES"]
+  },
+  get OPENCODE_API_TYPES() {
+    return process.env["OPENCODE_API_TYPES"]
+  },
+  get OPENCODE_AGENT_MODELS() {
+    return process.env["OPENCODE_AGENT_MODELS"]
+  },
 
   // Experimental
   OPENCODE_EXPERIMENTAL,

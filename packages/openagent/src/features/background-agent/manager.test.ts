@@ -12,6 +12,7 @@ import { MIN_IDLE_TIME_MS } from "./constants"
 import { BackgroundManager } from "./manager"
 import { ConcurrencyManager } from "./concurrency"
 import { initTaskToastManager, _resetTaskToastManagerForTesting } from "../task-toast-manager/manager"
+import { _resetForTesting as resetProcessCleanupState } from "./process-cleanup"
 
 mock.module("../../shared/connected-providers-cache", () => ({
   readConnectedProvidersCache: () => null,
@@ -216,6 +217,10 @@ function getCompletionTimers(manager: BackgroundManager): Map<string, ReturnType
 
 function getRootDescendantCounts(manager: BackgroundManager): Map<string, number> {
   return (manager as unknown as { rootDescendantCounts: Map<string, number> }).rootDescendantCounts
+}
+
+function getPreStartDescendantReservations(manager: BackgroundManager): Set<string> {
+  return (manager as unknown as { preStartDescendantReservations: Set<string> }).preStartDescendantReservations
 }
 
 function getQueuesByKey(
@@ -850,13 +855,13 @@ describe("BackgroundManager.notifyParentSession - dynamic message lookup", () =>
             {
               info: {
                 agent: "sisyphus",
-                model: { providerID: "anthropic", modelID: "claude-opus-4-6" },
+                model: { providerID: "anthropic", modelID: "claude-opus-4.7" },
               },
             },
             {
               info: {
                 agent: "compaction",
-                model: { providerID: "anthropic", modelID: "claude-sonnet-4-6" },
+                model: { providerID: "anthropic", modelID: "claude-sonnet-4.6" },
               },
             },
           ],
@@ -885,7 +890,7 @@ describe("BackgroundManager.notifyParentSession - dynamic message lookup", () =>
 
     //#then
     expect(capturedBody?.agent).toBe("sisyphus")
-    expect(capturedBody?.model).toEqual({ providerID: "anthropic", modelID: "claude-opus-4-6" })
+    expect(capturedBody?.model).toEqual({ providerID: "anthropic", modelID: "claude-opus-4.7" })
 
     manager.shutdown()
   })
@@ -908,7 +913,7 @@ describe("BackgroundManager.notifyParentSession - dynamic message lookup", () =>
     }
     const currentMessage: CurrentMessage = {
       agent: "sisyphus",
-      model: { providerID: "anthropic", modelID: "claude-opus-4-6" },
+      model: { providerID: "anthropic", modelID: "claude-opus-4.7" },
     }
 
     // when
@@ -916,7 +921,7 @@ describe("BackgroundManager.notifyParentSession - dynamic message lookup", () =>
 
     // then - uses currentMessage values, not task.parentModel/parentAgent
     expect(promptBody.agent).toBe("sisyphus")
-    expect(promptBody.model).toEqual({ providerID: "anthropic", modelID: "claude-opus-4-6" })
+    expect(promptBody.model).toEqual({ providerID: "anthropic", modelID: "claude-opus-4.7" })
   })
 
   test("should fallback to parentAgent when currentMessage.agent is undefined", async () => {
@@ -1144,7 +1149,18 @@ describe("BackgroundManager.notifyParentSession - notifications toggle", () => {
         prompt: promptMock,
         promptAsync: promptMock,
         abort: async () => ({}),
-        messages: async () => ({ data: [] }),
+        messages: async () => ({
+          data: [{
+            info: {
+              agent: "explore",
+              model: {
+                providerID: "anthropic",
+                modelID: "claude-opus-4.7",
+                variant: "high",
+              },
+            },
+          }],
+        }),
       },
     }
     const manager = new BackgroundManager(
@@ -1172,6 +1188,101 @@ describe("BackgroundManager.notifyParentSession - notifications toggle", () => {
 
     //#then
     expect(promptCalled).toBe(false)
+
+    manager.shutdown()
+  })
+})
+
+describe("BackgroundManager.notifyParentSession - variant propagation", () => {
+  test("should prefer parent session variant over child task variant in parent notification promptAsync body", async () => {
+    //#given
+    const promptCalls: Array<{ body: Record<string, unknown> }> = []
+    const client = {
+      session: {
+        prompt: async () => ({}),
+        promptAsync: async (args: { path: { id: string }; body: Record<string, unknown> }) => {
+          promptCalls.push({ body: args.body })
+          return {}
+        },
+        abort: async () => ({}),
+        messages: async () => ({
+          data: [{
+            info: {
+              agent: "explore",
+              model: {
+                providerID: "anthropic",
+                modelID: "claude-opus-4.7",
+                variant: "max",
+              },
+            },
+          }],
+        }),
+      },
+    }
+    const manager = new BackgroundManager({ client, directory: tmpdir() } as unknown as PluginInput)
+    const task: BackgroundTask = {
+      id: "task-parent-variant-wins",
+      sessionID: "session-child",
+      parentSessionID: "session-parent",
+      parentMessageID: "msg-parent",
+      description: "task with mismatched variant",
+      prompt: "test",
+      agent: "explore",
+      status: "completed",
+      startedAt: new Date(),
+      completedAt: new Date(),
+      model: { providerID: "anthropic", modelID: "claude-opus-4.7", variant: "high" },
+    }
+    getPendingByParent(manager).set("session-parent", new Set([task.id]))
+
+    //#when
+    await (manager as unknown as { notifyParentSession: (task: BackgroundTask) => Promise<void> })
+      .notifyParentSession(task)
+
+    //#then
+    expect(promptCalls).toHaveLength(1)
+    expect(promptCalls[0].body.variant).toBe("max")
+
+    manager.shutdown()
+  })
+
+  test("should not include variant in promptAsync body when task has no variant", async () => {
+    //#given
+    const promptCalls: Array<{ body: Record<string, unknown> }> = []
+    const client = {
+      session: {
+        prompt: async () => ({}),
+        promptAsync: async (args: { path: { id: string }; body: Record<string, unknown> }) => {
+          promptCalls.push({ body: args.body })
+          return {}
+        },
+        abort: async () => ({}),
+        messages: async () => ({ data: [] }),
+      },
+    }
+    const manager = new BackgroundManager({ client, directory: tmpdir() } as unknown as PluginInput)
+    const task: BackgroundTask = {
+      id: "task-no-variant",
+      sessionID: "session-child",
+      parentSessionID: "session-parent",
+      parentMessageID: "msg-parent",
+      description: "task without variant",
+      prompt: "test",
+      agent: "explore",
+      status: "completed",
+      startedAt: new Date(),
+      completedAt: new Date(),
+      model: { providerID: "anthropic", modelID: "claude-opus-4.7" },
+    }
+    getPendingByParent(manager).set("session-parent", new Set([task.id]))
+
+    //#when
+    await (manager as unknown as { notifyParentSession: (task: BackgroundTask) => Promise<void> })
+      .notifyParentSession(task)
+
+    //#then
+    expect(promptCalls).toHaveLength(1)
+    expect(promptCalls[0].body.variant).toBeUndefined()
 
     manager.shutdown()
   })
@@ -1238,7 +1349,7 @@ describe("BackgroundManager.tryCompleteTask", () => {
 
   test("should release concurrency and clear key on completion", async () => {
     // given
-    const concurrencyKey = "anthropic/claude-opus-4-6"
+    const concurrencyKey = "anthropic/claude-opus-4.7"
     const concurrencyManager = getConcurrencyManager(manager)
     await concurrencyManager.acquire(concurrencyKey)
 
@@ -1267,7 +1378,7 @@ describe("BackgroundManager.tryCompleteTask", () => {
 
   test("should prevent double completion and double release", async () => {
     // given
-    const concurrencyKey = "anthropic/claude-opus-4-6"
+    const concurrencyKey = "anthropic/claude-opus-4.7"
     const concurrencyManager = getConcurrencyManager(manager)
     await concurrencyManager.acquire(concurrencyKey)
 
@@ -1397,7 +1508,7 @@ describe("BackgroundManager.tryCompleteTask", () => {
 
   test("should release task concurrencyKey when startTask throws after assigning it", async () => {
     // given
-    const concurrencyKey = "anthropic/claude-opus-4-6"
+    const concurrencyKey = "anthropic/claude-opus-4.7"
     const concurrencyManager = getConcurrencyManager(manager)
 
     const task = createMockTask({
@@ -1413,7 +1524,7 @@ describe("BackgroundManager.tryCompleteTask", () => {
       agent: task.agent,
       parentSessionID: task.parentSessionID,
       parentMessageID: task.parentMessageID,
-      model: { providerID: "anthropic", modelID: "claude-opus-4-6" },
+      model: { providerID: "anthropic", modelID: "claude-opus-4.7" },
     }
     getTaskMap(manager).set(task.id, task)
     getQueuesByKey(manager).set(concurrencyKey, [{ task, input }])
@@ -1431,9 +1542,50 @@ describe("BackgroundManager.tryCompleteTask", () => {
     expect(task.concurrencyKey).toBeUndefined()
   })
 
+  test("should mark task as error when startTask throws after session creation", async () => {
+    //#given - startTask creates session but fails before sending prompt
+    const concurrencyKey = "anthropic/claude-opus-4.7"
+
+    const task = createMockTask({
+      id: "task-zombie-session",
+      sessionID: "session-zombie-placeholder",
+      parentSessionID: "parent-zombie",
+      status: "pending",
+      agent: "explore",
+    })
+    delete (task as Partial<BackgroundTask>).sessionID
+
+    const input = {
+      description: task.description,
+      prompt: task.prompt,
+      agent: task.agent,
+      parentSessionID: task.parentSessionID,
+      parentMessageID: task.parentMessageID,
+      model: { providerID: "anthropic", modelID: "claude-opus-4.7" },
+    }
+    getTaskMap(manager).set(task.id, task)
+    getQueuesByKey(manager).set(concurrencyKey, [{ task, input }])
+
+    ;(manager as unknown as { startTask: (item: { task: BackgroundTask; input: typeof input }) => Promise<void> }).startTask = async (item) => {
+      item.task.status = "running"
+      item.task.sessionID = "ses_zombie_child"
+      item.task.startedAt = new Date()
+      item.task.concurrencyKey = concurrencyKey
+      throw new Error("crash between session creation and prompt send")
+    }
+
+    //#when
+    await processKeyForTest(manager, concurrencyKey)
+
+    //#then - task must be marked as error, not left in running zombie state
+    expect(task.status).toBe("error")
+    expect(task.error).toContain("crash between session creation and prompt send")
+    expect(task.completedAt).toBeDefined()
+  })
+
   test("should release queue slot when queued task is already interrupt", async () => {
     // given
-    const concurrencyKey = "anthropic/claude-opus-4-6"
+    const concurrencyKey = "anthropic/claude-opus-4.7"
     const concurrencyManager = getConcurrencyManager(manager)
 
     const task = createMockTask({
@@ -1449,7 +1601,7 @@ describe("BackgroundManager.tryCompleteTask", () => {
       agent: task.agent,
       parentSessionID: task.parentSessionID,
       parentMessageID: task.parentMessageID,
-      model: { providerID: "anthropic", modelID: "claude-opus-4-6" },
+      model: { providerID: "anthropic", modelID: "claude-opus-4.7" },
     }
     getTaskMap(manager).set(task.id, task)
     getQueuesByKey(manager).set(concurrencyKey, [{ task, input }])
@@ -1739,10 +1891,10 @@ describe("BackgroundManager.resume model persistence", () => {
     expect(getSessionPromptParams("session-advanced")).toEqual({
       temperature: 0.25,
       topP: 0.55,
+      maxOutputTokens: 8192,
       options: {
         reasoningEffort: "high",
         thinking: { type: "disabled" },
-        maxTokens: 8192,
       },
     })
   })
@@ -1782,6 +1934,7 @@ describe("BackgroundManager.resume model persistence", () => {
 describe("BackgroundManager process cleanup", () => {
   test("should remove listeners after last shutdown", () => {
     // given
+    resetProcessCleanupState()
     const signals = getCleanupSignals()
     const baseline = getListenerCounts(signals)
     const managerA = createBackgroundManager()
@@ -1800,6 +1953,8 @@ describe("BackgroundManager process cleanup", () => {
       expect(afterFirstShutdown[signal]).toBe(baseline[signal] + 1)
       expect(afterSecondShutdown[signal]).toBe(baseline[signal])
     }
+
+    resetProcessCleanupState()
   })
 })
 
@@ -1949,7 +2104,7 @@ describe("BackgroundManager - Non-blocking Queue Integration", () => {
       agent: "test-agent",
       parentSessionID: "parent-session",
       parentMessageID: "parent-message",
-      model: { providerID: "anthropic", modelID: "claude-opus-4-6" },
+      model: { providerID: "anthropic", modelID: "claude-opus-4.7" },
     }
     const launchInputWithoutModel = {
       description: "Test task without model",
@@ -1969,7 +2124,7 @@ describe("BackgroundManager - Non-blocking Queue Integration", () => {
     expect(taskWithModel.status).toBe("pending")
     expect(taskWithoutModel.status).toBe("pending")
     expect(promptBodies).toHaveLength(2)
-    expect(promptBodies[0].model).toEqual({ providerID: "anthropic", modelID: "claude-opus-4-6" })
+    expect(promptBodies[0].model).toEqual({ providerID: "anthropic", modelID: "claude-opus-4.7" })
     expect(promptBodies[0].agent).toBe("test-agent")
     expect(promptBodies[1].agent).toBe("test-agent")
     expect("model" in promptBodies[1]).toBe(false)
@@ -2172,7 +2327,7 @@ describe("BackgroundManager - Non-blocking Queue Integration", () => {
       await expect(result).rejects.toThrow("background_task.maxDepth=3")
     })
 
-    test("should block launches when maxDescendants is reached", async () => {
+    test("allows multiple descendants without a root spawn cap", async () => {
       // given
       manager.shutdown()
       manager = new BackgroundManager(
@@ -2182,7 +2337,6 @@ describe("BackgroundManager - Non-blocking Queue Integration", () => {
           }),
           directory: tmpdir(),
         } as unknown as PluginInput,
-        { maxDescendants: 1 },
       )
 
       const input = {
@@ -2199,10 +2353,10 @@ describe("BackgroundManager - Non-blocking Queue Integration", () => {
       const result = manager.launch(input)
 
       // then
-      await expect(result).rejects.toThrow("background_task.maxDescendants=1")
+      await expect(result).resolves.toBeDefined()
     })
 
-    test("should consume descendant quota for reserved sync spawns", async () => {
+    test("allows spawn assertions after reserveSubagentSpawn without a root spawn cap", async () => {
       // given
       manager.shutdown()
       manager = new BackgroundManager(
@@ -2212,7 +2366,6 @@ describe("BackgroundManager - Non-blocking Queue Integration", () => {
           }),
           directory: tmpdir(),
         } as unknown as PluginInput,
-        { maxDescendants: 1 },
       )
 
       await manager.reserveSubagentSpawn("session-root")
@@ -2221,7 +2374,10 @@ describe("BackgroundManager - Non-blocking Queue Integration", () => {
       const result = manager.assertCanSpawn("session-root")
 
       // then
-      await expect(result).rejects.toThrow("background_task.maxDescendants=1")
+      await expect(result).resolves.toMatchObject({
+        rootSessionID: "session-root",
+        childDepth: 1,
+      })
     })
 
     test("should fail closed when session lineage lookup fails", async () => {
@@ -2237,7 +2393,6 @@ describe("BackgroundManager - Non-blocking Queue Integration", () => {
           ),
           directory: tmpdir(),
         } as unknown as PluginInput,
-        { maxDescendants: 1 },
       )
 
       const input = {
@@ -2252,10 +2407,10 @@ describe("BackgroundManager - Non-blocking Queue Integration", () => {
       const result = manager.launch(input)
 
       // then
-      await expect(result).rejects.toThrow("background_task.maxDescendants cannot be enforced safely")
+      await expect(result).rejects.toThrow("background_task.maxDepth cannot be enforced safely")
     })
 
-    test("should release descendant quota when queued task is cancelled before session starts", async () => {
+    test("allows replacement launch when a queued task is cancelled before session starts", async () => {
       // given
       manager.shutdown()
       manager = new BackgroundManager(
@@ -2265,7 +2420,7 @@ describe("BackgroundManager - Non-blocking Queue Integration", () => {
           }),
           directory: tmpdir(),
         } as unknown as PluginInput,
-        { defaultConcurrency: 1, maxDescendants: 2 },
+        { defaultConcurrency: 1 },
       )
 
       const input = {
@@ -2290,7 +2445,7 @@ describe("BackgroundManager - Non-blocking Queue Integration", () => {
       expect(replacementTask.status).toBe("pending")
     })
 
-    test("should release descendant quota when session creation fails before session starts", async () => {
+    test("allows retry after session creation fails before session starts", async () => {
       // given
       let createAttempts = 0
       manager.shutdown()
@@ -2317,7 +2472,6 @@ describe("BackgroundManager - Non-blocking Queue Integration", () => {
           },
           directory: tmpdir(),
         } as unknown as PluginInput,
-        { maxDescendants: 1 },
       )
 
       const input = {
@@ -2337,6 +2491,46 @@ describe("BackgroundManager - Non-blocking Queue Integration", () => {
 
       // then
       expect(retryTask.status).toBe("pending")
+    })
+
+    test("should only roll back the failed task reservation once when siblings still exist", async () => {
+      // given
+      const concurrencyKey = "test-agent"
+      const task = createMockTask({
+        id: "task-single-reservation-rollback",
+        sessionID: "session-single-reservation-rollback",
+        parentSessionID: "session-root",
+        status: "pending",
+        agent: "test-agent",
+        rootSessionID: "session-root",
+      })
+      delete (task as Partial<BackgroundTask>).sessionID
+
+      const input = {
+        description: task.description,
+        prompt: task.prompt,
+        agent: task.agent,
+        parentSessionID: task.parentSessionID,
+        parentMessageID: task.parentMessageID,
+      }
+
+      getTaskMap(manager).set(task.id, task)
+      getQueuesByKey(manager).set(concurrencyKey, [{ task, input }])
+      getRootDescendantCounts(manager).set("session-root", 2)
+      getPreStartDescendantReservations(manager).add(task.id)
+      stubNotifyParentSession(manager)
+
+      ;(manager as unknown as {
+        startTask: (item: { task: BackgroundTask; input: typeof input }) => Promise<void>
+      }).startTask = async () => {
+        throw new Error("session create failed")
+      }
+
+      // when
+      await processKeyForTest(manager, concurrencyKey)
+
+      // then
+      expect(getRootDescendantCounts(manager).get("session-root")).toBe(1)
     })
 
     test("should keep the next queued task when the first task is cancelled during session creation", async () => {
@@ -2692,7 +2886,7 @@ describe("BackgroundManager - Non-blocking Queue Integration", () => {
       }
     })
 
-    test("should release descendant quota when task completes", async () => {
+    test("allows relaunch after task completes", async () => {
       manager.shutdown()
       manager = new BackgroundManager(
         {
@@ -2701,7 +2895,6 @@ describe("BackgroundManager - Non-blocking Queue Integration", () => {
           }),
           directory: tmpdir(),
         } as unknown as PluginInput,
-        { maxDescendants: 1 },
       )
       stubNotifyParentSession(manager)
 
@@ -2725,7 +2918,7 @@ describe("BackgroundManager - Non-blocking Queue Integration", () => {
       await expect(manager.launch(input)).resolves.toBeDefined()
     })
 
-    test("should release descendant quota when running task is cancelled", async () => {
+    test("allows relaunch after running task is cancelled", async () => {
       manager.shutdown()
       manager = new BackgroundManager(
         {
@@ -2734,7 +2927,6 @@ describe("BackgroundManager - Non-blocking Queue Integration", () => {
           }),
           directory: tmpdir(),
         } as unknown as PluginInput,
-        { maxDescendants: 1 },
       )
 
       const input = {
@@ -2755,7 +2947,7 @@ describe("BackgroundManager - Non-blocking Queue Integration", () => {
       await expect(manager.launch(input)).resolves.toBeDefined()
     })
 
-    test("should release descendant quota when task errors", async () => {
+    test("allows relaunch after task errors", async () => {
       manager.shutdown()
       manager = new BackgroundManager(
         {
@@ -2764,7 +2956,6 @@ describe("BackgroundManager - Non-blocking Queue Integration", () => {
           }),
           directory: tmpdir(),
         } as unknown as PluginInput,
-        { maxDescendants: 1 },
       )
 
       const input = {
@@ -2789,7 +2980,7 @@ describe("BackgroundManager - Non-blocking Queue Integration", () => {
       await expect(manager.launch(input)).resolves.toBeDefined()
     })
 
-    test("should not double-decrement quota when pending task is cancelled", async () => {
+    test("allows repeated relaunch after pending tasks are cancelled", async () => {
       manager.shutdown()
       manager = new BackgroundManager(
         {
@@ -2798,7 +2989,6 @@ describe("BackgroundManager - Non-blocking Queue Integration", () => {
           }),
           directory: tmpdir(),
         } as unknown as PluginInput,
-        { maxDescendants: 2 },
       )
 
       const input = {
@@ -3055,7 +3245,7 @@ describe("BackgroundManager - Non-blocking Queue Integration", () => {
         description: "Task 1",
         prompt: "Do something",
         agent: "test-agent",
-        model: { providerID: "anthropic", modelID: "claude-opus-4-6" },
+        model: { providerID: "anthropic", modelID: "claude-opus-4.7" },
         parentSessionID: "parent-session",
         parentMessageID: "parent-message",
       }
@@ -4035,7 +4225,7 @@ describe("BackgroundManager.handleEvent - session.deleted cascade", () => {
 
 describe("BackgroundManager.handleEvent - session.error", () => {
   const defaultRetryFallbackChain = [
-    { providers: ["anthropic"], model: "claude-opus-4-6", variant: "max" },
+    { providers: ["anthropic"], model: "claude-opus-4-7", variant: "max" },
     { providers: ["anthropic"], model: "gpt-5.3-codex", variant: "high" },
   ]
 
@@ -4059,7 +4249,7 @@ describe("BackgroundManager.handleEvent - session.error", () => {
       agent: "sisyphus",
       status: "running",
       concurrencyKey: input.concurrencyKey,
-      model: { providerID: "anthropic", modelID: "claude-opus-4-6-thinking" },
+      model: { providerID: "anthropic", modelID: "claude-opus-4.7-thinking" },
       fallbackChain: input.fallbackChain ?? defaultRetryFallbackChain,
       attemptCount: 0,
     })
@@ -4204,7 +4394,7 @@ describe("BackgroundManager.handleEvent - session.error", () => {
     //#given
     const manager = createBackgroundManager()
     const concurrencyManager = getConcurrencyManager(manager)
-    const concurrencyKey = "anthropic/claude-opus-4-6-thinking"
+    const concurrencyKey = "anthropic/claude-opus-4.7-thinking"
     await concurrencyManager.acquire(concurrencyKey)
 
     stubProcessKey(manager)
@@ -4216,7 +4406,7 @@ describe("BackgroundManager.handleEvent - session.error", () => {
       description: "task that should retry",
       concurrencyKey,
       fallbackChain: [
-        { providers: ["anthropic"], model: "claude-opus-4-6", variant: "max" },
+        { providers: ["anthropic"], model: "claude-opus-4-7", variant: "max" },
         { providers: ["anthropic"], model: "claude-opus-4-5", variant: "max" },
       ],
     })
@@ -4230,7 +4420,7 @@ describe("BackgroundManager.handleEvent - session.error", () => {
           name: "UnknownError",
           data: {
             message:
-              "Bad Gateway: {\"error\":{\"message\":\"unknown provider for model claude-opus-4-6-thinking\"}}",
+              "Bad Gateway: {\"error\":{\"message\":\"unknown provider for model claude-opus-4.7-thinking\"}}",
           },
         },
       },
@@ -4241,7 +4431,7 @@ describe("BackgroundManager.handleEvent - session.error", () => {
     expect(task.attemptCount).toBe(1)
     expect(task.model).toEqual({
       providerID: "anthropic",
-      modelID: "claude-opus-4-6",
+      modelID: "claude-opus-4.7",
       variant: "max",
     })
     expect(task.concurrencyKey).toBeUndefined()
@@ -4279,7 +4469,7 @@ describe("BackgroundManager.handleEvent - session.error", () => {
     expect(task.attemptCount).toBe(1)
     expect(task.model).toEqual({
       providerID: "anthropic",
-      modelID: "claude-opus-4-6",
+      modelID: "claude-opus-4.7",
       variant: "max",
     })
 
@@ -4307,7 +4497,7 @@ describe("BackgroundManager.handleEvent - session.error", () => {
         name: "UnknownError",
         data: {
           message:
-            "Bad Gateway: {\"error\":{\"message\":\"unknown provider for model claude-opus-4-6-thinking\"}}",
+              "Bad Gateway: {\"error\":{\"message\":\"unknown provider for model claude-opus-4.7-thinking\"}}",
         },
       },
     }
@@ -4324,7 +4514,7 @@ describe("BackgroundManager.handleEvent - session.error", () => {
     expect(task.attemptCount).toBe(1)
     expect(task.model).toEqual({
       providerID: "anthropic",
-      modelID: "claude-opus-4-6",
+      modelID: "claude-opus-4.7",
       variant: "max",
     })
 

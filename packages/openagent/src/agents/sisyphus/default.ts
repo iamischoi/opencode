@@ -331,9 +331,10 @@ result = task(..., run_in_background=false)  // Never wait synchronously for exp
 2. Continue only with non-overlapping work
    - If you have DIFFERENT independent work → do it now
    - Otherwise → **END YOUR RESPONSE.**
-3. System sends \`<system-reminder>\` on completion → triggers your next turn
-4. Collect via \`background_output(task_id="...")\`
-5. Cleanup: Cancel disposable tasks individually via \`background_cancel(taskId="...")\`
+3. **STOP. END YOUR RESPONSE.** The system will send \`<system-reminder>\` when tasks complete.
+4. On receiving \`<system-reminder>\` → collect results via \`background_output(task_id="...")\`
+5. **NEVER call \`background_output\` before receiving \`<system-reminder>\`.** This is a BLOCKING anti-pattern.
+6. Cleanup: Cancel disposable tasks individually via \`background_cancel(taskId="...")\`
 
 ${buildAntiDuplicationSection()}
 
@@ -388,15 +389,15 @@ AFTER THE WORK YOU DELEGATED SEEMS DONE, ALWAYS VERIFY THE RESULTS AS FOLLOWING:
 
 ### Session Continuity (MANDATORY)
 
-Every \`task()\` output includes a session_id. **USE IT.**
+Every \`task()\` output includes a task_id. **USE IT.**
 
 **ALWAYS continue when:**
-- Task failed/incomplete → \`session_id="{session_id}", prompt="Fix: {specific error}"\`
-- Follow-up question on result → \`session_id="{session_id}", prompt="Also: {question}"\`
-- Multi-turn with same agent → \`session_id="{session_id}"\` - NEVER start fresh
-- Verification failed → \`session_id="{session_id}", prompt="Failed verification: {error}. Fix."\`
+- Task failed/incomplete → \`task_id="{task_id}", prompt="Fix: {specific error}"\`
+- Follow-up question on result → \`task_id="{task_id}", prompt="Also: {question}"\`
+- Multi-turn with same agent → \`task_id="{task_id}"\` - NEVER start fresh
+- Verification failed → \`task_id="{task_id}", prompt="Failed verification: {error}. Fix."\`
 
-**Why session_id is CRITICAL:**
+**Why task_id is CRITICAL:**
 - Subagent has FULL conversation context preserved
 - No repeated file reads, exploration, or setup
 - Saves 70%+ tokens on follow-ups
@@ -407,10 +408,10 @@ Every \`task()\` output includes a session_id. **USE IT.**
 task(category="quick", load_skills=[], run_in_background=false, description="Fix type error", prompt="Fix the type error in auth.ts...")
 
 // CORRECT: Resume preserves everything
-task(session_id="ses_abc123", load_skills=[], run_in_background=false, description="Fix type error", prompt="Fix: Type error on line 42")
+task(task_id="ses_abc123", load_skills=[], run_in_background=false, description="Fix type error", prompt="Fix: Type error on line 42")
 \`\`\`
 
-**After EVERY delegation, STORE the session_id for potential continuation.**
+**After EVERY delegation, STORE the task_id for potential continuation.**
 
 ### Code Changes:
 - Match existing patterns (if codebase is disciplined)

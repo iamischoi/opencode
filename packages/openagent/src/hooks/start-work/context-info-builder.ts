@@ -6,10 +6,7 @@ import {
   findPrometheusPlans,
   getPlanName,
   getPlanProgress,
-  getTaskSessionState,
   readBoulderState,
-  readCurrentTopLevelTask,
-  upsertTaskSessionState,
   writeBoulderState,
 } from "../../features/boulder-state"
 import { log } from "../../shared/logger"
@@ -17,12 +14,33 @@ import { createWorktreeActiveBlock } from "./worktree-block"
 import type { PluginInput } from "@opencode-ai/plugin"
 import { HOOK_NAME } from "./start-work-hook"
 
+function normalizePlanLookupValue(value: string): string {
+  return value
+    .trim()
+    .replace(/^["'`]+|["'`]+$/g, "")
+    .toLowerCase()
+    .replace(/[\s_]+/g, "-")
+    .replace(/[^\p{L}\p{N}-]+/gu, "-")
+    .replace(/-+/g, "-")
+    .replace(/^-+|-+$/g, "")
+}
+
 function findPlanByName(plans: string[], requestedName: string): string | null {
   const lowerName = requestedName.toLowerCase()
+  const normalizedRequestedName = normalizePlanLookupValue(requestedName)
   const exactMatch = plans.find((p) => getPlanName(p).toLowerCase() === lowerName)
   if (exactMatch) return exactMatch
+  const normalizedExactMatch = plans.find((planPath) =>
+    normalizePlanLookupValue(getPlanName(planPath)) === normalizedRequestedName,
+  )
+  if (normalizedExactMatch) return normalizedExactMatch
   const partialMatch = plans.find((p) => getPlanName(p).toLowerCase().includes(lowerName))
-  return partialMatch || null
+  if (partialMatch) return partialMatch
+
+  const normalizedPartialMatch = plans.find((planPath) =>
+    normalizePlanLookupValue(getPlanName(planPath)).includes(normalizedRequestedName),
+  )
+  return normalizedPartialMatch || null
 }
 
 function buildAutoSelectedPlanContext(params: {
@@ -76,8 +94,8 @@ Ask the user which plan to work on.`
   return `
 ## Plan Not Found
 
-Could not find a plan matching "${explicitPlanName}".
-No incomplete plans available. Create a new plan with: /plan "your task"`
+ Could not find a plan matching "${explicitPlanName}".
+ No incomplete plans available. Create a new plan using the Prometheus agent.`
 }
 
 function buildExplicitPlanContext(params: {
@@ -104,8 +122,8 @@ function buildExplicitPlanContext(params: {
     return `
 ## Plan Already Complete
 
-The requested plan "${getPlanName(matchedPlan)}" has been completed.
-All ${progress.total} tasks are done. Create a new plan with: /plan "your task"`
+ The requested plan "${getPlanName(matchedPlan)}" has been completed.
+ All ${progress.total} tasks are done. Create a new plan using the Prometheus agent.`
   }
 
   if (existingState) {
@@ -203,8 +221,8 @@ function buildPlanDiscoveryContext(params: {
     return contextInfo + `
 ## No Plans Found
 
-No Prometheus plan files found at .sisyphus/plans/
-Use Prometheus to create a work plan first: /plan "your task"`
+ No Prometheus plan files found in the .sisyphus plans directory.
+ Use the Prometheus agent to create a work plan first.`
   }
 
   if (incompletePlans.length === 0) {
@@ -212,7 +230,7 @@ Use Prometheus to create a work plan first: /plan "your task"`
 
 ## All Plans Complete
 
-All ${plans.length} plan(s) are complete. Create a new plan with: /plan "your task"`
+ All ${plans.length} plan(s) are complete. Create a new plan using the Prometheus agent.`
   }
 
   if (incompletePlans.length === 1) {

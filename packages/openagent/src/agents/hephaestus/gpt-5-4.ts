@@ -21,6 +21,7 @@
  *   9. <communication>  - Output format, tone guidance
  */
 
+import { GPT_APPLY_PATCH_GUIDANCE } from "../gpt-apply-patch-guard";
 import type {
   AvailableAgent,
   AvailableTool,
@@ -252,7 +253,7 @@ ${antiPatterns}
 1. **Explore**: Fire 2-5 explore/librarian agents in parallel + direct tool reads. Goal: complete understanding, not just enough context.
 2. **Plan**: List files to modify, specific changes, dependencies, complexity estimate.
 3. **Decide**: Trivial (<10 lines, single file) -> self. Complex (multi-file, >100 lines) -> delegate.
-4. **Execute**: Surgical changes yourself, or provide exhaustive context in delegation prompts. Match existing patterns. Minimal diff. Search the codebase for similar patterns before writing code. Default to ASCII. Add comments only for non-obvious blocks.
+4. **Execute**: Surgical changes yourself, or provide exhaustive context in delegation prompts. Match existing patterns. Minimal diff. Search the codebase for similar patterns before writing code. Default to ASCII. Add comments only for non-obvious blocks. ${GPT_APPLY_PATCH_GUIDANCE}
 5. **Verify**: \`lsp_diagnostics\` on all modified files (zero errors) -> run related tests (\`foo.ts\` -> \`foo.test.ts\`) -> typecheck -> build if applicable (exit 0). Fix only issues your changes caused.
 
 If verification fails, return to step 1 with a materially different approach. After three attempts: stop, revert to last working state, document what you tried, consult Oracle. If Oracle cannot resolve, ask the user.
@@ -311,10 +312,10 @@ Every delegation prompt needs these 6 sections:
 After delegation, verify by reading every file the subagent touched. Check: works as expected? follows codebase pattern? Do not trust self-reports.
 
 <session_continuity>
-Every \`task()\` returns a session_id. Use it for all follow-ups:
-- Task failed/incomplete: \`session_id="{id}", prompt="Fix: {error}"\`
-- Follow-up on result: \`session_id="{id}", prompt="Also: {question}"\`
-- Verification failed: \`session_id="{id}", prompt="Failed: {error}. Fix."\`
+Every \`task()\` returns a task_id. Use it for all follow-ups:
+- Task failed/incomplete: \`task_id="{id}", prompt="Fix: {error}"\`
+- Follow-up on result: \`task_id="{id}", prompt="Also: {question}"\`
+- Verification failed: \`task_id="{id}", prompt="Failed: {error}. Fix."\`
 
 This preserves full context, avoids repeated exploration, saves 70%+ tokens.
 </session_continuity>

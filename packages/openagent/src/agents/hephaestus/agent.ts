@@ -1,13 +1,14 @@
 import type { AgentConfig } from "@opencode-ai/sdk";
 import type { AgentMode, AgentPromptMetadata } from "../types";
-import { isGpt5_4Model, isGpt5_3CodexModel } from "../types";
+import { isGpt5_3CodexModel, isGptNativeSisyphusModel } from "../types";
 import type {
   AvailableAgent,
   AvailableTool,
   AvailableSkill,
   AvailableCategory,
 } from "../dynamic-agent-prompt-builder";
-import { categorizeTools } from "../dynamic-agent-prompt-builder";
+import { categorizeTools, buildAgentIdentitySection } from "../dynamic-agent-prompt-builder";
+import { getGptApplyPatchPermission } from "../gpt-apply-patch-guard";
 
 import { buildHephaestusPrompt as buildGptPrompt } from "./gpt";
 import { buildHephaestusPrompt as buildGpt53CodexPrompt } from "./gpt-5-3-codex";
@@ -20,7 +21,7 @@ export type HephaestusPromptSource = "gpt-5-4" | "gpt-5-3-codex" | "gpt";
 export function getHephaestusPromptSource(
   model?: string,
 ): HephaestusPromptSource {
-  if (model && isGpt5_4Model(model)) {
+  if (model && isGptNativeSisyphusModel(model)) {
     return "gpt-5-4";
   }
   if (model && isGpt5_3CodexModel(model)) {
@@ -87,7 +88,12 @@ function buildDynamicHephaestusPrompt(ctx?: HephaestusContext): string {
       break;
   }
 
-  return basePrompt;
+  const agentIdentity = buildAgentIdentitySection(
+    "Hephaestus",
+    "Autonomous deep worker for software engineering from OhMyOpenCode",
+  );
+
+  return `${agentIdentity}\n${basePrompt}`;
 }
 
 export function createHephaestusAgent(
@@ -120,6 +126,7 @@ export function createHephaestusAgent(
     permission: {
       question: "allow",
       call_omo_agent: "deny",
+      ...getGptApplyPatchPermission(model),
     } as AgentConfig["permission"],
     reasoningEffort: "medium",
   };

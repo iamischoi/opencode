@@ -18,6 +18,7 @@ describe("generateOmoConfig - model fallback system", () => {
       hasZaiCodingPlan: false,
       hasKimiForCoding: false,
       hasOpencodeGo: false,
+      hasVercelAiGateway: false,
     }
 
     //#when
@@ -25,8 +26,8 @@ describe("generateOmoConfig - model fallback system", () => {
 
     //#then
     expect([
-      "github-copilot/claude-opus-4.6",
-      "github-copilot/claude-opus-4-6",
+      "github-copilot/claude-opus-4.7",
+      "github-copilot/claude-opus-4-7",
     ]).toContain((result.agents as Record<string, { model: string }>).sisyphus.model)
   })
 
@@ -42,6 +43,7 @@ describe("generateOmoConfig - model fallback system", () => {
       hasZaiCodingPlan: false,
       hasKimiForCoding: false,
       hasOpencodeGo: false,
+      hasVercelAiGateway: false,
     }
 
     //#when
@@ -64,6 +66,7 @@ describe("generateOmoConfig - model fallback system", () => {
       hasZaiCodingPlan: true,
       hasKimiForCoding: false,
       hasOpencodeGo: false,
+      hasVercelAiGateway: false,
     }
 
     //#when
@@ -71,7 +74,7 @@ describe("generateOmoConfig - model fallback system", () => {
 
     //#then
     expect((result.agents as Record<string, { model: string }>).librarian.model).toBe("zai-coding-plan/glm-4.7")
-    expect((result.agents as Record<string, { model: string }>).sisyphus.model).toBe("anthropic/claude-opus-4-6")
+    expect((result.agents as Record<string, { model: string }>).sisyphus.model).toBe("anthropic/claude-opus-4-7")
   })
 
   test("uses native OpenAI models when only ChatGPT available", () => {
@@ -86,6 +89,7 @@ describe("generateOmoConfig - model fallback system", () => {
       hasZaiCodingPlan: false,
       hasKimiForCoding: false,
       hasOpencodeGo: false,
+      hasVercelAiGateway: false,
     }
 
     //#when
@@ -96,6 +100,51 @@ describe("generateOmoConfig - model fallback system", () => {
     expect((result.agents as Record<string, { model: string; variant?: string }>).sisyphus.variant).toBe("medium")
     expect((result.agents as Record<string, { model: string }>).oracle.model).toBe("openai/gpt-5.4")
     expect((result.agents as Record<string, { model: string }>)['multimodal-looker'].model).toBe("openai/gpt-5.4")
+  })
+
+  test("adds fallback_models when multiple providers are available", () => {
+    //#given
+    const config: InstallConfig = {
+      hasClaude: true,
+      isMax20: false,
+      hasOpenAI: true,
+      hasGemini: false,
+      hasCopilot: false,
+      hasOpencodeZen: false,
+      hasZaiCodingPlan: false,
+      hasKimiForCoding: false,
+      hasOpencodeGo: false,
+      hasVercelAiGateway: false,
+    }
+
+    //#when
+    const result = generateOmoConfig(config)
+    const agents = result.agents as Record<string, {
+      model: string
+      variant?: string
+      fallback_models?: Array<{ model: string; variant?: string }>
+    }>
+    const categories = result.categories as Record<string, {
+      model: string
+      variant?: string
+      fallback_models?: Array<{ model: string; variant?: string }>
+    }>
+
+    //#then
+    expect(agents.sisyphus.model).toBe("anthropic/claude-opus-4-7")
+    expect(agents.sisyphus.fallback_models).toEqual([
+      {
+        model: "openai/gpt-5.4",
+        variant: "medium",
+      },
+    ])
+    expect(categories.deep.model).toBe("openai/gpt-5.4")
+    expect(categories.deep.fallback_models).toEqual([
+      {
+        model: "anthropic/claude-opus-4-7",
+        variant: "max",
+      },
+    ])
   })
 
   test("uses haiku for explore when Claude max20", () => {
@@ -110,6 +159,7 @@ describe("generateOmoConfig - model fallback system", () => {
       hasZaiCodingPlan: false,
       hasKimiForCoding: false,
       hasOpencodeGo: false,
+      hasVercelAiGateway: false,
     }
 
     //#when
@@ -131,6 +181,7 @@ describe("generateOmoConfig - model fallback system", () => {
       hasZaiCodingPlan: false,
       hasKimiForCoding: false,
       hasOpencodeGo: false,
+      hasVercelAiGateway: false,
     }
 
     //#when

@@ -8,6 +8,7 @@ import {
 } from "../../shared/model-suggestion-retry"
 import { formatDetailedError } from "./error-formatting"
 import { getAgentToolRestrictions } from "../../shared/agent-tool-restrictions"
+import { stripInvisibleAgentCharacters } from "../../shared/agent-display-names"
 import { applySessionPromptParams } from "../../shared/session-prompt-params-helpers"
 import { setSessionTools } from "../../shared/session-tools-store"
 import { createInternalAgentTextPart } from "../../shared/internal-initiator-marker"
@@ -30,18 +31,18 @@ function buildPromptGenerationParams(model: DelegatedModelConfig | undefined): R
   const promptOptions: Record<string, unknown> = {
     ...(model.reasoningEffort ? { reasoningEffort: model.reasoningEffort } : {}),
     ...(model.thinking ? { thinking: model.thinking } : {}),
-    ...(model.maxTokens !== undefined ? { maxTokens: model.maxTokens } : {}),
   }
 
   return {
     ...(model.temperature !== undefined ? { temperature: model.temperature } : {}),
     ...(model.top_p !== undefined ? { topP: model.top_p } : {}),
+    ...(model.maxTokens !== undefined ? { maxOutputTokens: model.maxTokens } : {}),
     ...(Object.keys(promptOptions).length > 0 ? { options: promptOptions } : {}),
   }
 }
 
 function isOracleAgent(agentToUse: string): boolean {
-  return agentToUse.toLowerCase() === "oracle"
+  return stripInvisibleAgentCharacters(agentToUse).toLowerCase() === "oracle"
 }
 
 function isUnexpectedEofError(error: unknown): boolean {
@@ -80,7 +81,7 @@ export async function sendSyncPrompt(
   const promptArgs = {
     path: { id: input.sessionID },
     body: {
-      agent: input.agentToUse,
+      agent: stripInvisibleAgentCharacters(input.agentToUse),
       system: input.systemContent,
       tools,
       parts: [createInternalAgentTextPart(effectivePrompt)],

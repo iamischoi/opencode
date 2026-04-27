@@ -21,6 +21,7 @@
  *   8. <style>             - Tone (prose) + output contract + progress updates
  */
 
+import { GPT_APPLY_PATCH_GUIDANCE } from "../gpt-apply-patch-guard";
 import type {
   AvailableAgent,
   AvailableTool,
@@ -28,6 +29,7 @@ import type {
   AvailableCategory,
 } from "../dynamic-agent-prompt-builder";
 import {
+  buildAgentIdentitySection,
   buildKeyTriggersSection,
   buildToolSelectionTable,
   buildExploreSection,
@@ -105,6 +107,11 @@ export function buildGpt54SisyphusPrompt(
   const todoHookNote = useTaskSystem
     ? "YOUR TASK CREATION WOULD BE TRACKED BY HOOK([SYSTEM REMINDER - TASK CONTINUATION])"
     : "YOUR TODO CREATION WOULD BE TRACKED BY HOOK([SYSTEM REMINDER - TODO CONTINUATION])";
+
+  const agentIdentity = buildAgentIdentitySection(
+    "Sisyphus",
+    "Powerful AI Agent with orchestration capabilities from OhMyOpenCode",
+  );
 
   const identityBlock = `<identity>
 You are Sisyphus - an AI orchestrator from OhMyOpenCode.
@@ -260,9 +267,10 @@ Background result collection:
 2. Continue only with non-overlapping work
    - If you have DIFFERENT independent work → do it now
    - Otherwise → **END YOUR RESPONSE.**
-3. System sends \`<system-reminder>\` on completion → triggers your next turn
-4. Collect via \`background_output(task_id="...")\`
-5. Cancel disposable tasks individually via \`background_cancel(taskId="...")\`
+3. **STOP. END YOUR RESPONSE.** The system will send \`<system-reminder>\` when tasks complete.
+4. On receiving \`<system-reminder>\` → collect results via \`background_output(task_id="...")\`
+5. **NEVER call \`background_output\` before receiving \`<system-reminder>\`.** This is a BLOCKING anti-pattern.
+6. Cancel disposable tasks individually via \`background_cancel(taskId="...")\`
 
 ${buildAntiDuplicationSection()}
 
@@ -303,7 +311,7 @@ Every implementation task follows this cycle. No exceptions.
    Skills: if ANY available skill's domain overlaps with the task, load it NOW via \`skill\` tool and include it in \`load_skills\`. When the connection is even remotely plausible, load the skill - the cost of loading an irrelevant skill is near zero, the cost of missing a relevant one is high.
 
 4. EXECUTE_OR_SUPERVISE -
-   If self: surgical changes, match existing patterns, minimal diff. Never suppress type errors. Never commit unless asked. Bugfix rule: fix minimally, never refactor while fixing.
+   If self: surgical changes, match existing patterns, minimal diff. Never suppress type errors. Never commit unless asked. Bugfix rule: fix minimally, never refactor while fixing. ${GPT_APPLY_PATCH_GUIDANCE}
    If delegated: exhaustive 6-section prompt per \`<delegation>\` protocol. Session continuity for follow-ups.
 
 5. VERIFY -
@@ -379,10 +387,10 @@ Post-delegation: delegation never substitutes for verification. Always run \`<ve
 
 ### Session continuity
 
-Every \`task()\` returns a session_id. Use it for all follow-ups:
-- Failed/incomplete → \`session_id="{id}", prompt="Fix: {specific error}"\`
-- Follow-up → \`session_id="{id}", prompt="Also: {question}"\`
-- Multi-turn → always \`session_id\`, never start fresh
+Every \`task()\` returns a task_id. Use it for all follow-ups:
+- Failed/incomplete → \`task_id="{id}", prompt="Fix: {specific error}"\`
+- Follow-up → \`task_id="{id}", prompt="Also: {question}"\`
+- Multi-turn → always \`task_id\`, never start fresh
 
 This preserves full context, avoids repeated exploration, saves 70%+ tokens.
 
@@ -420,7 +428,8 @@ If the user's approach has a problem, explain the concern directly and clearly, 
 </verbosity_controls>
 </style>`;
 
-  return `${identityBlock}
+  return `${agentIdentity}
+${identityBlock}
 
 ${constraintsBlock}
 

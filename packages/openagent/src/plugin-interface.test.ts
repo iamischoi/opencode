@@ -15,6 +15,7 @@ import {
   updateSessionAgent,
 } from "./features/claude-code-session-state"
 
+
 describe("createPluginInterface - command.execute.before", () => {
   let testDir = ""
 
@@ -165,7 +166,7 @@ describe("createPluginInterface - command.execute.before", () => {
     )
 
     // then
-    expect(output.message.agent).toBe(getAgentListDisplayName("atlas"))
+    expect(output.message.agent).toBe("atlas")
     expect(getSessionAgent("ses-command-atlas")).toBe("atlas")
     expect(readBoulderState(testDir)?.agent).toBe("atlas")
   })

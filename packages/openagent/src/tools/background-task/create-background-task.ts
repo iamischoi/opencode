@@ -4,7 +4,7 @@ import type { BackgroundTaskArgs } from "./types"
 import { BACKGROUND_TASK_DESCRIPTION } from "./constants"
 import { resolveMessageContext } from "../../features/hook-message-injector"
 import { getSessionAgent } from "../../features/claude-code-session-state"
-import { storeToolMetadata } from "../../features/tool-metadata-store"
+import { publishToolMetadata } from "../../features/tool-metadata-store"
 import { log } from "../../shared/logger"
 import { delay } from "./delay"
 import { getMessageDir } from "./message-dir"
@@ -100,11 +100,7 @@ export function createBackgroundTask(
             ...(sessionId ? { sessionId } : {}),
           },
         }
-        ctx.metadata?.(bgMeta)
-
-        if (ctx.callID) {
-          storeToolMetadata(ctx.sessionID, ctx.callID, bgMeta)
-        }
+        await publishToolMetadata(ctx, bgMeta)
 
         return `Background task launched successfully.
 
@@ -114,10 +110,9 @@ Description: ${task.description}
 Agent: ${task.agent}
 Status: ${task.status}
 
-The system will notify you when the task completes.
-Use \`background_output\` tool with task_id="${task.id}" to check progress:
-- block=false (default): Check status immediately - returns full status info
-- block=true: Wait for completion (rarely needed since system notifies)`
+System notifies on completion. Use \`background_output\` with task_id="${task.id}" to check.
+
+Do NOT call background_output now. Wait for <system-reminder> notification first.`
       } catch (error) {
         const message = error instanceof Error ? error.message : String(error)
         return `[ERROR] Failed to launch background task: ${message}`

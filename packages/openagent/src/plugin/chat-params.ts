@@ -1,4 +1,3 @@
-import { normalizeSDKResponse } from "../shared/normalize-sdk-response"
 import { getSessionPromptParams } from "../shared/session-prompt-params-state"
 import { getModelCapabilities, resolveCompatibleModelSettings } from "../shared"
 
@@ -18,6 +17,7 @@ export type ChatParamsOutput = {
   temperature?: number
   topP?: number
   topK?: number
+  maxOutputTokens?: number
   options: Record<string, unknown>
 }
 
@@ -57,8 +57,6 @@ function buildChatParamsInput(raw: unknown): ChatParamsHookInput | null {
       ? model.id
       : undefined
   const providerId = provider.id
-  const variant = message.variant
-
   if (typeof providerID !== "string") return null
   if (typeof modelID !== "string") return null
   if (typeof providerId !== "string") return null
@@ -70,7 +68,6 @@ function buildChatParamsInput(raw: unknown): ChatParamsHookInput | null {
     provider: { id: providerId },
     message,
     rawMessage: message,
-    ...(typeof variant === "string" ? {} : {}),
   }
 }
 
@@ -99,6 +96,9 @@ export function createChatParamsHandler(args: {
       if (storedPromptParams.topP !== undefined) {
         output.topP = storedPromptParams.topP
       }
+      if (storedPromptParams.maxOutputTokens !== undefined) {
+        (output as Record<string, unknown>).maxOutputTokens = storedPromptParams.maxOutputTokens
+      }
       if (storedPromptParams.options) {
         output.options = {
           ...output.options,
@@ -124,7 +124,7 @@ export function createChatParamsHandler(args: {
           : undefined,
         temperature: typeof output.temperature === "number" ? output.temperature : undefined,
         topP: typeof output.topP === "number" ? output.topP : undefined,
-        maxTokens: typeof output.options.maxTokens === "number" ? output.options.maxTokens : undefined,
+        maxTokens: typeof output.maxOutputTokens === "number" ? output.maxOutputTokens : undefined,
         thinking: isRecord(output.options.thinking) ? output.options.thinking : undefined,
       },
       capabilities,
@@ -142,7 +142,9 @@ export function createChatParamsHandler(args: {
     if (compatibility.reasoningEffort !== undefined) {
       output.options.reasoningEffort = compatibility.reasoningEffort
     } else if ("reasoningEffort" in output.options) {
-      delete output.options.reasoningEffort
+      if (capabilities.reasoning === false) {
+        delete output.options.reasoningEffort
+      }
     }
 
     if ("temperature" in compatibility) {
@@ -163,9 +165,9 @@ export function createChatParamsHandler(args: {
 
     if ("maxTokens" in compatibility) {
       if (compatibility.maxTokens !== undefined) {
-        output.options.maxTokens = compatibility.maxTokens
+        output.maxOutputTokens = compatibility.maxTokens
       } else {
-        delete output.options.maxTokens
+        delete output.maxOutputTokens
       }
     }
 

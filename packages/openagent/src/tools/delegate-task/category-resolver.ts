@@ -5,10 +5,11 @@ import type { FallbackEntry } from "../../shared/model-requirements"
 import { mergeCategories } from "../../shared/merge-categories"
 import { SISYPHUS_JUNIOR_AGENT } from "./sisyphus-junior-agent"
 import { resolveCategoryConfig } from "./categories"
-import { parseModelString } from "./model-string-parser"
+import { parseModelString } from "../../shared/model-string-parser"
 import { CATEGORY_MODEL_REQUIREMENTS } from "../../shared/model-requirements"
 import { normalizeFallbackModels, flattenToFallbackModelStrings } from "../../shared/model-resolver"
 import { buildFallbackChainFromModels, findMostSpecificFallbackEntry } from "../../shared/fallback-chain-from-models"
+import { CONFIG_BASENAME } from "../../shared/plugin-identity"
 import { getAvailableModelsForDelegateTask } from "./available-models"
 import { resolveModelForDelegateTask } from "./model-selection"
 
@@ -89,7 +90,7 @@ export async function resolveCategoryExecution(
 
 To use this category:
 1. Connect a provider with this model: ${requirement.requiresModel}
-2. Or configure an alternative model in your oh-my-opencode.json for this category
+2. Or configure an alternative model in your ${CONFIG_BASENAME}.json for this category
 
 Available categories: ${allCategoryNames}`,
       }
@@ -225,7 +226,7 @@ Available categories: ${allCategoryNames}`,
 
 Configure in one of:
 1. OpenCode: Set "model" in opencode.json
-2. Oh-My-OpenCode: Set category model in oh-my-opencode.json
+2. Oh-My-OpenCode: Set category model in ${CONFIG_BASENAME}.json
 3. Provider: Connect a provider with available models
 
 Current category: ${args.category}
@@ -275,6 +276,6 @@ Available categories: ${categoryNames.join(", ")}`,
     actualModel,
     isUnstableAgent,
     // Don't use hardcoded fallback chain when resolution was skipped (cold cache)
-    fallbackChain: configuredFallbackChain ?? ((isModelResolutionSkipped || explicitCategoryModel) ? undefined : requirement?.fallbackChain),
+    fallbackChain: configuredFallbackChain ?? ((isModelResolutionSkipped || explicitCategoryModel || overrideModel) ? undefined : requirement?.fallbackChain),
   }
 }

@@ -4,6 +4,17 @@
   "description": "Internalized oh-my-openagent package",
   "type": "module",
   "main": "src/index.ts",
+  "scripts": {
+    "build": "bun build src/index.ts --outdir dist --target bun --format esm --external @ast-grep/napi --external zod && tsc --emitDeclarationOnly && bun build src/cli/index.ts --outdir dist/cli --target bun --format esm --external @ast-grep/napi && bun run build:schema",
+    "build:all": "bun run build && bun run build:binaries",
+    "build:binaries": "bun run script/build-binaries.ts",
+    "build:schema": "bun run script/build-schema.ts",
+    "build:model-capabilities": "bun run script/build-model-capabilities.ts",
+    "clean": "rm -rf dist",
+    "prepare": "bun run build",
+    "typecheck": "tsc --noEmit",
+    "test": "bun test"
+  },
   "dependencies": {
     "@ast-grep/cli": "^0.41.1",
     "@ast-grep/napi": "^0.41.1",
@@ -19,8 +30,9 @@
     "jsonc-parser": "^3.3.1",
     "picocolors": "^1.1.1",
     "picomatch": "^4.0.2",
+    "posthog-node": "^5.29.2",
     "vscode-jsonrpc": "^8.2.0",
-    "zod": "^4.1.8"
+    "zod": "^4.3.0"
   },
   "devDependencies": {
     "@types/js-yaml": "^4.0.9",

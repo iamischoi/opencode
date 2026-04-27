@@ -10,9 +10,11 @@ import { getAgentConfigKey } from "../../shared/agent-display-names"
 import { normalizeFallbackModels } from "../../shared/model-resolver"
 import { buildFallbackChainFromModels } from "../../shared/fallback-chain-from-models"
 import { log } from "../../shared"
-import { parseModelString } from "../delegate-task/model-string-parser"
+import { parseModelString } from "../../shared/model-string-parser"
 import { executeBackground } from "./background-executor"
 import { executeSync } from "./sync-executor"
+import { findCallableAgentMatch, mergeWithClaudeCodeAgents } from "../delegate-task/subagent-discovery"
+import { normalizeSDKResponse } from "../../shared"
 
 function resolveModelAndFallbackChain(args: {
   subagentType: string
@@ -130,16 +132,18 @@ export function createCallOmoAgent(
       const toolCtx = toolContext as ToolContextWithMetadata
       log(`[call_omo_agent] Starting with agent: ${args.subagent_type}, background: ${args.run_in_background}`)
 
-      // Case-insensitive agent validation - allows "Explore", "EXPLORE", "explore" etc.
-      if (
-        !ALLOWED_AGENTS.some(
-          (name) => name.toLowerCase() === args.subagent_type.toLowerCase(),
-        )
-      ) {
-        return `Error: Invalid agent type "${args.subagent_type}". Only ${ALLOWED_AGENTS.join(", ")} are allowed.`
+      const agentsResult = await ctx.client.app.agents()
+      const agents = normalizeSDKResponse(agentsResult, [], {
+        preferResponseOnMissingData: true,
+      })
+      const mergedAgents = mergeWithClaudeCodeAgents(agents, ctx.directory)
+      const matchedAgent = findCallableAgentMatch(mergedAgents, args.subagent_type)
+
+      if (!matchedAgent) {
+        return `Error: Invalid agent type "${args.subagent_type}".`
       }
 
-      const normalizedAgent = args.subagent_type.toLowerCase() as AllowedAgentType
+      const normalizedAgent = matchedAgent.name
       args = { ...args, subagent_type: normalizedAgent }
 
       // Check if agent is disabled

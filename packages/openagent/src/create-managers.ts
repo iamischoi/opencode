@@ -5,18 +5,42 @@ import type { PluginContext, TmuxConfig } from "./plugin/types"
 import type { SubagentSessionCreatedEvent } from "./features/background-agent"
 import { BackgroundManager } from "./features/background-agent"
 import { SkillMcpManager } from "./features/skill-mcp-manager"
+import { createModelFallbackControllerAccessor } from "./hooks/model-fallback"
 import { initTaskToastManager } from "./features/task-toast-manager"
 import { TmuxSessionManager } from "./features/tmux-subagent"
+import * as openclawRuntimeDispatch from "./openclaw/runtime-dispatch"
 import { registerManagerForCleanup } from "./features/background-agent/process-cleanup"
 import { createConfigHandler } from "./plugin-handlers"
 import { log } from "./shared"
 import { markServerRunningInProcess } from "./shared/tmux/tmux-utils/server-health"
+import type { ModelFallbackControllerAccessor } from "./hooks/model-fallback"
+
+type CreateManagersDeps = {
+  BackgroundManagerClass: typeof BackgroundManager
+  SkillMcpManagerClass: typeof SkillMcpManager
+  TmuxSessionManagerClass: typeof TmuxSessionManager
+  initTaskToastManagerFn: typeof initTaskToastManager
+  registerManagerForCleanupFn: typeof registerManagerForCleanup
+  createConfigHandlerFn: typeof createConfigHandler
+  markServerRunningInProcessFn: typeof markServerRunningInProcess
+}
+
+const defaultCreateManagersDeps: CreateManagersDeps = {
+  BackgroundManagerClass: BackgroundManager,
+  SkillMcpManagerClass: SkillMcpManager,
+  TmuxSessionManagerClass: TmuxSessionManager,
+  initTaskToastManagerFn: initTaskToastManager,
+  registerManagerForCleanupFn: registerManagerForCleanup,
+  createConfigHandlerFn: createConfigHandler,
+  markServerRunningInProcessFn: markServerRunningInProcess,
+}
 
 export type Managers = {
   tmuxSessionManager: TmuxSessionManager
   backgroundManager: BackgroundManager
   skillMcpManager: SkillMcpManager
   configHandler: ReturnType<typeof createConfigHandler>
+  modelFallbackControllerAccessor: ModelFallbackControllerAccessor
 }
 
 export function createManagers(args: {
@@ -25,15 +49,17 @@ export function createManagers(args: {
   tmuxConfig: TmuxConfig
   modelCacheState: ModelCacheState
   backgroundNotificationHookEnabled: boolean
+  deps?: Partial<CreateManagersDeps>
 }): Managers {
   const { ctx, pluginConfig, tmuxConfig, modelCacheState, backgroundNotificationHookEnabled } = args
+  const deps = { ...defaultCreateManagersDeps, ...args.deps }
 
   if (tmuxConfig.enabled) {
-    markServerRunningInProcess()
+    deps.markServerRunningInProcessFn()
   }
-  const tmuxSessionManager = new TmuxSessionManager(ctx, tmuxConfig)
+  const tmuxSessionManager = new deps.TmuxSessionManagerClass(ctx, tmuxConfig)
 
-  registerManagerForCleanup({
+  deps.registerManagerForCleanupFn({
     shutdown: async () => {
       await tmuxSessionManager.cleanup().catch((error) => {
         log("[create-managers] tmux cleanup error during process shutdown:", error)
@@ -41,15 +67,15 @@ export function createManagers(args: {
     },
   })
 
-  const backgroundManager = new BackgroundManager(
+  const backgroundManager = new deps.BackgroundManagerClass(
     ctx,
     pluginConfig.background_task,
     {
       tmuxConfig,
-		onSubagentSessionCreated: async (event: SubagentSessionCreatedEvent) => {
-			log("[index] onSubagentSessionCreated callback received", {
-				sessionID: event.sessionID,
-				parentID: event.parentID,
+      onSubagentSessionCreated: async (event: SubagentSessionCreatedEvent) => {
+        log("[create-managers] onSubagentSessionCreated callback received", {
+          sessionID: event.sessionID,
+          parentID: event.parentID,
           title: event.title,
         })
 
@@ -64,31 +90,45 @@ export function createManagers(args: {
           },
         })
 
-        log("[index] onSubagentSessionCreated callback completed")
+        if (pluginConfig.openclaw) {
+          await openclawRuntimeDispatch.dispatchOpenClawEvent({
+            config: pluginConfig.openclaw,
+            rawEvent: "session.created",
+            context: {
+              sessionId: event.sessionID,
+              projectPath: ctx.directory,
+              tmuxPaneId: tmuxSessionManager.getTrackedPaneId?.(event.sessionID) ?? process.env.TMUX_PANE,
+            },
+          })
+        }
+
+        log("[create-managers] onSubagentSessionCreated callback completed")
       },
       onShutdown: async () => {
         await tmuxSessionManager.cleanup().catch((error) => {
-          log("[index] tmux cleanup error during shutdown:", error)
+          log("[create-managers] tmux cleanup error during shutdown:", error)
         })
       },
       enableParentSessionNotifications: backgroundNotificationHookEnabled,
     },
   )
 
-  initTaskToastManager(ctx.client)
+  deps.initTaskToastManagerFn(ctx.client)
 
-  const skillMcpManager = new SkillMcpManager()
+  const skillMcpManager = new deps.SkillMcpManagerClass()
 
-  const configHandler = createConfigHandler({
+  const configHandler = deps.createConfigHandlerFn({
     ctx: { directory: ctx.directory, client: ctx.client },
     pluginConfig,
     modelCacheState,
   })
+  const modelFallbackControllerAccessor = createModelFallbackControllerAccessor()
 
   return {
     tmuxSessionManager,
     backgroundManager,
     skillMcpManager,
     configHandler,
+    modelFallbackControllerAccessor,
   }
 }

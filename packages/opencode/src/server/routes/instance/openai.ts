@@ -1,4 +1,5 @@
 import { Hono } from "hono"
+import { Flag } from "@/flag/flag"
 import { streamSSE } from "hono/streaming"
 import { describeRoute, validator, resolver } from "hono-openapi"
 import z from "zod"
@@ -26,6 +27,19 @@ import { statSync } from "node:fs"
 
 const log = Log.create({ service: "server.openai" })
 
+const hasUltraworkToken = (value: string) => {
+  const normalized = value.toLowerCase()
+  return normalized.includes("ulw") || normalized.includes("ultrawork")
+}
+
+const hasUltraworkHeader = (headers: Record<string, string | undefined>) => {
+  return Object.entries(headers).some(([key, value]) => {
+    if (hasUltraworkToken(key)) return true
+    if (!value) return false
+    return hasUltraworkToken(value)
+  })
+}
+
 export const OpenAiRoutes = () => {
   const routes = new Hono()
 
@@ -49,8 +63,8 @@ export const OpenAiRoutes = () => {
     async (c) => {
       return await runRequest("OpenAiRoutes.models", c, Effect.gen(function* () {
         // Dynamic models from env/config (fallback to process.env if config service doesn't have it yet)
-        const appConfigsRaw = process.env.OPENCODE_APP_CONFIG || ""
-        const agentTypesRaw = process.env.OPENCODE_AGENT_TYPES || ""
+        const appConfigsRaw = Flag.OPENCODE_APP_CONFIG || ""
+        const agentTypesRaw = Flag.OPENCODE_AGENT_TYPES || ""
 
         const appConfigs = appConfigsRaw.split(",").map(s => s.trim()).filter(Boolean)
         const agentTypes = agentTypesRaw.split(",").map(s => s.trim()).filter(Boolean)
@@ -67,7 +81,7 @@ export const OpenAiRoutes = () => {
 
             for (const type of agentTypes) {
               models.push({
-                id: `${appName} ${type} AGENT`,
+                id: `${appName} ${type}`,
                 object: "model",
                 created: Math.floor(Date.now() / 1000),
                 owned_by: "opencode"
@@ -118,12 +132,15 @@ export const OpenAiRoutes = () => {
     async (c) => {
       const body = c.req.valid("json")
       const { messages, stream: shouldStream, model } = body
+      const headers = c.req.header()
       const lastMessage = messages[messages.length - 1]?.content || ""
+      const forceContinuousExecution = model?.includes("개발") || hasUltraworkHeader(headers)
 
       log.info("incoming chat completion request", {
-        headers: c.req.header(),
+        headers,
         model,
         stream: shouldStream,
+        forceContinuousExecution,
         messageCount: messages.length,
         prompt: lastMessage
       })
@@ -140,8 +157,8 @@ export const OpenAiRoutes = () => {
 
         // 1. Resolve internal agent
         const useCustomProviders = process.env.OPENCODE_USE_CUSTOM_PROVIDERS?.toLowerCase() === "true"
-        const agentTypesEnv = process.env.OPENCODE_API_TYPES || ""
-        const agentModelsEnv = process.env.OPENCODE_AGENT_MODELS || ""
+        const agentTypesEnv = Flag.OPENCODE_API_TYPES || ""
+        const agentModelsEnv = Flag.OPENCODE_AGENT_MODELS || ""
 
         // Parse OPENCODE_AGENT_MODELS once up-front (format: agentName:provider/model,...).
         // Previously the map was rebuilt on every resolveAgentModel() call — wasteful when the
@@ -167,6 +184,10 @@ export const OpenAiRoutes = () => {
           }
         }
 
+        const dynamicAgentTypes = (Flag.OPENCODE_AGENT_TYPES || "")
+          .split(",")
+          .map((s) => s.trim())
+          .filter(Boolean)
         const agentTypesMap: Record<string, boolean> = {}
         for (const s of agentTypesEnv.split(",")) {
           const trimmed = s.trim()
@@ -177,34 +198,21 @@ export const OpenAiRoutes = () => {
           }
         }
 
-        let agentName = "sisyphus"
+        let agentName = "prometheus"
         let promptModelOverride: { providerID: ProviderID; modelID: ModelID } | undefined = undefined
-        let autoHandover = false
+        let autoHandover = forceContinuousExecution
 
-        if (model && (model.includes(" AGENT") || model === "SHLIFE-CODE-AGENT")) {
-          log.info("detected dynamic agent request", { model })
+        if (useCustomProviders) {
+          promptModelOverride = resolveAgentModel("prometheus")
+        }
 
-          let agentType = "default"
-          if (model.endsWith(" AGENT")) {
-            const parts = model.split(" ")
-            if (parts.length >= 3) {
-              agentType = parts[parts.length - 2]
-            }
-          }
-
-          autoHandover = agentTypesMap[agentType] ?? agentTypesMap["default"] ?? false
-          agentName = "prometheus"
-          // Only apply OPENCODE_AGENT_MODELS mapping when custom providers are explicitly enabled.
-          // When useCustomProviders=false the corp endpoints are not active, so mapping to them
-          // would point at an unreachable provider regardless of what AGENT_MODELS says.
-          if (useCustomProviders) {
-            promptModelOverride = resolveAgentModel("prometheus")
-          }
-
+        const agentType = model
+          ? dynamicAgentTypes.find((type) => model.includes(type) || model.endsWith(type))
+          : undefined
+        if (agentType) {
+          log.info("detected dynamic agent request", { model, agentType, forceContinuousExecution })
+          autoHandover = forceContinuousExecution || agentTypesMap[agentType] || agentTypesMap["default"] || false
           log.info("resolved agent configuration", { agentType, agentName, autoHandover, hasModelOverride: !!promptModelOverride })
-        } else if (useCustomProviders) {
-          // Mirror the same guard for the default sisyphus path.
-          promptModelOverride = resolveAgentModel("sisyphus")
         }
 
         // Model selection when custom providers are disabled:
@@ -241,16 +249,11 @@ export const OpenAiRoutes = () => {
 
         let executionAgent = agent
         if (autoHandover) {
-          const atlasResult = yield* Effect.exit(agentSvc.get("atlas"))
-          if (atlasResult._tag === "Success" && atlasResult.value) {
-            executionAgent = atlasResult.value
+          const sisyphusResult = yield* Effect.exit(agentSvc.get("sisyphus"))
+          if (sisyphusResult._tag === "Success" && sisyphusResult.value) {
+            executionAgent = sisyphusResult.value
           } else {
-            const sisyphusResult = yield* Effect.exit(agentSvc.get("sisyphus"))
-            if (sisyphusResult._tag === "Success" && sisyphusResult.value) {
-              executionAgent = sisyphusResult.value
-            } else {
-              executionAgent = yield* agentSvc.get("build")
-            }
+            executionAgent = yield* agentSvc.get("build")
           }
         }
 
@@ -311,7 +314,7 @@ ${planName}
               time: { created: Date.now(), updated: Date.now() },
               parentID: currentParentID
             } as any);
-            
+
             yield* sessionSvc.updatePart({
               id: PartID.ascending(),
               messageID: msgID,
@@ -338,7 +341,7 @@ ${planName}
             const sendStatusUpdate = async (msg: string, asContent = false) => {
               if (msg === lastSentStatus) return
               lastSentStatus = msg
-              
+
               const delta: any = {}
 
               if (asContent) {
@@ -470,7 +473,7 @@ ${planName}
                 // 3. Reasoning Deltas (Internal CoT)
                 if (event.type === "message.part.delta" && event.properties.field === "reasoning") {
                   const delta = event.properties.delta
-                  
+
                   // If this is the start of reasoning and we have context, prepend it
                   let prefix = ""
                   if (!lastSentStatus.includes("생각 중") && currentAgentDisplayName) {
@@ -615,6 +618,7 @@ ${planName}
 
                   const toolMap: Record<string, string> = {
                     bash: "터미널 명령",
+                    run_command: "명령어 실행",
                     read: "파일/데이터 읽기",
                     read_file: "파일 읽기",
                     view_file: "파일 내용 확인",
@@ -622,9 +626,12 @@ ${planName}
                     replace_file_content: "파일 내용 수정",
                     multi_replace_file_content: "여러 파일 일괄 수정",
                     grep_search: "파일 내용 검색",
+                    grep: "파일 내용 정밀 검색",
+                    glob: "파일 패턴 검색",
                     list_dir: "디렉토리 구조 분석",
                     search_web: "웹 검색",
                     google_search: "구글 검색",
+                    read_url_content: "URL 콘텐츠 읽기",
                     question: "사용자 질문",
                     delegate_task: "에이전트 업무 위임",
                     task: "에이전트 업무 위임"
@@ -661,8 +668,19 @@ ${planName}
 
                       // 1. Prioritize 'description' for high-level intent (common in bash/task tools)
                       if (args.description) {
-                        argsDesc = `: ${args.description}`
+                        argsDesc = `: **${args.description}**`
                         currentTaskSummary = args.description
+                      }
+                      // 4. Glob Tool
+                      else if (toolName === "glob" && args.pattern) {
+                        argsDesc = `: \`${args.pattern}\` 패턴 검색`
+                        currentTaskSummary = `파일 패턴 검색: ${args.pattern}`
+                      }
+                      // 5. Grep Tool
+                      else if ((toolName === "grep" || toolName === "grep_search") && args.query) {
+                        const searchPath = args.SearchPath || args.path || ""
+                        argsDesc = `: \`${args.query}\` (경로: ${formatPath(searchPath) || "전체"})`
+                        currentTaskSummary = `내용 검색: ${args.query}`
                       }
                       // 2. Question Tool
                       else if (args.questions && Array.isArray(args.questions) && args.questions[0]?.question) {
@@ -684,7 +702,8 @@ ${planName}
                       else if (args.AbsolutePath) argsDesc = `: \`${formatPath(args.AbsolutePath)}\``
                       else if (args.path) argsDesc = `: \`${formatPath(args.path)}\``
                       // 4. Command/Query/Url
-                      else if (args.command) argsDesc = `: \`${args.command}\``
+                      else if (args.command) argsDesc = `: \`${args.command.length > 50 ? args.command.substring(0, 50) + "..." : args.command}\``
+                      else if (args.CommandLine) argsDesc = `: \`${args.CommandLine.length > 50 ? args.CommandLine.substring(0, 50) + "..." : args.CommandLine}\``
                       else if (args.query) argsDesc = `: \`${args.query}\``
                       else if (args.Url) argsDesc = `: \`${args.Url}\``
                       // 5. Fallbacks
@@ -740,11 +759,11 @@ ${planName}
             try {
               const plansBeforePrompt = autoHandover ? snapshotPrometheusPlans() : undefined
               const finalParts: any[] = [{ type: "text", text: lastMessage }]
-              
+
               if (autoHandover && agentName === "prometheus") {
-                finalParts.unshift({ 
-                  type: "text", 
-                  text: "<system-reminder>\nYOU ARE IN AUTOMATED MODE. Do not interview the user. Do not ask for confirmation. Use your tools to gather context and generate a complete .sisyphus/plans/*.md file immediately. Once the plan is saved, conclude your turn.\n</system-reminder>" 
+                finalParts.unshift({
+                  type: "text",
+                  text: "<system-reminder>\nYOU ARE IN AUTOMATED MODE. Do not interview the user. Do not ask for confirmation. Use your tools to gather context and generate a complete .sisyphus/plans/*.md file immediately. Once the plan is saved, conclude your turn.\n</system-reminder>"
                 })
               }
 
@@ -784,7 +803,15 @@ ${planName}
                   )
                 } else {
                   log.warn("skipping automatic handover because no runnable prometheus plan was verified", { sessionID, projectDirectory })
-                  await sendStatusUpdate(formatStatus("⚠️ 계획은 끝났지만 실행 가능한 Prometheus plan 파일을 확인하지 못해 자동 개발 단계는 건너뜁니다."))
+                  await sendStatusUpdate(formatStatus("⚠️ 실행 가능한 Prometheus plan 파일이 없어도 작업을 멈추지 않고 Sisyphus를 직접 이어서 실행합니다."))
+                  await AppRuntime.runPromise(
+                    promptSvc.prompt({
+                      sessionID,
+                      parts: [{ type: "text", text: lastMessage }],
+                      agent: executionAgent.name,
+                      model: useCustomProviders ? resolveAgentModel(executionAgent.name) : undefined,
+                    })
+                  )
                 }
               }
 
@@ -853,9 +880,9 @@ ${planName}
         const plansBeforePrompt = autoHandover ? snapshotPrometheusPlans() : undefined
         const finalParts: any[] = [{ type: "text", text: lastMessage }]
         if (autoHandover && agentName === "prometheus") {
-          finalParts.unshift({ 
-            type: "text", 
-            text: "<system-reminder>\nYOU ARE IN AUTOMATED MODE. Do not interview the user. Do not ask for confirmation. Use your tools to gather context and generate a complete .sisyphus/plans/*.md file immediately. Once the plan is saved, conclude your turn.\n</system-reminder>" 
+          finalParts.unshift({
+            type: "text",
+            text: "<system-reminder>\nYOU ARE IN AUTOMATED MODE. Do not interview the user. Do not ask for confirmation. Use your tools to gather context and generate a complete .sisyphus/plans/*.md file immediately. Once the plan is saved, conclude your turn.\n</system-reminder>"
           })
         }
 
@@ -883,6 +910,12 @@ ${planName}
             })
           } else {
             log.warn("skipping automatic handover because no runnable prometheus plan was verified", { sessionID, projectDirectory })
+            finalMessage = yield* promptSvc.prompt({
+              sessionID,
+              parts: [{ type: "text", text: lastMessage }],
+              agent: executionAgent.name,
+              model: useCustomProviders ? resolveAgentModel(executionAgent.name) : undefined,
+            })
           }
         }
 
@@ -909,6 +942,197 @@ ${planName}
             completion_tokens: 0,
             total_tokens: 0
           }
+        })
+      }) as any)
+    },
+  )
+
+  routes.post(
+    "/general/text",
+    describeRoute({
+      summary: "General text request",
+      description: "Runs a long free-form text request using the OpenCode pipeline.",
+      operationId: "openai.general.text",
+      responses: {
+        200: {
+          description: "General text response",
+        },
+      },
+    }),
+    validator(
+      "json",
+      z.object({
+        text: z.string(),
+      }),
+    ),
+    async (c) => {
+      const body = c.req.valid("json")
+      const headers = c.req.header()
+      const forceContinuousExecution = hasUltraworkHeader(headers)
+
+      log.info("incoming general text request", {
+        headers,
+        forceContinuousExecution,
+        textLength: body.text.length,
+      })
+
+      return await runRequest("OpenAiRoutes.general.text", c, Effect.gen(function* () {
+        const sessionSvc = yield* Session.Service
+        const promptSvc = yield* SessionPrompt.Service
+        const agentSvc = yield* Agent.Service
+        const authSvc = yield* Auth.Service
+        const pluginSvc = yield* Plugin.Service
+
+        const auths = yield* authSvc.all()
+        const isLoggedIn = Object.values(auths).some(auth => auth.type === "oauth")
+
+        const useCustomProviders = process.env.OPENCODE_USE_CUSTOM_PROVIDERS?.toLowerCase() === "true"
+        const agentModelsEnv = Flag.OPENCODE_AGENT_MODELS || ""
+
+        const agentModelMap: Record<string, string> = {}
+        for (const s of agentModelsEnv.split(",")) {
+          const trimmed = s.trim()
+          if (!trimmed) continue
+          const [rawAgent, rawModel] = trimmed.split(":")
+          if (rawAgent && rawModel) {
+            agentModelMap[rawAgent.trim().toLowerCase()] = rawModel.trim()
+          }
+        }
+
+        const resolveAgentModel = (name: string) => {
+          const modelStr = agentModelMap[name.toLowerCase()]
+          if (!modelStr) return undefined
+          const splitIdx = modelStr.indexOf("/")
+          if (splitIdx <= 0) return undefined
+          return {
+            providerID: ProviderID.make(modelStr.substring(0, splitIdx)),
+            modelID: ModelID.make(modelStr.substring(splitIdx + 1))
+          }
+        }
+
+        let promptModelOverride: { providerID: ProviderID; modelID: ModelID } | undefined = undefined
+        if (useCustomProviders) {
+          promptModelOverride = resolveAgentModel("prometheus")
+        }
+
+        if (!useCustomProviders && !isLoggedIn) {
+          promptModelOverride = {
+            providerID: ProviderID.make("opencode"),
+            modelID: ModelID.make("minimax-m2.5-free")
+          }
+        }
+
+        let agent: any
+        const result1 = yield* Effect.exit(agentSvc.get("prometheus"))
+        if (result1._tag === "Success" && result1.value) {
+          agent = result1.value
+        } else {
+          const planResult = yield* Effect.exit(agentSvc.get("plan"))
+          if (planResult._tag === "Success" && planResult.value) {
+            agent = planResult.value
+          } else {
+            const result2 = yield* Effect.exit(agentSvc.get("sisyphus"))
+            if (result2._tag === "Success" && result2.value) {
+              agent = result2.value
+            } else {
+              agent = yield* agentSvc.get("build")
+            }
+          }
+        }
+
+        let executionAgent = agent
+        if (forceContinuousExecution) {
+          const sisyphusResult = yield* Effect.exit(agentSvc.get("sisyphus"))
+          if (sisyphusResult._tag === "Success" && sisyphusResult.value) {
+            executionAgent = sisyphusResult.value
+          } else {
+            executionAgent = yield* agentSvc.get("build")
+          }
+        }
+
+        const session = yield* sessionSvc.create({})
+        const sessionID = session.id
+        const projectDirectory = Instance.directory
+        const snapshotPrometheusPlans = () => new Map(
+          findPrometheusPlans(projectDirectory).map((planPath) => [planPath, statSync(planPath).mtimeMs]),
+        )
+        const findRunnablePrometheusPlan = (before: Map<string, number>) => findPrometheusPlans(projectDirectory).find((planPath) => {
+          const previousMtime = before.get(planPath)
+          if (previousMtime === undefined) return false
+          const nextMtime = statSync(planPath).mtimeMs
+          if (nextMtime <= previousMtime) return false
+          return true
+        }) ?? findPrometheusPlans(projectDirectory).find((planPath) => {
+          if (before.has(planPath)) return false
+          return true
+        })
+        const buildStartWorkParts = Effect.fn("OpenAiRoutes.general.buildStartWorkParts")(function* (planName: string) {
+          return yield* pluginSvc.trigger(
+            "command.execute.before",
+            { command: "start-work", sessionID, arguments: planName },
+            {
+              parts: [{
+                type: "text" as const,
+                text: `<command-instruction>
+${START_WORK_TEMPLATE}
+</command-instruction>
+
+<session-context>
+Session ID: $SESSION_ID
+Timestamp: $TIMESTAMP
+</session-context>
+
+<user-request>
+${planName}
+</user-request>`,
+              }],
+            },
+          )
+        })
+
+        const plansBeforePrompt = forceContinuousExecution ? snapshotPrometheusPlans() : undefined
+        const msg = yield* promptSvc.prompt({
+          sessionID,
+          parts: [{ type: "text", text: body.text }],
+          agent: agent.name,
+          model: promptModelOverride,
+        })
+
+        let finalMessage = msg
+
+        if (forceContinuousExecution) {
+          const verifiedPlanPath = plansBeforePrompt
+            ? findRunnablePrometheusPlan(plansBeforePrompt)
+            : undefined
+
+          if (verifiedPlanPath) {
+            const startWork = yield* buildStartWorkParts(getPlanName(verifiedPlanPath))
+            finalMessage = yield* promptSvc.prompt({
+              sessionID,
+              parts: startWork.parts,
+              agent: executionAgent.name,
+              model: useCustomProviders ? resolveAgentModel(executionAgent.name) : undefined,
+            })
+          } else {
+            log.warn("running direct execution handover because no runnable prometheus plan was verified", { sessionID, projectDirectory })
+            finalMessage = yield* promptSvc.prompt({
+              sessionID,
+              parts: [{ type: "text", text: body.text }],
+              agent: executionAgent.name,
+              model: useCustomProviders ? resolveAgentModel(executionAgent.name) : undefined,
+            })
+          }
+        }
+
+        const content = finalMessage.parts
+          .filter((p): p is MessageV2.TextPart => p.type === "text")
+          .map(p => p.text)
+          .join("")
+
+        return c.json({
+          id: sessionID,
+          object: "general.text",
+          content,
         })
       }) as any)
     },

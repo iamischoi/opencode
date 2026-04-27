@@ -6,8 +6,8 @@ import { join } from "node:path"
 import { tmpdir } from "node:os"
 import { randomUUID } from "node:crypto"
 import { createStartWorkHook } from "./index"
+import { buildStartWorkContextInfo } from "./context-info-builder"
 import { createAtlasHook } from "../atlas"
-import { getAgentListDisplayName } from "../../shared/agent-display-names"
 import {
   writeBoulderState,
   clearBoulderState,
@@ -68,6 +68,27 @@ You are starting a Sisyphus work session.
   })
 
   describe("chat.message handler", () => {
+    test("should not include /plan literal in missing-plan guidance", () => {
+      // given
+      const contextInfo = buildStartWorkContextInfo({
+        ctx: createMockPluginInput(),
+        explicitPlanName: null,
+        existingState: null,
+        sessionId: "session-123",
+        timestamp: "2026-04-12T00:00:00.000Z",
+        activeAgent: "sisyphus",
+        worktreePath: undefined,
+        worktreeBlock: "",
+      })
+
+      // when
+      const containsLegacyPlanCommand = contextInfo.includes("/plan")
+
+      // then
+      expect(containsLegacyPlanCommand).toBe(false)
+      expect(contextInfo).toContain("Prometheus")
+    })
+
     test("should ignore non-start-work commands", async () => {
       // given - hook and non-start-work message
       const hook = createStartWorkHook(createMockPluginInput())
@@ -415,45 +436,154 @@ You are starting a Sisyphus work session.
       expect(output.parts[0].text).toContain("2026-01-15-feature-implementation")
       expect(output.parts[0].text).toContain("Auto-Selected Plan")
     })
-  })
 
-  describe("session agent management", () => {
-    test("should prefer command arguments over stale boulder state in command.execute.before", async () => {
-      // given
+    test("should match quoted human-readable plan names to slugged filenames", async () => {
+      // given - saved plan uses a slugged filename
       const plansDir = join(testDir, ".sisyphus", "plans")
       mkdirSync(plansDir, { recursive: true })
 
-      const oldPlanPath = join(plansDir, "old-plan.md")
-      writeFileSync(oldPlanPath, "# Old Plan\n- [ ] Old Task 1")
-
-      const newPlanPath = join(plansDir, "new-plan.md")
-      writeFileSync(newPlanPath, "# New Plan\n- [ ] New Task 1")
-
-      writeBoulderState(testDir, {
-        active_plan: oldPlanPath,
-        started_at: "2026-01-01T10:00:00Z",
-        session_ids: ["old-session"],
-        plan_name: "old-plan",
-      })
+      const planPath = join(plansDir, "my-feature-plan.md")
+      writeFileSync(planPath, "# My Feature Plan\n- [ ] Task 1")
 
       const hook = createStartWorkHook(createMockPluginInput())
       const output = {
-        parts: [{ type: "text", text: createStartWorkPrompt({ sessionContext: "Session: $SESSION_ID" }) }],
+        parts: [
+          {
+            type: "text",
+            text: createStartWorkPrompt({ userRequest: "\"my feature plan\"" }),
+          },
+        ],
       }
 
       // when
-      await hook["command.execute.before"](
-        { sessionID: "session-123", command: "start-work", arguments: "new-plan" },
+      await hook["chat.message"](
+        { sessionID: "session-123" },
         output,
       )
 
       // then
-      expect(output.parts[0].text).toContain("new-plan")
-      expect(output.parts[0].text).not.toContain("RESUMING")
-      expect(output.parts[0].text).not.toContain("old-plan")
-      expect(readBoulderState(testDir)?.plan_name).toBe("new-plan")
+      expect(output.parts[0].text).toContain("my-feature-plan")
+      expect(output.parts[0].text).toContain("Auto-Selected Plan")
     })
 
+    test("should match Korean plan names after Unicode-aware normalization", async () => {
+      // given
+      const plansDir = join(testDir, ".sisyphus", "plans")
+      mkdirSync(plansDir, { recursive: true })
+
+      const planPath = join(plansDir, "결제-플로우.md")
+      writeFileSync(planPath, "# 결제 플로우\n- [ ] 작업 1")
+
+      const hook = createStartWorkHook(createMockPluginInput())
+      const output = {
+        parts: [
+          {
+            type: "text",
+            text: createStartWorkPrompt({ userRequest: "결제 플로우" }),
+          },
+        ],
+      }
+
+      // when
+      await hook["chat.message"](
+        { sessionID: "session-korean-plan" },
+        output,
+      )
+
+      // then
+      expect(output.parts[0].text).toContain("결제-플로우")
+      expect(output.parts[0].text).toContain("Auto-Selected Plan")
+    })
+
+    test("should match Japanese plan names after Unicode-aware normalization", async () => {
+      // given
+      const plansDir = join(testDir, ".sisyphus", "plans")
+      mkdirSync(plansDir, { recursive: true })
+
+      const planPath = join(plansDir, "支払い-フロー.md")
+      writeFileSync(planPath, "# 支払い フロー\n- [ ] タスク 1")
+
+      const hook = createStartWorkHook(createMockPluginInput())
+      const output = {
+        parts: [
+          {
+            type: "text",
+            text: createStartWorkPrompt({ userRequest: "支払い フロー" }),
+          },
+        ],
+      }
+
+      // when
+      await hook["chat.message"](
+        { sessionID: "session-japanese-plan" },
+        output,
+      )
+
+      // then
+      expect(output.parts[0].text).toContain("支払い-フロー")
+      expect(output.parts[0].text).toContain("Auto-Selected Plan")
+    })
+
+    test("should keep ASCII plan name matching behavior unchanged", async () => {
+      // given
+      const plansDir = join(testDir, ".sisyphus", "plans")
+      mkdirSync(plansDir, { recursive: true })
+
+      const planPath = join(plansDir, "checkout-flow.md")
+      writeFileSync(planPath, "# Checkout Flow\n- [ ] Task 1")
+
+      const hook = createStartWorkHook(createMockPluginInput())
+      const output = {
+        parts: [
+          {
+            type: "text",
+            text: createStartWorkPrompt({ userRequest: "checkout flow" }),
+          },
+        ],
+      }
+
+      // when
+      await hook["chat.message"](
+        { sessionID: "session-ascii-plan" },
+        output,
+      )
+
+      // then
+      expect(output.parts[0].text).toContain("checkout-flow")
+      expect(output.parts[0].text).toContain("Auto-Selected Plan")
+    })
+
+    test("should match mixed ASCII and non-ASCII plan names", async () => {
+      // given
+      const plansDir = join(testDir, ".sisyphus", "plans")
+      mkdirSync(plansDir, { recursive: true })
+
+      const planPath = join(plansDir, "v2-결제-flow.md")
+      writeFileSync(planPath, "# v2 결제 flow\n- [ ] Task 1")
+
+      const hook = createStartWorkHook(createMockPluginInput())
+      const output = {
+        parts: [
+          {
+            type: "text",
+            text: createStartWorkPrompt({ userRequest: "v2 결제 flow" }),
+          },
+        ],
+      }
+
+      // when
+      await hook["chat.message"](
+        { sessionID: "session-mixed-plan" },
+        output,
+      )
+
+      // then
+      expect(output.parts[0].text).toContain("v2-결제-flow")
+      expect(output.parts[0].text).toContain("Auto-Selected Plan")
+    })
+  })
+
+  describe("session agent management", () => {
     test("should update session agent to Atlas when start-work command is triggered", async () => {
       // given
       const updateSpy = spyOn(sessionState, "updateSessionAgent")
@@ -474,7 +604,7 @@ You are starting a Sisyphus work session.
       updateSpy.mockRestore()
     })
 
-    test("should stamp the outgoing message with Atlas list key so follow-up events keep the handoff", async () => {
+    test("should stamp the outgoing message with Atlas config key so OpenCode can resolve the agent", async () => {
       // given
       const hook = createStartWorkHook(createMockPluginInput())
       const output = {
@@ -488,8 +618,29 @@ You are starting a Sisyphus work session.
         output
       )
 
-      // then
-      expect(output.message.agent).toBe(getAgentListDisplayName("atlas"))
+      // then - config key, not display name (matches no-sisyphus-gpt / boulder-continuation-injector convention)
+      expect(output.message.agent).toBe("atlas")
+    })
+
+    test("should switch to Atlas even when current session is Sisyphus (regression: #3155)", async () => {
+      // given: user runs /start-work while in a Sisyphus session
+      // atlas is registered, so /start-work must always hand off to atlas
+      sessionState.updateSessionAgent("ses-sisyphus-to-atlas", "sisyphus")
+
+      const hook = createStartWorkHook(createMockPluginInput())
+      const output = {
+        message: {} as Record<string, unknown>,
+        parts: [{ type: "text", text: createStartWorkPrompt() }],
+      }
+
+      await hook["chat.message"](
+        { sessionID: "ses-sisyphus-to-atlas" },
+        output
+      )
+
+      // atlas is registered in beforeEach, so it must be selected
+      expect(output.message.agent).toBe("atlas")
+      expect(sessionState.getSessionAgent("ses-sisyphus-to-atlas")).toBe("atlas")
     })
 
     test("should keep the current agent when Atlas is unavailable", async () => {
@@ -511,7 +662,7 @@ You are starting a Sisyphus work session.
       )
 
       // then
-      expect(output.message.agent).toBe("Sisyphus (Ultraworker)")
+      expect(output.message.agent).toBe("sisyphus")
       expect(sessionState.getSessionAgent("ses-prometheus-to-sisyphus")).toBe("sisyphus")
     })
 
@@ -539,7 +690,7 @@ You are starting a Sisyphus work session.
       )
 
       // then
-      expect(output.message.agent).toBe("Sisyphus (Ultraworker)")
+      expect(output.message.agent).toBe("sisyphus")
       expect(sessionState.getSessionAgent("ses-prometheus-to-worker")).toBe("sisyphus")
       expect(readBoulderState(testDir)?.agent).toBe("sisyphus")
     })
@@ -574,7 +725,7 @@ You are starting a Sisyphus work session.
       )
 
       // then
-      expect(output.message.agent).toBe("Sisyphus (Ultraworker)")
+      expect(output.message.agent).toBe("sisyphus")
       expect(readBoulderState(testDir)?.agent).toBe("sisyphus")
     })
 
@@ -609,7 +760,7 @@ You are starting a Sisyphus work session.
       await atlasHook.handler({ event: { type: "session.idle", properties: { sessionID: "session-123" } } })
 
       // then
-      expect(output.message.agent).toBe(getAgentListDisplayName("atlas"))
+      expect(output.message.agent).toBe("atlas")
       expect(readBoulderState(testDir)?.session_ids).toContain("session-123")
       expect(readBoulderState(testDir)?.agent).toBe("atlas")
       expect(promptAsyncMock).toHaveBeenCalledTimes(1)
@@ -699,7 +850,7 @@ You are starting a Sisyphus work session.
         await firePendingTimers()
 
         // then
-        expect(output.message.agent).toBe(getAgentListDisplayName("atlas"))
+        expect(output.message.agent).toBe("atlas")
         expect(readBoulderState(testDir)?.session_ids).toContain("session-123")
         expect(readBoulderState(testDir)?.agent).toBe("atlas")
         expect(promptAsyncMock).toHaveBeenCalledTimes(1)

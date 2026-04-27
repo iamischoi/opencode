@@ -1,56 +1,103 @@
 import { describe, it, expect, beforeEach, afterEach, afterAll, mock, spyOn } from "bun:test"
+import type { Transport } from "@modelcontextprotocol/sdk/shared/transport.js"
 import type { SkillMcpClientInfo, SkillMcpServerContext } from "./types"
 import type { ClaudeCodeMcpServer } from "../claude-code-mcp-loader/types"
+import type { OAuthTokenData } from "../mcp-oauth/storage"
+import { setHttpClientDependenciesForTesting } from "./http-client"
+import { setStdioClientDependenciesForTesting } from "./stdio-client"
+import { SkillMcpManager } from "./manager"
 
-// Mock the MCP SDK transports to avoid network calls
 const mockHttpConnect = mock(() => Promise.reject(new Error("Mocked HTTP connection failure")))
 const mockHttpClose = mock(() => Promise.resolve())
 let lastTransportInstance: { url?: URL; options?: { requestInit?: RequestInit } } = {}
 
-const mockTokens = mock(() => null as { accessToken: string } | null)
-const mockLogin = mock(() => Promise.resolve({ accessToken: "test-token" }) as Promise<{ accessToken: string } | null>)
+class MockHttpClient {
+  readonly close = mock(() => Promise.resolve())
+  readonly listTools = mock(async () => ({ tools: [] }))
+  readonly listResources = mock(async () => ({ resources: [] }))
+  readonly listPrompts = mock(async () => ({ prompts: [] }))
+  readonly callTool = mock(async () => ({ content: [] }))
+  readonly readResource = mock(async () => ({ contents: [] }))
+  readonly getPrompt = mock(async () => ({ messages: [] }))
 
-async function importFreshManagerModule(): Promise<typeof import("./manager")> {
-  mock.module("@modelcontextprotocol/sdk/client/streamableHttp.js", () => ({
-    StreamableHTTPClientTransport: class MockStreamableHTTPClientTransport {
-      constructor(public url: URL, public options?: { requestInit?: RequestInit }) {
-        lastTransportInstance = { url, options }
-      }
-      async start() {
-        await mockHttpConnect()
-      }
-      async close() {
-        await mockHttpClose()
-      }
-    },
-  }))
+  constructor(
+    _clientInfo: { name: string; version: string },
+    _options: { capabilities: Record<string, never> }
+  ) {}
 
-  const module = await import(`./manager?test=${Date.now()}-${Math.random()}`)
-  mock.restore()
-  return module
+  async connect(transport: Transport): Promise<void> {
+    await transport.start()
+  }
 }
+
+class MockStreamableHTTPClientTransport {
+  constructor(public url: URL, public options?: { requestInit?: RequestInit }) {
+    lastTransportInstance = { url, options }
+  }
+
+  async start(): Promise<void> {
+    await mockHttpConnect()
+  }
+
+  async send(): Promise<void> {}
+
+  async close(): Promise<void> {
+    await mockHttpClose()
+  }
+}
+
+function getHeaderValue(headers: HeadersInit | undefined, name: string): string | undefined {
+  if (!headers) {
+    return undefined
+  }
+
+  if (headers instanceof Headers) {
+    return headers.get(name) ?? undefined
+  }
+
+  if (Array.isArray(headers)) {
+    const entry = headers.find(([headerName]) => headerName.toLowerCase() === name.toLowerCase())
+    return entry?.[1]
+  }
+
+  return headers[name]
+}
+
+const mockTokens = mock(() => null as OAuthTokenData | null)
+const mockLogin = mock(() => Promise.resolve({ accessToken: "test-token" } satisfies OAuthTokenData))
+const mockRefresh = mock((_: string) => Promise.resolve({ accessToken: "refreshed-token" } satisfies OAuthTokenData))
 
 afterAll(() => { mock.restore() })
 
 describe("SkillMcpManager", () => {
-  let manager: any
+  let manager: SkillMcpManager
 
-  beforeEach(async () => {
-    const { SkillMcpManager } = await importFreshManagerModule()
+  beforeEach(() => {
+    setHttpClientDependenciesForTesting({
+      createClient: (clientInfo, options) => new MockHttpClient(clientInfo, options),
+      createTransport: (url, options) => new MockStreamableHTTPClientTransport(url, options),
+    })
+    setStdioClientDependenciesForTesting()
+
     manager = new SkillMcpManager({
       createOAuthProvider: () => ({
         tokens: () => mockTokens(),
         login: () => mockLogin(),
+        refresh: (refreshToken: string) => mockRefresh(refreshToken),
       }),
     })
     mockHttpConnect.mockClear()
     mockHttpClose.mockClear()
     mockTokens.mockClear()
     mockLogin.mockClear()
+    mockRefresh.mockClear()
+    lastTransportInstance = {}
   })
 
   afterEach(async () => {
     await manager.disconnectAll()
+    setHttpClientDependenciesForTesting()
+    setStdioClientDependenciesForTesting()
   })
 
   describe("getOrCreateClient", () => {
@@ -61,6 +108,7 @@ describe("SkillMcpManager", () => {
           serverName: "test-server",
           skillName: "test-skill",
           sessionID: "session-1",
+          scope: "builtin",
         }
         const config: ClaudeCodeMcpServer = {}
 
@@ -76,6 +124,7 @@ describe("SkillMcpManager", () => {
           serverName: "my-mcp",
           skillName: "data-skill",
           sessionID: "session-1",
+          scope: "builtin",
         }
         const config: ClaudeCodeMcpServer = {}
 
@@ -91,6 +140,7 @@ describe("SkillMcpManager", () => {
           serverName: "custom-server",
           skillName: "custom-skill",
           sessionID: "session-1",
+        scope: "builtin",
         }
         const config: ClaudeCodeMcpServer = {}
 
@@ -108,6 +158,7 @@ describe("SkillMcpManager", () => {
           serverName: "http-server",
           skillName: "test-skill",
           sessionID: "session-1",
+        scope: "builtin",
         }
         const config: ClaudeCodeMcpServer = {
           type: "http",
@@ -126,6 +177,7 @@ describe("SkillMcpManager", () => {
           serverName: "sse-server",
           skillName: "test-skill",
           sessionID: "session-1",
+        scope: "builtin",
         }
         const config: ClaudeCodeMcpServer = {
           type: "sse",
@@ -144,6 +196,7 @@ describe("SkillMcpManager", () => {
           serverName: "inferred-http",
           skillName: "test-skill",
           sessionID: "session-1",
+        scope: "builtin",
         }
         const config: ClaudeCodeMcpServer = {
           url: "https://example.com/mcp",
@@ -161,6 +214,7 @@ describe("SkillMcpManager", () => {
           serverName: "stdio-server",
           skillName: "test-skill",
           sessionID: "session-1",
+        scope: "builtin",
         }
         const config: ClaudeCodeMcpServer = {
           type: "stdio",
@@ -180,6 +234,7 @@ describe("SkillMcpManager", () => {
           serverName: "inferred-stdio",
           skillName: "test-skill",
           sessionID: "session-1",
+        scope: "builtin",
         }
         const config: ClaudeCodeMcpServer = {
           command: "node",
@@ -198,6 +253,7 @@ describe("SkillMcpManager", () => {
           serverName: "mixed-config",
           skillName: "test-skill",
           sessionID: "session-1",
+        scope: "builtin",
         }
         const config: ClaudeCodeMcpServer = {
           type: "stdio",
@@ -220,6 +276,7 @@ describe("SkillMcpManager", () => {
           serverName: "bad-url-server",
           skillName: "test-skill",
           sessionID: "session-1",
+        scope: "builtin",
         }
         const config: ClaudeCodeMcpServer = {
           type: "http",
@@ -238,6 +295,7 @@ describe("SkillMcpManager", () => {
           serverName: "http-error-server",
           skillName: "test-skill",
           sessionID: "session-1",
+        scope: "builtin",
         }
         const config: ClaudeCodeMcpServer = {
           url: "https://nonexistent.example.com/mcp",
@@ -255,6 +313,7 @@ describe("SkillMcpManager", () => {
           serverName: "hint-server",
           skillName: "test-skill",
           sessionID: "session-1",
+        scope: "builtin",
         }
         const config: ClaudeCodeMcpServer = {
           url: "https://nonexistent.example.com/mcp",
@@ -272,6 +331,7 @@ describe("SkillMcpManager", () => {
           serverName: "mock-test-server",
           skillName: "test-skill",
           sessionID: "session-1",
+        scope: "builtin",
         }
         const config: ClaudeCodeMcpServer = {
           url: "https://example.com/mcp",
@@ -298,6 +358,7 @@ describe("SkillMcpManager", () => {
           serverName: "missing-command",
           skillName: "test-skill",
           sessionID: "session-1",
+        scope: "builtin",
         }
         const config: ClaudeCodeMcpServer = {
           type: "stdio",
@@ -316,6 +377,7 @@ describe("SkillMcpManager", () => {
           serverName: "test-server",
           skillName: "test-skill",
           sessionID: "session-1",
+        scope: "builtin",
         }
         const config: ClaudeCodeMcpServer = {
           command: "nonexistent-command-xyz",
@@ -334,6 +396,7 @@ describe("SkillMcpManager", () => {
           serverName: "test-server",
           skillName: "test-skill",
           sessionID: "session-1",
+        scope: "builtin",
         }
         const config: ClaudeCodeMcpServer = {
           command: "nonexistent-command",
@@ -354,11 +417,13 @@ describe("SkillMcpManager", () => {
         serverName: "server1",
         skillName: "skill1",
         sessionID: "session-1",
+      scope: "builtin",
       }
       const session2Info: SkillMcpClientInfo = {
         serverName: "server1",
         skillName: "skill1",
         sessionID: "session-2",
+      scope: "builtin",
       }
 
       // when
@@ -392,6 +457,7 @@ describe("SkillMcpManager", () => {
         serverName: "signal-server",
         skillName: "signal-skill",
         sessionID: "session-1",
+      scope: "builtin",
       }
       const config: ClaudeCodeMcpServer = {
         url: "https://example.com/mcp",
@@ -419,11 +485,12 @@ describe("SkillMcpManager", () => {
   describe("isConnected", () => {
     it("returns false for unconnected server", () => {
       // given
-      const info: SkillMcpClientInfo = {
-        serverName: "unknown",
-        skillName: "test",
-        sessionID: "session-1",
-      }
+        const info: SkillMcpClientInfo = {
+          serverName: "$1",
+          skillName: "$2",
+          sessionID: "$3",
+          scope: "builtin",
+        }
 
       // when / #then
       expect(manager.isConnected(info)).toBe(false)
@@ -444,6 +511,7 @@ describe("SkillMcpManager", () => {
         serverName: "test-server",
         skillName: "test-skill",
         sessionID: "session-1",
+      scope: "builtin",
       }
       const configWithoutEnv: ClaudeCodeMcpServer = {
         command: "node",
@@ -467,6 +535,7 @@ describe("SkillMcpManager", () => {
         serverName: "test-server",
         skillName: "test-skill",
         sessionID: "session-2",
+      scope: "builtin",
       }
       const configWithEnv: ClaudeCodeMcpServer = {
         command: "node",
@@ -494,6 +563,7 @@ describe("SkillMcpManager", () => {
         serverName: "auth-server",
         skillName: "test-skill",
         sessionID: "session-1",
+      scope: "builtin",
       }
       const config: ClaudeCodeMcpServer = {
         url: "https://example.com/mcp",
@@ -522,6 +592,7 @@ describe("SkillMcpManager", () => {
         serverName: "no-auth-server",
         skillName: "test-skill",
         sessionID: "session-1",
+      scope: "builtin",
       }
       const config: ClaudeCodeMcpServer = {
         url: "https://example.com/mcp",
@@ -542,6 +613,7 @@ describe("SkillMcpManager", () => {
         serverName: "retry-server",
         skillName: "retry-skill",
         sessionID: "session-retry-1",
+      scope: "builtin",
       }
       const context: SkillMcpServerContext = {
         config: {
@@ -580,6 +652,7 @@ describe("SkillMcpManager", () => {
         serverName: "fail-server",
         skillName: "fail-skill",
         sessionID: "session-fail-1",
+      scope: "builtin",
       }
       const context: SkillMcpServerContext = {
         config: {
@@ -611,6 +684,7 @@ describe("SkillMcpManager", () => {
         serverName: "error-server",
         skillName: "error-skill",
         sessionID: "session-error-1",
+      scope: "builtin",
       }
       const context: SkillMcpServerContext = {
         config: {
@@ -649,6 +723,7 @@ describe("SkillMcpManager", () => {
         serverName: "oauth-server",
         skillName: "oauth-skill",
         sessionID: "session-oauth-1",
+      scope: "builtin",
       }
       const config: ClaudeCodeMcpServer = {
         url: "https://mcp.example.com/mcp",
@@ -665,8 +740,8 @@ describe("SkillMcpManager", () => {
       } catch { /* connection fails in test */ }
 
       // then
-      const headers = lastTransportInstance.options?.requestInit?.headers as Record<string, string> | undefined
-      expect(headers?.Authorization).toBe("Bearer stored-access-token")
+      const headers = lastTransportInstance.options?.requestInit?.headers
+      expect(getHeaderValue(headers, "Authorization")).toBe("Bearer stored-access-token")
     })
 
     it("does not inject Authorization header when no stored tokens exist and login fails", async () => {
@@ -675,6 +750,7 @@ describe("SkillMcpManager", () => {
         serverName: "oauth-no-token",
         skillName: "oauth-skill",
         sessionID: "session-oauth-2",
+      scope: "builtin",
       }
       const config: ClaudeCodeMcpServer = {
         url: "https://mcp.example.com/mcp",
@@ -691,8 +767,8 @@ describe("SkillMcpManager", () => {
       } catch { /* connection fails in test */ }
 
       // then
-      const headers = lastTransportInstance.options?.requestInit?.headers as Record<string, string> | undefined
-      expect(headers?.Authorization).toBeUndefined()
+      const headers = lastTransportInstance.options?.requestInit?.headers
+      expect(getHeaderValue(headers, "Authorization")).toBeUndefined()
     })
 
     it("preserves existing static headers alongside OAuth token", async () => {
@@ -701,6 +777,7 @@ describe("SkillMcpManager", () => {
         serverName: "oauth-with-headers",
         skillName: "oauth-skill",
         sessionID: "session-oauth-3",
+      scope: "builtin",
       }
       const config: ClaudeCodeMcpServer = {
         url: "https://mcp.example.com/mcp",
@@ -719,9 +796,76 @@ describe("SkillMcpManager", () => {
       } catch { /* connection fails in test */ }
 
       // then
-      const headers = lastTransportInstance.options?.requestInit?.headers as Record<string, string> | undefined
-      expect(headers?.["X-Custom"]).toBe("custom-value")
-      expect(headers?.Authorization).toBe("Bearer oauth-token")
+      const headers = lastTransportInstance.options?.requestInit?.headers
+      expect(getHeaderValue(headers, "X-Custom")).toBe("custom-value")
+      expect(getHeaderValue(headers, "Authorization")).toBe("Bearer oauth-token")
+    })
+
+    it("attempts silent refresh for expired stored tokens before login", async () => {
+      // given
+      const info: SkillMcpClientInfo = {
+        serverName: "oauth-refresh",
+        skillName: "oauth-skill",
+        sessionID: "session-oauth-refresh",
+      scope: "builtin",
+      }
+      const config: ClaudeCodeMcpServer = {
+        url: "https://mcp.example.com/mcp",
+        oauth: {
+          clientId: "my-client",
+        },
+      }
+      mockTokens.mockReturnValue({
+        accessToken: "expired-token",
+        refreshToken: "refresh-token",
+        expiresAt: Math.floor(Date.now() / 1000) - 60,
+      })
+      mockRefresh.mockResolvedValue({ accessToken: "refreshed-token" })
+
+      // when
+      try {
+        await manager.getOrCreateClient(info, config)
+      } catch { /* connection fails in test */ }
+
+      // then
+      const headers = lastTransportInstance.options?.requestInit?.headers
+      expect(getHeaderValue(headers, "Authorization")).toBe("Bearer refreshed-token")
+      expect(mockRefresh).toHaveBeenCalledWith("refresh-token")
+      expect(mockLogin).not.toHaveBeenCalled()
+    })
+
+    it("falls back to login when silent refresh fails", async () => {
+      // given
+      const info: SkillMcpClientInfo = {
+        serverName: "oauth-refresh-fallback",
+        skillName: "oauth-skill",
+        sessionID: "session-oauth-refresh-fallback",
+      scope: "builtin",
+      }
+      const config: ClaudeCodeMcpServer = {
+        url: "https://mcp.example.com/mcp",
+        oauth: {
+          clientId: "my-client",
+        },
+      }
+      mockTokens.mockReturnValue({
+        accessToken: "expired-token",
+        refreshToken: "refresh-token",
+        expiresAt: Math.floor(Date.now() / 1000) - 60,
+      })
+      mockRefresh.mockRejectedValue(new Error("Refresh failed"))
+      mockLogin.mockResolvedValue({ accessToken: "login-token" })
+
+      // when
+      try {
+        await manager.getOrCreateClient(info, config)
+      } catch { /* connection fails in test */ }
+
+      // then
+      const headers = lastTransportInstance.options?.requestInit?.headers
+      expect(getHeaderValue(headers, "Authorization")).toBe("Bearer login-token")
+      expect(mockRefresh).toHaveBeenCalledWith("refresh-token")
+      expect(mockLogin).toHaveBeenCalled()
     })
 
     it("does not create auth provider when oauth config is absent", async () => {
@@ -730,6 +874,7 @@ describe("SkillMcpManager", () => {
         serverName: "no-oauth-server",
         skillName: "test-skill",
         sessionID: "session-no-oauth",
+      scope: "builtin",
       }
       const config: ClaudeCodeMcpServer = {
         url: "https://mcp.example.com/mcp",
@@ -744,8 +889,8 @@ describe("SkillMcpManager", () => {
       } catch { /* connection fails in test */ }
 
       // then
-      const headers = lastTransportInstance.options?.requestInit?.headers as Record<string, string> | undefined
-      expect(headers?.Authorization).toBe("Bearer static-token")
+      const headers = lastTransportInstance.options?.requestInit?.headers
+      expect(getHeaderValue(headers, "Authorization")).toBe("Bearer static-token")
       expect(mockTokens).not.toHaveBeenCalled()
     })
 
@@ -755,6 +900,7 @@ describe("SkillMcpManager", () => {
         serverName: "stepup-server",
         skillName: "stepup-skill",
         sessionID: "session-stepup-1",
+      scope: "builtin",
       }
       const config: ClaudeCodeMcpServer = {
         url: "https://mcp.example.com/mcp",
@@ -800,6 +946,7 @@ describe("SkillMcpManager", () => {
         serverName: "no-stepup-server",
         skillName: "no-stepup-skill",
         sessionID: "session-no-stepup",
+      scope: "builtin",
       }
       const context: SkillMcpServerContext = {
         config: {

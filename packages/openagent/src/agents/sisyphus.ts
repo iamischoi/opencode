@@ -1,6 +1,6 @@
 import type { AgentConfig } from "@opencode-ai/sdk";
 import type { AgentMode, AgentPromptMetadata } from "./types";
-import { isGptModel, isGeminiModel, isGpt5_4Model } from "./types";
+import { isGptModel, isGeminiModel, isGptNativeSisyphusModel } from "./types";
 import {
   buildGeminiToolMandate,
   buildGeminiDelegationOverride,
@@ -11,6 +11,7 @@ import {
 } from "./sisyphus/gemini";
 import { buildGpt54SisyphusPrompt } from "./sisyphus/gpt-5-4";
 import { buildTaskManagementSection } from "./sisyphus/default";
+import { getGptApplyPatchPermission } from "./gpt-apply-patch-guard";
 
 const MODE: AgentMode = "primary";
 export const SISYPHUS_PROMPT_METADATA: AgentPromptMetadata = {
@@ -26,6 +27,7 @@ import type {
   AvailableCategory,
 } from "./dynamic-agent-prompt-builder";
 import {
+  buildAgentIdentitySection,
   buildKeyTriggersSection,
   buildToolSelectionTable,
   buildExploreSection,
@@ -72,7 +74,13 @@ function buildDynamicSisyphusPrompt(
     ? "YOUR TASK CREATION WOULD BE TRACKED BY HOOK([SYSTEM REMINDER - TASK CONTINUATION])"
     : "YOUR TODO CREATION WOULD BE TRACKED BY HOOK([SYSTEM REMINDER - TODO CONTINUATION])";
 
-  return `<Role>
+  const agentIdentity = buildAgentIdentitySection(
+    "Sisyphus",
+    "Powerful AI Agent with orchestration capabilities from OhMyOpenCode",
+  );
+
+  return `${agentIdentity}
+<Role>
 You are "Sisyphus" - Powerful AI Agent with orchestration capabilities from OhMyOpenCode.
 
 **Why Sisyphus?**: Humans roll their boulder every day. So do you. We're not so different-your code should be indistinguishable from a senior engineer's.
@@ -251,9 +259,10 @@ result = task(..., run_in_background=false)  // Never wait synchronously for exp
 2. Continue only with non-overlapping work
    - If you have DIFFERENT independent work \u2192 do it now
    - Otherwise \u2192 **END YOUR RESPONSE.**
-3. System sends \`<system-reminder>\` on each task completion - then call \`background_output(task_id="...")\`
-4. Need results not yet ready? **End your response.** The notification will trigger your next turn.
-5. Cleanup: Cancel disposable tasks individually via \`background_cancel(taskId="...")\`
+3. **STOP. END YOUR RESPONSE.** The system will send \`<system-reminder>\` when tasks complete.
+4. On receiving \`<system-reminder>\` \u2192 collect results via \`background_output(task_id="...")\`
+5. **NEVER call \`background_output\` before receiving \`<system-reminder>\`.** This is a BLOCKING anti-pattern.
+6. Cleanup: Cancel disposable tasks individually via \`background_cancel(taskId="...")\`
 
 ${buildAntiDuplicationSection()}
 
@@ -308,15 +317,15 @@ AFTER THE WORK YOU DELEGATED SEEMS DONE, ALWAYS VERIFY THE RESULTS AS FOLLOWING:
 
 ### Session Continuity (MANDATORY)
 
-Every \`task()\` output includes a session_id. **USE IT.**
+Every \`task()\` output includes a task_id. **USE IT.**
 
 **ALWAYS continue when:**
-- Task failed/incomplete → \`session_id=\"{session_id}\", prompt=\"Fix: {specific error}\"\`
-- Follow-up question on result → \`session_id=\"{session_id}\", prompt=\"Also: {question}\"\`
-- Multi-turn with same agent → \`session_id=\"{session_id}\"\` - NEVER start fresh
-- Verification failed → \`session_id=\"{session_id}\", prompt=\"Failed verification: {error}. Fix.\"\`
+- Task failed/incomplete → \`task_id=\"{task_id}\", prompt=\"Fix: {specific error}\"\`
+- Follow-up question on result → \`task_id=\"{task_id}\", prompt=\"Also: {question}\"\`
+- Multi-turn with same agent → \`task_id=\"{task_id}\"\` - NEVER start fresh
+- Verification failed → \`task_id=\"{task_id}\", prompt=\"Failed verification: {error}. Fix.\"\`
 
-**Why session_id is CRITICAL:**
+**Why task_id is CRITICAL:**
 - Subagent has FULL conversation context preserved
 - No repeated file reads, exploration, or setup
 - Saves 70%+ tokens on follow-ups
@@ -327,10 +336,10 @@ Every \`task()\` output includes a session_id. **USE IT.**
 task(category="quick", load_skills=[], run_in_background=false, description="Fix type error", prompt="Fix the type error in auth.ts...")
 
 // CORRECT: Resume preserves everything
-task(session_id="ses_abc123", load_skills=[], run_in_background=false, description="Fix type error", prompt="Fix: Type error on line 42")
+task(task_id="ses_abc123", load_skills=[], run_in_background=false, description="Fix type error", prompt="Fix: Type error on line 42")
 \`\`\`
 
-**After EVERY delegation, STORE the session_id for potential continuation.**
+**After EVERY delegation, STORE the task_id for potential continuation.**
 
 ### Code Changes:
 - Match existing patterns (if codebase is disciplined)
@@ -471,7 +480,7 @@ export function createSisyphusAgent(
   const categories = availableCategories ?? [];
   const agents = availableAgents ?? [];
 
-  if (isGpt5_4Model(model)) {
+  if (isGptNativeSisyphusModel(model)) {
     const prompt = buildGpt54SisyphusPrompt(
       model,
       agents,
@@ -491,6 +500,7 @@ export function createSisyphusAgent(
       permission: {
         question: "allow",
         call_omo_agent: "deny",
+        ...getGptApplyPatchPermission(model),
       } as AgentConfig["permission"],
       reasoningEffort: "medium",
     };
@@ -530,6 +540,7 @@ export function createSisyphusAgent(
   const permission = {
     question: "allow",
     call_omo_agent: "deny",
+    ...getGptApplyPatchPermission(model),
   } as AgentConfig["permission"];
   const base = {
     description:

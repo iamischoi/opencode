@@ -104,11 +104,14 @@ describeFn("executeBackgroundTask output/session metadata compatibility", () => 
     //#then - output and metadata should include canonical session linkage
     expectFn(result).toContain("<task_metadata>")
     expectFn(result).toContain("session_id: ses_sub_123")
-    expectFn(result).toContain("task_id: bg_resolved")
+    expectFn(result).toContain("task_id: ses_sub_123")
     expectFn(result).toContain("background_task_id: bg_resolved")
+    expectFn(result).toContain("subagent: explore")
     expectFn(result).toContain("Background Task ID: bg_resolved")
     expectFn(metadataCalls).toHaveLength(1)
     expectFn(metadataCalls[0].metadata.sessionId).toBe("ses_sub_123")
+    expectFn(metadataCalls[0].metadata.taskId).toBe("ses_sub_123")
+    expectFn(metadataCalls[0].metadata.backgroundTaskId).toBe("bg_resolved")
   })
 
   testFn("captures late-resolved session id and emits synced metadata", async () => {
@@ -152,10 +155,12 @@ describeFn("executeBackgroundTask output/session metadata compatibility", () => 
 
     //#then - late session id still propagates to task metadata contract
     expectFn(result).toContain("session_id: ses_late_123")
-    expectFn(result).toContain("task_id: bg_late")
+    expectFn(result).toContain("task_id: ses_late_123")
     expectFn(result).toContain("background_task_id: bg_late")
     expectFn(metadataCalls).toHaveLength(1)
     expectFn(metadataCalls[0].metadata.sessionId).toBe("ses_late_123")
+    expectFn(metadataCalls[0].metadata.taskId).toBe("ses_late_123")
+    expectFn(metadataCalls[0].metadata.backgroundTaskId).toBe("bg_late")
   })
 
   testFn("passes question-deny session permission when launching delegate task", async () => {
@@ -202,6 +207,50 @@ describeFn("executeBackgroundTask output/session metadata compatibility", () => 
     expectFn(launchCalls[0].sessionPermission).toEqual([
       { permission: "question", action: "deny", pattern: "*" },
     ])
+  })
+
+  testFn("strips leading zwsp from agent name before launching background task", async () => {
+    //#given - display-sorted agent names should be normalized before manager launch
+    const launchCalls: unknown[] = []
+    const manager = {
+      launch: async (input: unknown) => {
+        launchCalls.push(input)
+        return {
+          id: "bg_clean_agent",
+          sessionID: "ses_clean_agent",
+          description: "Clean agent",
+          agent: "sisyphus-junior",
+          status: "running",
+        }
+      },
+      getTask: () => ({ sessionID: "ses_clean_agent" }),
+    }
+
+    //#when
+    await executeBackgroundTask(
+      {
+        description: "Clean agent",
+        prompt: "check",
+        run_in_background: true,
+        load_skills: [],
+      },
+      {
+        sessionID: "ses_parent",
+        callID: "call_clean_agent",
+        metadata: async () => {},
+        abort: new AbortController().signal,
+      },
+      { manager },
+      { sessionID: "ses_parent", messageID: "msg_clean_agent" },
+      "\u200Bsisyphus-junior",
+      undefined,
+      undefined,
+      undefined,
+    )
+
+    //#then
+    expectFn(launchCalls).toHaveLength(1)
+    expectFn((launchCalls[0] as { agent: string }).agent).toBe("sisyphus-junior")
   })
 
   testFn("keeps launched background task alive when parent aborts before session id resolves", async () => {
@@ -343,6 +392,54 @@ describeFn("executeBackgroundTask output/session metadata compatibility", () => 
     //#then - terminal child status should win over abort and surface the failure
     expectFn(result).toContain("Task failed to start")
     expectFn(result).toContain("interrupt")
+  })
+
+  testFn("reports failure when manager marks task as error during session startup", async () => {
+    //#given - session created but startTask throws before prompt is sent
+    const metadataCalls: any[] = []
+    let reads = 0
+    const manager = {
+      launch: async () => ({
+        id: "bg_crash_before_prompt",
+        sessionID: undefined,
+        description: "Crash before prompt",
+        agent: "explore",
+        status: "pending",
+      }),
+      getTask: () => {
+        reads += 1
+        if (reads >= 2) {
+          return { sessionID: "ses_orphan", status: "error", error: "crash between session creation and prompt send" }
+        }
+        return { sessionID: undefined, status: "pending" }
+      },
+    }
+
+    //#when
+    const result = await executeBackgroundTask(
+      {
+        description: "Crash before prompt",
+        prompt: "check",
+        run_in_background: true,
+        load_skills: [],
+      },
+      {
+        sessionID: "ses_parent",
+        callID: "call_crash",
+        metadata: async (value: any) => metadataCalls.push(value),
+        abort: new AbortController().signal,
+      },
+      { manager },
+      { sessionID: "ses_parent", messageID: "msg_crash" },
+      "explore",
+      undefined,
+      undefined,
+      undefined,
+    )
+
+    //#then - polling loop should detect terminal status and report failure
+    expectFn(result).toContain("Task failed to start")
+    expectFn(result).toContain("error")
   })
 
   testFn("keeps sibling background launch alive when two tasks start concurrently", async () => {

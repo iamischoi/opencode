@@ -296,6 +296,19 @@ export const layer: Layer.Layer<
                 status: "running",
                 input: value.input,
                 time: { start: Date.now() },
+                ...("metadata" in match.state && isRecord(match.state.metadata)
+                  ? { metadata: match.state.metadata }
+                  : isRecord(value.providerMetadata) &&
+                    (typeof value.providerMetadata.sessionId === "string" || value.providerMetadata.model !== undefined)
+                    ? {
+                      metadata: {
+                        ...(typeof value.providerMetadata.sessionId === "string"
+                          ? { sessionId: value.providerMetadata.sessionId }
+                          : {}),
+                        ...(value.providerMetadata.model !== undefined ? { model: value.providerMetadata.model } : {}),
+                      },
+                    }
+                    : {}),
               },
               metadata: match.metadata?.providerExecuted
                 ? { ...value.providerMetadata, providerExecuted: true }

@@ -109,11 +109,55 @@ export class OpenAICompatibleChatLanguageModel implements LanguageModelV3 {
         schema: openaiCompatibleProviderOptions,
       })) ?? {},
       (await parseProviderOptions({
+        provider: "openaiCompatible",
+        providerOptions,
+        schema: openaiCompatibleProviderOptions,
+      })) ?? {},
+      (await parseProviderOptions({
         provider: this.providerOptionsName,
         providerOptions,
         schema: openaiCompatibleProviderOptions,
       })) ?? {},
+      (await parseProviderOptions({
+        provider: this.provider,
+        providerOptions,
+        schema: openaiCompatibleProviderOptions,
+      })) ?? {},
     )
+
+    const optionSources = [
+      providerOptions,
+      typeof providerOptions?.[this.providerOptionsName] === "object" && providerOptions?.[this.providerOptionsName] !== null
+        ? providerOptions[this.providerOptionsName]
+        : undefined,
+      typeof providerOptions?.[this.provider] === "object" && providerOptions?.[this.provider] !== null
+        ? providerOptions[this.provider]
+        : undefined,
+      typeof providerOptions?.openaiCompatible === "object" && providerOptions?.openaiCompatible !== null
+        ? providerOptions.openaiCompatible
+        : undefined,
+      typeof providerOptions?.copilot === "object" && providerOptions?.copilot !== null ? providerOptions.copilot : undefined,
+    ]
+
+    const optionFromSources = (key: string): string | number | undefined => {
+      for (const source of optionSources) {
+        if (!source || typeof source !== "object") continue
+        const value = (source as Record<string, unknown>)[key]
+        if (typeof value === "string" || typeof value === "number") return value
+      }
+      return undefined
+    }
+
+    const reasoningEffort =
+      compatibleOptions.reasoningEffort
+      ?? (typeof optionFromSources("reasoningEffort") === "string" ? optionFromSources("reasoningEffort") : undefined)
+    const textVerbosity =
+      compatibleOptions.textVerbosity
+      ?? (typeof optionFromSources("textVerbosity") === "string" ? optionFromSources("textVerbosity") : undefined)
+    const userOption = compatibleOptions.user ?? (typeof optionFromSources("user") === "string" ? optionFromSources("user") : undefined)
+    const thinkingBudget =
+      compatibleOptions.thinking_budget
+      ?? (typeof optionFromSources("thinking_budget") === "number" ? optionFromSources("thinking_budget") : undefined)
 
     if (topK != null) {
       warnings.push({ type: "unsupported", feature: "topK" })
@@ -142,7 +186,7 @@ export class OpenAICompatibleChatLanguageModel implements LanguageModelV3 {
         model: this.modelId,
 
         // model specific settings:
-        user: compatibleOptions.user,
+        user: userOption,
 
         // standardized settings:
         max_tokens: maxOutputTokens,
@@ -172,8 +216,8 @@ export class OpenAICompatibleChatLanguageModel implements LanguageModelV3 {
           ),
         ),
 
-        reasoning_effort: compatibleOptions.reasoningEffort,
-        verbosity: compatibleOptions.textVerbosity,
+        reasoning_effort: reasoningEffort,
+        verbosity: textVerbosity,
 
         // messages:
         messages: convertToOpenAICompatibleChatMessages(prompt),
@@ -183,7 +227,7 @@ export class OpenAICompatibleChatLanguageModel implements LanguageModelV3 {
         tool_choice: openaiToolChoice,
 
         // thinking_budget
-        thinking_budget: compatibleOptions.thinking_budget,
+        thinking_budget: thinkingBudget,
       },
       warnings: [...warnings, ...toolWarnings],
     }

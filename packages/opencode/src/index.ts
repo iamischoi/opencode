@@ -6,6 +6,7 @@ const possiblePaths = [
   path.join(process.cwd(), "opencode-server.properties"),
   path.join(path.dirname(process.cwd()), "opencode-server.properties"),
   path.join(path.dirname(path.dirname(process.cwd())), "opencode-server.properties"),
+  path.join(path.dirname(process.execPath), "opencode-server.properties"), // For compiled binaries
   "opencode-server.properties"
 ]
 for (const p of possiblePaths) {

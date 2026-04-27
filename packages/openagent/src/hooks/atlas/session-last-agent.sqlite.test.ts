@@ -1,11 +1,5 @@
 export {}
-const { describe, expect, mock, test, afterAll } = require("bun:test")
-
-mock.module("../../shared/opencode-storage-detection", () => ({
-  isSqliteBackend: () => true,
-}))
-
-afterAll(() => { mock.restore() })
+const { describe, expect, test } = require("bun:test")
 
 const { getLastAgentFromSession } = await import("./session-last-agent")
 
@@ -25,7 +19,9 @@ describe("getLastAgentFromSession SQLite backend ordering", () => {
     }
 
     // when
-    const result = await getLastAgentFromSession("ses_sqlite_last_agent", client as never)
+    const result = await getLastAgentFromSession("ses_sqlite_last_agent", client as never, {
+      isSqliteBackend: () => true,
+    })
 
     // then
     expect(result).toBe("sisyphus-junior")
@@ -46,10 +42,38 @@ describe("getLastAgentFromSession SQLite backend ordering", () => {
     }
 
     // when
-    const result = await getLastAgentFromSession("ses_sqlite_last_agent_equal_time", client as never)
+    const result = await getLastAgentFromSession("ses_sqlite_last_agent_equal_time", client as never, {
+      isSqliteBackend: () => true,
+    })
 
     // then
     expect(result).toBe("sisyphus-junior")
+  })
+
+  test("skips compaction marker user messages that retain the original agent", async () => {
+    // given
+    const client = {
+      session: {
+        messages: async () => ({
+          data: [
+            { id: "msg_real", info: { agent: "sisyphus", time: { created: 100 } } },
+            {
+              id: "msg_compaction",
+              info: { agent: "atlas", time: { created: 200 } },
+              parts: [{ type: "compaction" }],
+            },
+          ],
+        }),
+      },
+    }
+
+    // when
+    const result = await getLastAgentFromSession("ses_sqlite_compaction_marker", client as never, {
+      isSqliteBackend: () => true,
+    })
+
+    // then
+    expect(result).toBe("sisyphus")
   })
 
   test("returns null instead of throwing when SQLite message lookup fails", async () => {
@@ -63,7 +87,9 @@ describe("getLastAgentFromSession SQLite backend ordering", () => {
     }
 
     // when
-    const result = await getLastAgentFromSession("ses_sqlite_error", client as never)
+    const result = await getLastAgentFromSession("ses_sqlite_error", client as never, {
+      isSqliteBackend: () => true,
+    })
 
     // then
     expect(result).toBeNull()
