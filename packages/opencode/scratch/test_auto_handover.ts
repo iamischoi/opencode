@@ -1,13 +1,13 @@
 const url = "http://127.0.0.1:10043/v1/chat/completions";
 const body = {
-  model: "SOLT1 개발 AGENT", // Should trigger prometheus:auto -> sisyphus
+  model: "SOLT1 개발", // Should trigger prometheus:auto -> sisyphus
   messages: [
     { role: "user", content: "간단한 index.html 파일 하나 만들어줘. 내용은 'Hello Auto Handover' 라고 적어줘." }
   ],
   stream: true
 };
 
-console.log("Sending request to OpenCode server with model: 'SOLT1 개발 AGENT' (Auto Handover Test)");
+console.log("Sending request to OpenCode server with model: 'SOLT1 개발' (Auto Handover Test)");
 
 const response = await fetch(url, {
   method: "POST",

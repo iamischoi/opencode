@@ -2,7 +2,7 @@
  * 시나리오: 의뢰:manual 모드 테스트
  *
  * OPENCODE_API_TYPES=의뢰:manual 설정 하에서
- * "SOLT1 의뢰 AGENT" 모델로 실제 업무 의뢰서 형태의 프롬프트를 전송합니다.
+ * "SOLT1 의뢰" 모델로 실제 업무 의뢰서 형태의 프롬프트를 전송합니다.
  *
  * 기대 동작:
  *  - agentName = "prometheus" (플래닝 에이전트)
@@ -48,7 +48,7 @@ const PROMPT = `
 
 section("📝 의뢰:manual 모드 테스트")
 console.log(c.gray(`  서버: ${SERVER_URL}`))
-console.log(c.gray(`  모델: SOLT1 의뢰 AGENT`))
+console.log(c.gray(`  모델: SOLT1 의뢰`))
 console.log(c.gray(`  기대: prometheus 플래닝 후 종료 (sisyphus 핸드오버 없음)\n`))
 
 const ok = await checkServer()
@@ -73,7 +73,7 @@ let reasoningLines = 0
 
 const { fullContent, fullReasoning } = await chatStream(
   {
-    model: "SOLT1 의뢰 AGENT",
+    model: "SOLT1 의뢰GENT",
     messages: [{ role: "user", content: PROMPT }],
     stream: true,
   },

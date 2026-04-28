@@ -24,7 +24,7 @@ function rewrite(request: Request, directory?: string) {
     url.searchParams.set("directory", value)
   }
 
-  const next = new Request(url, request)
+  const next = new Request(url.toString(), request)
   next.headers.delete("x-opencode-directory")
   return next
 }

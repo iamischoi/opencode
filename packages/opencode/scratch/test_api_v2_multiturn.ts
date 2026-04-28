@@ -3,7 +3,7 @@ const url = "http://127.0.0.1:10043/v1/chat/completions";
 console.log("Sending multi-turn request...");
 
 const body = {
-  model: "SOLT1 의뢰 AGENT", // Resolves to prometheus
+  model: "SOLT1 의뢰", // Resolves to prometheus
   messages: [
     { role: "user", content: "내 이름은 철수야. 잘 기억해둬." },
     { role: "assistant", content: "네, 기억했습니다. 당신의 이름은 철수입니다." },
@@ -32,10 +32,10 @@ const decoder = new TextDecoder();
 while (true) {
   const { done, value } = await reader.read();
   if (done) break;
-  
+
   const chunk = decoder.decode(value);
   const lines = chunk.split("\n");
-  
+
   for (const line of lines) {
     if (line.startsWith("data: ")) {
       const dataStr = line.slice(6);
@@ -43,11 +43,11 @@ while (true) {
         console.log("\n--- [DONE] ---");
         break;
       }
-      
+
       try {
         const json = JSON.parse(dataStr);
         const delta = json.choices[0].delta;
-        
+
         if (delta.reasoning_content) {
           process.stdout.write(`\x1b[33m[THINKING]\x1b[0m ${delta.reasoning_content}`);
         }

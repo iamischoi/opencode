@@ -5,7 +5,7 @@ const response = await fetch('http://localhost:10043/v1/chat/completions', {
     'Content-Type': 'application/json'
   },
   body: JSON.stringify({
-    model: 'SOLT1 의뢰 AGENT',
+    model: 'SOLT1 의뢰',
     messages: [
       { role: 'user', content: 'hello' }
     ],

@@ -1,13 +1,13 @@
 const url = "http://127.0.0.1:10043/v1/chat/completions";
 const body = {
-  model: "SOLT1 의뢰 AGENT", // This should resolve to prometheus now
+  model: "SOLT1 의뢰", // This should resolve to prometheus now
   messages: [
     { role: "user", content: "로그인 기능 만들어줘" }
   ],
   stream: true
 };
 
-console.log("Sending request to OpenCode server with model: 'SOLT1 의뢰 AGENT'");
+console.log("Sending request to OpenCode server with model: 'SOLT1 의뢰'");
 
 const response = await fetch(url, {
   method: "POST",
@@ -29,10 +29,10 @@ const decoder = new TextDecoder();
 while (true) {
   const { done, value } = await reader.read();
   if (done) break;
-  
+
   const chunk = decoder.decode(value);
   const lines = chunk.split("\n");
-  
+
   for (const line of lines) {
     if (line.startsWith("data: ")) {
       const dataStr = line.slice(6);
@@ -40,11 +40,11 @@ while (true) {
         console.log("\n--- [DONE] ---");
         break;
       }
-      
+
       try {
         const json = JSON.parse(dataStr);
         const delta = json.choices[0].delta;
-        
+
         if (delta.reasoning_content) {
           process.stdout.write(`\x1b[33m[THINKING]\x1b[0m ${delta.reasoning_content}`);
         }

@@ -40,11 +40,13 @@ export function createTimestampedStdoutController(stdout: NodeJS.WriteStream = p
   const transform = createTimestampTransformer()
 
   function enable(): void {
-    const write: WriteFn = (
-      chunk: Uint8Array | string,
-      encodingOrCallback?: BufferEncoding | ((error?: Error | null) => void),
-      callback?: (error?: Error | null) => void,
-    ): boolean => {
+    function write(chunk: string | Uint8Array, callback?: (err?: Error) => void): boolean
+    function write(chunk: string | Uint8Array, encoding?: BufferEncoding, callback?: (err?: Error) => void): boolean
+    function write(
+      chunk: string | Uint8Array,
+      encodingOrCallback?: BufferEncoding | ((err?: Error) => void),
+      callback?: (err?: Error) => void,
+    ): boolean {
       const text = typeof chunk === "string"
         ? chunk
         : Buffer.from(chunk).toString(typeof encodingOrCallback === "string" ? encodingOrCallback : undefined)
@@ -55,6 +57,9 @@ export function createTimestampedStdoutController(stdout: NodeJS.WriteStream = p
       }
       if (encodingOrCallback !== undefined) {
         return originalWrite(stamped, encodingOrCallback, callback)
+      }
+      if (callback) {
+        return originalWrite(stamped, callback)
       }
       return originalWrite(stamped)
     }

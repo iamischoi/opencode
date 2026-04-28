@@ -67,17 +67,17 @@ OPENCODE_TEST_URL=http://127.0.0.1:4000 bun run test
 
 예상 출력 예시:
 ```
-• SOLT1 의뢰 AGENT
-• SOLT1 개발 AGENT
-• SOLT2 의뢰 AGENT
-• SOLT2 개발 AGENT
+• SOLT1 의뢰
+• SOLT1 개발
+• SOLT2 의뢰
+• SOLT2 개발
 ```
 
 ---
 
 ### `test:manual` — 의뢰:manual 모드
 
-**모델:** `SOLT1 의뢰 AGENT`
+**모델:** `SOLT1 의뢰`
 **프롬프트:** 사용자 알림 기능 추가 의뢰서 (이메일/슬랙 알림, 이력 조회)
 
 | 검증 항목 | 기대값 |
@@ -90,7 +90,7 @@ OPENCODE_TEST_URL=http://127.0.0.1:4000 bun run test
 
 ### `test:auto` — 개발:auto 모드
 
-**모델:** `SOLT1 개발 AGENT`
+**모델:** `SOLT1 개발`
 **프롬프트:** Express 헬스체크 API 엔드포인트 구현 요청
 
 | 검증 항목 | 기대값 |

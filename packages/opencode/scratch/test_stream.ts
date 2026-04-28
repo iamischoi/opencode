@@ -1,7 +1,7 @@
 
 const url = "http://127.0.0.1:10043/v1/chat/completions";
 const body = {
-  model: "SOLT1 의뢰 AGENT",
+  model: "SOLT1 의뢰",
   messages: [
     { role: "user", content: "현재 프로젝트의 opencode 패키지에서 src/server 디렉토리 구조를 분석해서 어떤 라우트가 있는지 알려줘." }
   ],
@@ -33,10 +33,10 @@ console.log("");
 while (true) {
   const { done, value } = await reader.read();
   if (done) break;
-  
+
   const chunk = decoder.decode(value);
   const lines = chunk.split("\n");
-  
+
   for (const line of lines) {
     if (line.startsWith("data: ")) {
       const dataStr = line.slice(6);
@@ -44,11 +44,11 @@ while (true) {
         console.log("\n--- [DONE] ---");
         break;
       }
-      
+
       try {
         const json = JSON.parse(dataStr);
         const delta = json.choices[0].delta;
-        
+
         if (delta.reasoning_content) {
           process.stdout.write(`\x1b[33m[THINKING]\x1b[0m ${delta.reasoning_content}`);
         }

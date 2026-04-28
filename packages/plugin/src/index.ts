@@ -42,7 +42,7 @@ export type WorkspaceTarget =
   | {
       type: "remote"
       url: string | URL
-      headers?: HeadersInit
+      headers?: RequestInit["headers"]
     }
 
 export type WorkspaceAdaptor = {

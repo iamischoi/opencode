@@ -2,7 +2,7 @@
  * 시나리오: 개발:auto 모드 테스트
  *
  * OPENCODE_API_TYPES=개발:auto 설정 하에서
- * "SOLT1 개발 AGENT" 모델로 실제 개발 의뢰 형태의 프롬프트를 전송합니다.
+ * "SOLT1 개발" 모델로 실제 개발 의뢰 형태의 프롬프트를 전송합니다.
  *
  * 기대 동작:
  *  - agentName = "prometheus" (플래닝 에이전트)
@@ -60,7 +60,7 @@ src/
 
 section("🚀 개발:auto 모드 테스트")
 console.log(c.gray(`  서버: ${SERVER_URL}`))
-console.log(c.gray(`  모델: SOLT1 개발 AGENT`))
+console.log(c.gray(`  모델: SOLT1 개발`))
 console.log(c.gray(`  기대: prometheus 플래닝 → 자동 sisyphus 핸드오버 → 구현 수행\n`))
 
 const ok = await checkServer()
@@ -88,7 +88,7 @@ let phase: "prometheus" | "handover" | "sisyphus" = "prometheus"
 
 const { fullContent, fullReasoning } = await chatStream(
   {
-    model: "SOLT1 개발 AGENT",
+    model: "SOLT1 개발",
     messages: [{ role: "user", content: PROMPT }],
     stream: true,
   },
@@ -134,7 +134,7 @@ if (autoHandoverDetected) {
 } else {
   console.log(c.red("  ✗ [FAIL] sisyphus 핸드오버 미발생"))
   console.log(c.yellow("    → OPENCODE_API_TYPES 에서 '개발:auto' 가 올바르게 설정됐는지 확인하세요."))
-  console.log(c.yellow("    → 모델명이 'SOLT1 개발 AGENT' 형식인지 확인하세요. (OPENCODE_AGENT_TYPES 에 '개발' 포함 필요)"))
+  console.log(c.yellow("    → 모델명이 'SOLT1 개발' 형식인지 확인하세요. (OPENCODE_AGENT_TYPES 에 '개발' 포함 필요)"))
 }
 
 // 검증 2: 플랜 파일 작성 확인

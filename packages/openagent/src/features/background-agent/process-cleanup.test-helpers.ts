@@ -8,16 +8,24 @@ type ProcessCleanupEvent =
 export function getNewListener(
   signal: ProcessCleanupEvent,
   existingListeners: Function[],
-): () => void {
-  const listener = process
-    .listeners(signal)
-    .find((registeredListener) => !existingListeners.includes(registeredListener))
+): (...args: Array<unknown>) => void {
+  const listeners = signal === "beforeExit"
+    ? process.listeners("beforeExit")
+    : signal === "exit"
+      ? process.listeners("exit")
+      : signal === "uncaughtException"
+        ? process.listeners("uncaughtException")
+        : signal === "unhandledRejection"
+          ? process.listeners("unhandledRejection")
+          : process.listeners(signal)
+  const listener = listeners.find((registeredListener) => !existingListeners.includes(registeredListener))
 
   if (typeof listener !== "function") {
     throw new Error(`Expected a ${signal} listener to be registered`)
   }
 
-  return listener
+  const nextListener = listener as (...args: Array<unknown>) => void
+  return (...args) => nextListener(...args)
 }
 
 export async function flushMicrotasks(): Promise<void> {

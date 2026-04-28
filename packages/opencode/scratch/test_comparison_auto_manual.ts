@@ -38,7 +38,7 @@ async function runTest(model: string, content: string, label: string) {
             // Optional: print reasoning in yellow
             // process.stdout.write(`\x1b[33m${delta.reasoning_content}\x1b[0m`);
           }
-        } catch (e) {}
+        } catch (e) { }
       }
     }
   }
@@ -47,7 +47,7 @@ async function runTest(model: string, content: string, label: string) {
 console.log("Starting comparison tests...");
 
 // 1. AUTO case
-await runTest("SOLT1 개발 AGENT", "test.txt 파일을 만들고 내용은 'Auto Handover'라고 해줘.", "AUTO HANDOVER");
+await runTest("SOLT1 개발", "test.txt 파일을 만들고 내용은 'Auto Handover'라고 해줘.", "AUTO HANDOVER");
 
 // 2. MANUAL case
-await runTest("SOLT1 의뢰 AGENT", "새로운 백엔드 시스템 아키텍처를 설계하고 싶어.", "MANUAL (CONSULTATION)");
+await runTest("SOLT1 의뢰", "새로운 백엔드 시스템 아키텍처를 설계하고 싶어.", "MANUAL (CONSULTATION)");
