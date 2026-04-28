@@ -11,6 +11,7 @@ import { Agent } from "@/agent/agent"
 import { jsonRequest, runRequest } from "./trace"
 import { Auth } from "@/auth"
 import { Plugin } from "@/plugin"
+import { Provider } from "@/provider"
 import { Effect, Option } from "effect"
 import { AppRuntime } from "@/effect/app-runtime"
 import { MessageV2 } from "@/session/message-v2"
@@ -193,9 +194,13 @@ export const OpenAiRoutes = () => {
         const agentSvc = yield* Agent.Service
         const authSvc = yield* Auth.Service
         const pluginSvc = yield* Plugin.Service
+        const providerSvc = yield* Provider.Service
 
         const auths = yield* authSvc.all()
-        const isLoggedIn = Object.values(auths).some(auth => auth.type === "oauth")
+        // auth.expires is stored as ms (plugin/codex.ts convention) — check token is not expired
+        const isLoggedIn = Object.values(auths).some(
+          auth => auth.type === "oauth" && auth.expires > Date.now()
+        )
 
         // 1. Resolve internal agent
         const useCustomProviders = process.env.OPENCODE_USE_CUSTOM_PROVIDERS?.toLowerCase() === "true"
@@ -258,16 +263,27 @@ export const OpenAiRoutes = () => {
         }
 
         // Model selection when custom providers are disabled:
-        //  - OAuth active (isLoggedIn=true)  → leave promptModelOverride as undefined so the
-        //    prompt service picks the model saved in the user's opencode configuration
-        //    (i.e. the recently-used / default model from the authenticated provider).
+        //  - OAuth active (isLoggedIn=true)  → explicitly resolve provider.defaultModel() so both
+        //    single-turn and multi-turn requests use the same model (the most recently used /
+        //    configured model from the authenticated provider).  Leaving model=undefined causes an
+        //    inconsistency: multi-turn injects history tagged with minimax-m2.5-free (fallback),
+        //    then lastModel() picks that up and calls the wrong LLM.
         //  - No OAuth                        → force the public free model so the request does
         //    not fail with an unauthenticated provider.
-        if (!useCustomProviders && !isLoggedIn) {
-          log.info("Custom providers disabled and no OAuth session. Falling back to free model.")
-          promptModelOverride = {
-            providerID: ProviderID.make("opencode"),
-            modelID: ModelID.make("minimax-m2.5-free")
+        if (!useCustomProviders) {
+          if (isLoggedIn) {
+            const resolved = yield* providerSvc.defaultModel()
+            log.info("Custom providers disabled with active OAuth session. Using resolved default model.", {
+              providerID: resolved.providerID,
+              modelID: resolved.modelID,
+            })
+            promptModelOverride = resolved
+          } else {
+            log.info("Custom providers disabled and no OAuth session. Falling back to free model.")
+            promptModelOverride = {
+              providerID: ProviderID.make("opencode"),
+              modelID: ModelID.make("minimax-m2.5-free")
+            }
           }
         }
 
@@ -806,8 +822,6 @@ ${planName}
                 currentAgentDisplayName = displayName
                 currentTaskSummary = "작업 계획 수립 및 수행 중"
                 await sendStatusUpdate(formatStatus(`🤖 작업 주체 전환: **${displayName}**`))
-                // Also inject into reasoning field for Thinking box context
-                await sendStatusUpdate(`\n[${displayName}] 작업 수행 중...\n`, false)
               }
             } catch (e) {
               log.error("failed to write SSE", { error: e })
@@ -977,7 +991,7 @@ ${planName}
     object: "chat.completion",
     type: agentType,
     created: Math.floor(Date.now() / 1000),
-    model: model || "SHLIFE-CODE-AGENT",
+    model: model || "prometheus",
     choices: [{
       index: 0,
       message: {
@@ -1032,9 +1046,13 @@ routes.post(
       const agentSvc = yield* Agent.Service
       const authSvc = yield* Auth.Service
       const pluginSvc = yield* Plugin.Service
+      const providerSvc = yield* Provider.Service
 
       const auths = yield* authSvc.all()
-      const isLoggedIn = Object.values(auths).some(auth => auth.type === "oauth")
+      // auth.expires is stored as ms (plugin/codex.ts convention) — check token is not expired
+      const isLoggedIn = Object.values(auths).some(
+        auth => auth.type === "oauth" && auth.expires > Date.now()
+      )
 
       const useCustomProviders = process.env.OPENCODE_USE_CUSTOM_PROVIDERS?.toLowerCase() === "true"
       const agentModelsEnv = Flag.OPENCODE_AGENT_MODELS || ""
@@ -1065,10 +1083,20 @@ routes.post(
         promptModelOverride = resolveAgentModel("prometheus")
       }
 
-      if (!useCustomProviders && !isLoggedIn) {
-        promptModelOverride = {
-          providerID: ProviderID.make("opencode"),
-          modelID: ModelID.make("minimax-m2.5-free")
+      if (!useCustomProviders) {
+        if (isLoggedIn) {
+          const resolved = yield* providerSvc.defaultModel()
+          log.info("Custom providers disabled with active OAuth session. Using resolved default model.", {
+            providerID: resolved.providerID,
+            modelID: resolved.modelID,
+          })
+          promptModelOverride = resolved
+        } else {
+          log.info("Custom providers disabled and no OAuth session. Falling back to free model.")
+          promptModelOverride = {
+            providerID: ProviderID.make("opencode"),
+            modelID: ModelID.make("minimax-m2.5-free")
+          }
         }
       }
 
