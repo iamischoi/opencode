@@ -10,6 +10,7 @@ import {
 import { continueIteration } from "./iteration-continuation"
 import { handlePendingVerification } from "./pending-verification-handler"
 import { handleDeletedLoopSession, handleErroredLoopSession } from "./session-event-handler"
+import { archiveAndClearBoulderState } from "../../features/boulder-state/storage"
 
 type SessionRecovery = {
 	isRecovering: (sessionID: string) => boolean
@@ -171,9 +172,10 @@ export function createRalphLoopEventHandler(
 						iteration: state.iteration,
 						max: state.max_iterations,
 					})
-					options.loopState.clear()
+				options.loopState.clear()
+				archiveAndClearBoulderState(options.directory, "failed")
 
-					await ctx.client.tui?.showToast?.({
+				await ctx.client.tui?.showToast?.({
 						body: { title: "Ralph Loop Stopped", message: `Max iterations (${state.max_iterations}) reached without completion`, variant: "warning", duration: 5000 },
 						}).catch(() => {})
 					return
@@ -220,12 +222,17 @@ export function createRalphLoopEventHandler(
 		}
 
 		if (event.type === "session.deleted") {
+			const stateBefore = options.loopState.getState()
 			if (!handleDeletedLoopSession(props, options.loopState, options.sessionRecovery)) return
+			if (stateBefore) archiveAndClearBoulderState(options.directory, "failed")
 			return
 		}
 
 		if (event.type === "session.error") {
+			const stateBefore = options.loopState.getState()
 			handleErroredLoopSession(props, options.loopState, options.sessionRecovery)
+			const stateAfter = options.loopState.getState()
+			if (stateBefore && !stateAfter) archiveAndClearBoulderState(options.directory, "failed")
 		}
 	}
 }

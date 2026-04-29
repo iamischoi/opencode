@@ -922,6 +922,49 @@ export function defaultModelIDs<T extends { models: Record<string, { id: string 
   return mapValues(providers, (item) => sort(Object.values(item.models))[0].id)
 }
 
+function parseAgentModelEnvEntry(entry: string) {
+  const trimmed = entry.trim()
+  if (!trimmed) return
+
+  const separatorIdx = trimmed.indexOf("=")
+  if (separatorIdx > 0) {
+    const rawAgent = trimmed.substring(0, separatorIdx).trim()
+    const rawModel = trimmed.substring(separatorIdx + 1).trim()
+    if (rawAgent && rawModel) return { rawAgent, rawModel }
+    return
+  }
+
+  const legacySeparatorIdx = trimmed.indexOf(":")
+  if (legacySeparatorIdx > 0) {
+    const rawAgent = trimmed.substring(0, legacySeparatorIdx).trim()
+    const rawModel = trimmed.substring(legacySeparatorIdx + 1).trim()
+    if (rawAgent && rawModel) return { rawAgent, rawModel }
+  }
+}
+
+export function resolveConfiguredAgentModel(agentName: string) {
+  if (process.env.OPENCODE_USE_CUSTOM_PROVIDERS?.toLowerCase() !== "true") return
+
+  const envModels = process.env.OPENCODE_AGENT_MODELS || ""
+  const envMap: Record<string, string> = {}
+  for (const s of envModels.split(",")) {
+    const parsed = parseAgentModelEnvEntry(s)
+    if (!parsed) continue
+    envMap[parsed.rawAgent.toLowerCase()] = parsed.rawModel
+  }
+
+  const modelStr = envMap[agentName.toLowerCase()] ?? envMap["sisyphus"]
+  if (!modelStr) return
+
+  const splitIdx = modelStr.indexOf("/")
+  if (splitIdx <= 0) return
+
+  return {
+    providerID: ProviderID.make(modelStr.substring(0, splitIdx)),
+    modelID: ModelID.make(modelStr.substring(splitIdx + 1)),
+  }
+}
+
 export interface Interface {
   readonly list: () => Effect.Effect<Record<ProviderID, Info>>
   readonly getProvider: (providerID: ProviderID) => Effect.Effect<Info>
@@ -1382,6 +1425,7 @@ const layer: Layer.Layer<
           const pUrl = process.env[`OPENCODE_PROVIDER_${upperName}_URL`]
           const pKey = process.env[`OPENCODE_PROVIDER_${upperName}_KEY`] || "internal"
           const pModelsStr = process.env[`OPENCODE_PROVIDER_${upperName}_MODELS`] || ""
+          const pToolcall = (process.env[`OPENCODE_PROVIDER_${upperName}_TOOLCALL`] || "false").toLowerCase() === "true"
 
           if (!pUrl) {
             log.warn(`custom provider ${pName} missing URL. Skipping.`)
@@ -1408,14 +1452,14 @@ const layer: Layer.Layer<
               options: {},
               cost: { input: 0, output: 0, cache: { read: 0, write: 0 } },
               limit: { context: 32768, output: 4096 },
-              capabilities: {
-                temperature: true,
-                reasoning: false,
-                attachment: false,
-                toolcall: true,
-                input: { text: true, audio: false, image: false, video: false, pdf: false },
-                output: { text: true, audio: false, image: false, video: false, pdf: false },
-                interleaved: false,
+                capabilities: {
+                  temperature: true,
+                  reasoning: false,
+                  attachment: false,
+                  toolcall: pToolcall,
+                  input: { text: true, audio: false, image: false, video: false, pdf: false },
+                  output: { text: true, audio: false, image: false, video: false, pdf: false },
+                  interleaved: false,
               },
               release_date: new Date().toISOString(),
               variants: {},
@@ -1709,6 +1753,9 @@ const layer: Layer.Layer<
     })
 
     const defaultModel = Effect.fn("Provider.defaultModel")(function* () {
+      const configured = resolveConfiguredAgentModel("sisyphus")
+      if (configured) return configured
+
       const cfg = yield* config.get()
       if (cfg.model) return parseModel(cfg.model)
 

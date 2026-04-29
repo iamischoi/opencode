@@ -193,23 +193,53 @@ describe("prometheus-md-only", () => {
        setupMessageStorage(TEST_SESSION_ID, "prometheus")
      })
 
-    test("should block Prometheus from writing non-.md files", async () => {
-      // given
-      const hook = createPrometheusMdOnlyHook(createMockPluginInput())
-      const input = {
-        tool: "Write",
-        sessionID: TEST_SESSION_ID,
-        callID: "call-1",
-      }
-      const output = {
-        args: { filePath: "/path/to/file.ts" },
-      }
+     test("should block Prometheus from writing non-.md files", async () => {
+       // given
+       const hook = createPrometheusMdOnlyHook(createMockPluginInput())
+       const input = {
+         tool: "Write",
+         sessionID: TEST_SESSION_ID,
+         callID: "call-1",
+       }
+       const output = {
+         args: { filePath: "/path/to/file.ts" },
+       }
 
-      // when / #then
-      await expect(
-        hook["tool.execute.before"](input, output)
-      ).rejects.toThrow("File operations restricted to .sisyphus/*.md plan files only")
-    })
+       // when / #then
+       await expect(
+         hook["tool.execute.before"](input, output)
+       ).rejects.toThrow("File operations restricted to .sisyphus/*.md plan files only")
+     })
+
+     test("should allow Prometheus to write boulder.json inside .sisyphus/", async () => {
+       // given
+       const hook = createPrometheusMdOnlyHook(createMockPluginInput())
+       const input = { tool: "Write", sessionID: TEST_SESSION_ID, callID: "call-1" }
+       const output = { args: { filePath: "/tmp/test/.sisyphus/boulder.json" } }
+
+       // when / then
+       await expect(hook["tool.execute.before"](input, output)).resolves.toBeUndefined()
+     })
+
+      test("should allow Prometheus to write any file type inside .sisyphus/", async () => {
+        // given — any file under .sisyphus/ is allowed (not just .md)
+        const hook = createPrometheusMdOnlyHook(createMockPluginInput())
+        const input = { tool: "Write", sessionID: TEST_SESSION_ID, callID: "call-1" }
+        const output = { args: { filePath: "/tmp/test/.sisyphus/config.json" } }
+
+        // when / then
+        await expect(hook["tool.execute.before"](input, output)).resolves.toBeUndefined()
+      })
+
+      test("should allow Prometheus to write text files inside .sisyphus/ subdirs", async () => {
+        // given
+        const hook = createPrometheusMdOnlyHook(createMockPluginInput())
+        const input = { tool: "Write", sessionID: TEST_SESSION_ID, callID: "call-1" }
+        const output = { args: { filePath: "/tmp/test/.sisyphus/notes/scratch.txt" } }
+
+        // when / then
+        await expect(hook["tool.execute.before"](input, output)).resolves.toBeUndefined()
+      })
 
     test("should allow Prometheus to write .md files inside .sisyphus/", async () => {
       // given
@@ -306,7 +336,7 @@ describe("prometheus-md-only", () => {
       ).rejects.toThrow("File operations restricted to .sisyphus/*.md plan files only")
     })
 
-    test("should allow bash commands from Prometheus", async () => {
+    test("should block bash commands from Prometheus", async () => {
       // given
       const hook = createPrometheusMdOnlyHook(createMockPluginInput())
       const input = {
@@ -321,7 +351,7 @@ describe("prometheus-md-only", () => {
       // when / #then
       await expect(
         hook["tool.execute.before"](input, output)
-      ).resolves.toBeUndefined()
+      ).rejects.toThrow("Shell command execution is not allowed")
     })
 
     test("should not affect non-blocked tools", async () => {
@@ -700,8 +730,8 @@ describe("prometheus-md-only", () => {
        ).rejects.toThrow("File operations restricted to .sisyphus/*.md plan files only")
      })
 
-     test("should allow nested .sisyphus directories (ctx.directory may be parent)", async () => {
-       // given - when ctx.directory is parent of actual project, path includes project name
+     test("should block nested .sisyphus directories (only root .sisyphus is allowed)", async () => {
+       // given - sub-package paths like src/.sisyphus/... must be blocked
        setupMessageStorage(TEST_SESSION_ID, "prometheus")
        const hook = createPrometheusMdOnlyHook(createMockPluginInput())
        const input = {
@@ -713,10 +743,10 @@ describe("prometheus-md-only", () => {
          args: { filePath: "src/.sisyphus/plans/x.md" },
        }
 
-       // when / #then - should allow because .sisyphus is in path
+       // when / #then - must be blocked; only root-level .sisyphus is allowed
        await expect(
          hook["tool.execute.before"](input, output)
-       ).resolves.toBeUndefined()
+       ).rejects.toThrow("File operations restricted to .sisyphus/*.md plan files only")
      })
 
      test("should block path traversal attempts", async () => {
@@ -757,9 +787,8 @@ describe("prometheus-md-only", () => {
        ).resolves.toBeUndefined()
      })
 
-     test("should allow nested project path with .sisyphus (Windows real-world case)", async () => {
-       // given - simulates when ctx.directory is parent of actual project
-       // User reported: xauusd-dxy-plan\.sisyphus\drafts\supabase-email-templates.md
+     test("should block nested project path with .sisyphus (only root .sisyphus is allowed)", async () => {
+       // given - sub-package paths like xauusd-dxy-plan\.sisyphus\... must be blocked
        setupMessageStorage(TEST_SESSION_ID, "prometheus")
        const hook = createPrometheusMdOnlyHook(createMockPluginInput())
        const input = {
@@ -771,13 +800,13 @@ describe("prometheus-md-only", () => {
          args: { filePath: "xauusd-dxy-plan\\.sisyphus\\drafts\\supabase-email-templates.md" },
        }
 
-       // when / #then
+       // when / #then - must be blocked; only root-level .sisyphus is allowed
        await expect(
          hook["tool.execute.before"](input, output)
-       ).resolves.toBeUndefined()
+       ).rejects.toThrow("File operations restricted to .sisyphus/*.md plan files only")
      })
 
-     test("should allow nested project path with mixed separators", async () => {
+     test("should block nested project path with mixed separators (only root .sisyphus is allowed)", async () => {
        // given
        setupMessageStorage(TEST_SESSION_ID, "prometheus")
        const hook = createPrometheusMdOnlyHook(createMockPluginInput())
@@ -790,10 +819,10 @@ describe("prometheus-md-only", () => {
          args: { filePath: "my-project/.sisyphus\\plans/task.md" },
        }
 
-       // when / #then
+       // when / #then - must be blocked; only root-level .sisyphus is allowed
        await expect(
          hook["tool.execute.before"](input, output)
-       ).resolves.toBeUndefined()
+       ).rejects.toThrow("File operations restricted to .sisyphus/*.md plan files only")
      })
 
      test("should block nested project path without .sisyphus", async () => {
@@ -814,5 +843,85 @@ describe("prometheus-md-only", () => {
          hook["tool.execute.before"](input, output)
        ).rejects.toThrow("File operations restricted to .sisyphus/*.md plan files only")
      })
+  })
+
+  describe("REPOSITORY_BASE_PATH support", () => {
+    const REPO_BASE = "/swdata/repository"
+    let originalEnv: string | undefined
+
+    beforeEach(() => {
+      originalEnv = process.env.REPOSITORY_BASE_PATH
+      process.env.REPOSITORY_BASE_PATH = REPO_BASE
+      setupMessageStorage(TEST_SESSION_ID, "prometheus")
+    })
+
+    afterEach(() => {
+      if (originalEnv === undefined) delete process.env.REPOSITORY_BASE_PATH
+      else process.env.REPOSITORY_BASE_PATH = originalEnv
+    })
+
+    test("should allow project top-level .sisyphus under REPOSITORY_BASE_PATH", async () => {
+      // given
+      const hook = createPrometheusMdOnlyHook(createMockPluginInput())
+      const input = { tool: "Write", sessionID: TEST_SESSION_ID, callID: "call-1" }
+      const output = {
+        args: { filePath: `${REPO_BASE}/my-project/.sisyphus/plans/work-plan.md` },
+      }
+
+      // when / then
+      await expect(hook["tool.execute.before"](input, output)).resolves.toBeUndefined()
+    })
+
+    test("should allow drafts under project .sisyphus in REPOSITORY_BASE_PATH", async () => {
+      // given
+      const hook = createPrometheusMdOnlyHook(createMockPluginInput())
+      const input = { tool: "Write", sessionID: TEST_SESSION_ID, callID: "call-1" }
+      const output = {
+        args: { filePath: `${REPO_BASE}/project-b/.sisyphus/drafts/notes.md` },
+      }
+
+      // when / then
+      await expect(hook["tool.execute.before"](input, output)).resolves.toBeUndefined()
+    })
+
+    test("should block sub-package .sisyphus under REPOSITORY_BASE_PATH project", async () => {
+      // given — packages/sub/.sisyphus is two levels deep, must be blocked
+      const hook = createPrometheusMdOnlyHook(createMockPluginInput())
+      const input = { tool: "Write", sessionID: TEST_SESSION_ID, callID: "call-1" }
+      const output = {
+        args: { filePath: `${REPO_BASE}/my-project/packages/sub/.sisyphus/plans/x.md` },
+      }
+
+      // when / then
+      await expect(hook["tool.execute.before"](input, output)).rejects.toThrow(
+        "File operations restricted to .sisyphus/*.md plan files only",
+      )
+    })
+
+    test("should block files outside REPOSITORY_BASE_PATH even with .sisyphus in path", async () => {
+      // given
+      const hook = createPrometheusMdOnlyHook(createMockPluginInput())
+      const input = { tool: "Write", sessionID: TEST_SESSION_ID, callID: "call-1" }
+      const output = {
+        args: { filePath: "/other/my-project/.sisyphus/plans/x.md" },
+      }
+
+      // when / then
+      await expect(hook["tool.execute.before"](input, output)).rejects.toThrow(
+        "File operations restricted to .sisyphus/*.md plan files only",
+      )
+    })
+
+    test("should still allow workspace root .sisyphus when REPOSITORY_BASE_PATH is set", async () => {
+      // given
+      const hook = createPrometheusMdOnlyHook(createMockPluginInput())
+      const input = { tool: "Write", sessionID: TEST_SESSION_ID, callID: "call-1" }
+      const output = {
+        args: { filePath: "/tmp/test/.sisyphus/plans/work-plan.md" },
+      }
+
+      // when / then
+      await expect(hook["tool.execute.before"](input, output)).resolves.toBeUndefined()
+    })
   })
 })

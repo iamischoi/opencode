@@ -4,6 +4,7 @@ import { buildContinuationPrompt } from "./continuation-prompt-builder"
 import { HOOK_NAME } from "./constants"
 import { injectContinuationPrompt } from "./continuation-prompt-injector"
 import type { RalphLoopState } from "./types"
+import { archiveAndClearBoulderState } from "../../features/boulder-state/storage"
 
 type LoopStateController = {
 	clear: () => boolean
@@ -54,6 +55,7 @@ export async function handleDetectedCompletion(
 	}
 
 	loopState.clear()
+	archiveAndClearBoulderState(directory, "done")
 
 	const title = state.ultrawork ? "ULTRAWORK LOOP COMPLETE!" : "Ralph Loop Complete!"
 	const message = state.ultrawork

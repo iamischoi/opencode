@@ -4,10 +4,10 @@
  * Handles reading/writing boulder.json for active plan tracking.
  */
 
-import { existsSync, readFileSync, writeFileSync, mkdirSync, readdirSync } from "node:fs"
+import { existsSync, readFileSync, writeFileSync, mkdirSync, readdirSync, renameSync } from "node:fs"
 import { dirname, join, basename } from "node:path"
 import type { BoulderState, PlanProgress, TaskSessionState } from "./types"
-import { BOULDER_DIR, BOULDER_FILE, PROMETHEUS_PLANS_DIR } from "./constants"
+import { BOULDER_DIR, BOULDER_FILE, PROMETHEUS_PLANS_DIR, PROMETHEUS_PLANS_DONE_DIR, PROMETHEUS_PLANS_FAILED_DIR } from "./constants"
 
 const RESERVED_KEYS = new Set(["__proto__", "prototype", "constructor"])
 
@@ -333,4 +333,48 @@ export function createBoulderState(
     ...(agent !== undefined ? { agent } : {}),
     ...(worktreePath !== undefined ? { worktree_path: worktreePath } : {}),
   }
+}
+
+/**
+ * Move a plan file to `.sisyphus/plans/done/` or `.sisyphus/plans/failed/`
+ * depending on whether execution succeeded.
+ *
+ * Returns the destination path on success, null if the source does not exist
+ * or the move fails.
+ */
+export function movePlanToArchive(
+  directory: string,
+  planPath: string,
+  outcome: "done" | "failed",
+): string | null {
+  if (!existsSync(planPath)) return null
+
+  const archiveSubdir = outcome === "done" ? PROMETHEUS_PLANS_DONE_DIR : PROMETHEUS_PLANS_FAILED_DIR
+  const archiveDir = join(directory, archiveSubdir)
+
+  try {
+    if (!existsSync(archiveDir)) {
+      mkdirSync(archiveDir, { recursive: true })
+    }
+    const dest = join(archiveDir, basename(planPath))
+    renameSync(planPath, dest)
+    return dest
+  } catch {
+    return null
+  }
+}
+
+/**
+ * Convenience: move the active plan from boulder state to archive, then clear
+ * boulder.json. Call this when execution completes (success or failure).
+ */
+export function archiveAndClearBoulderState(
+  directory: string,
+  outcome: "done" | "failed",
+): boolean {
+  const state = readBoulderState(directory)
+  if (state?.active_plan) {
+    movePlanToArchive(directory, state.active_plan, outcome)
+  }
+  return clearBoulderState(directory)
 }

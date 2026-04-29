@@ -16,6 +16,26 @@ import { executeSync } from "./sync-executor"
 import { findCallableAgentMatch, mergeWithClaudeCodeAgents } from "../delegate-task/subagent-discovery"
 import { normalizeSDKResponse } from "../../shared"
 
+function parseAgentModelEntry(entry: string) {
+  const trimmed = entry.trim()
+  if (!trimmed) return
+
+  const separatorIdx = trimmed.indexOf("=")
+  if (separatorIdx > 0) {
+    const rawAgent = trimmed.substring(0, separatorIdx).trim()
+    const rawModel = trimmed.substring(separatorIdx + 1).trim()
+    if (rawAgent && rawModel) return { rawAgent, rawModel }
+    return
+  }
+
+  const legacySeparatorIdx = trimmed.indexOf(":")
+  if (legacySeparatorIdx > 0) {
+    const rawAgent = trimmed.substring(0, legacySeparatorIdx).trim()
+    const rawModel = trimmed.substring(legacySeparatorIdx + 1).trim()
+    if (rawAgent && rawModel) return { rawAgent, rawModel }
+  }
+}
+
 function resolveModelAndFallbackChain(args: {
   subagentType: string
   agentOverrides?: AgentOverrides
@@ -44,14 +64,11 @@ function resolveModelAndFallbackChain(args: {
   if (envModels) {
     const envMap: Record<string, string> = {}
     for (const s of envModels.split(",")) {
-      const trimmed = s.trim()
-      if (!trimmed) continue
-      const [rawAgent, rawModel] = trimmed.split(":")
-      if (rawAgent && rawModel) {
-        envMap[getAgentConfigKey(rawAgent.trim())] = rawModel.trim()
-      }
+      const parsed = parseAgentModelEntry(s)
+      if (!parsed) continue
+      envMap[getAgentConfigKey(parsed.rawAgent)] = parsed.rawModel
     }
-    const envModelStr = envMap[agentConfigKey]
+    const envModelStr = envMap[agentConfigKey] ?? envMap[getAgentConfigKey("sisyphus")]
     if (envModelStr) {
       const normalized = parseModelString(envModelStr)
       if (normalized) {

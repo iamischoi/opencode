@@ -1,61 +1,64 @@
 import { resolve, isAbsolute } from "node:path"
+import { log } from "../../shared/logger"
 
-import { ALLOWED_EXTENSIONS, ALLOWED_PATH_PREFIX } from "./constants"
+import { ALLOWED_PATH_PREFIX } from "./constants"
+
+const normalize = (p: string) => resolve(p).replace(/\\/g, "/").toLowerCase()
+
+/**
+ * Returns true if `resolved` (already normalized) is directly under
+ * `{root}/.sisyphus/` — i.e. no sub-package nesting between root and .sisyphus.
+ */
+function isDirectlyUnderSisyphus(resolved: string, root: string): boolean {
+  if (!resolved.startsWith(root)) return false
+  const rel = resolved.substring(root.length).replace(/^\/+/, "")
+  if (rel.startsWith("..")) return false
+  return rel.startsWith(`${ALLOWED_PATH_PREFIX.toLowerCase()}/`)
+}
 
 /**
  * Cross-platform path validator for Prometheus file writes.
- * Uses path.resolve + startsWith instead of path.relative to handle:
- * - Windows backslashes (e.g., .sisyphus\\plans\\x.md)
- * - Mixed separators (e.g., .sisyphus\\plans/x.md)
- * - Case-insensitive directory/extension matching
- * - Workspace confinement (blocks paths outside root or via traversal)
- * - Nested project paths (e.g., parent/.sisyphus/... when ctx.directory is parent)
+ * Normalizes everything to forward-slash lowercase before comparing
+ * so Windows backslash vs. forward-slash differences never cause mismatches.
+ *
+ * Allowed locations:
+ *   1. {workspaceRoot}/.sisyphus/...  (always) — any file type
+ *   2. {repositoryBasePath}/{project}/.sisyphus/...  (when repositoryBasePath is set)
+ *      — exactly ONE directory level between repositoryBasePath and .sisyphus
+ *      — any file type
  */
-export function isAllowedFile(filePath: string, workspaceRoot: string): boolean {
-  // 1. Normalize both paths to use forward slashes for consistent processing
-  const normalizedRoot = resolve(workspaceRoot).replace(/\\/g, "/")
-  const absoluteFilePath = (isAbsolute(filePath) ? filePath : resolve(workspaceRoot, filePath)).replace(/\\/g, "/")
+export function isAllowedFile(
+  filePath: string,
+  workspaceRoot: string,
+  repositoryBasePath?: string,
+): boolean {
+  const root = normalize(workspaceRoot)
+  const resolved = normalize(isAbsolute(filePath) ? filePath : resolve(workspaceRoot, filePath))
 
-  // 2. Drive letter normalization for Windows
-  let root = normalizedRoot
-  let resolved = absoluteFilePath
-  
-  if (process.platform === "win32") {
-    // Ensure drive letter is consistent (e.g., C:/...)
-    if (root.match(/^[a-zA-Z]:/)) {
-      root = root.charAt(0).toUpperCase() + root.slice(1)
+  log("[isAllowedFile] debug", { filePath, workspaceRoot, repositoryBasePath, root, resolved, platform: process.platform })
+
+  // Case 1: directly under workspace root's .sisyphus/
+  if (isDirectlyUnderSisyphus(resolved, root)) {
+    log("[isAllowedFile] ALLOW: under workspace root .sisyphus/", { resolved })
+    return true
+  }
+
+  // Case 2: {REPOSITORY_BASE_PATH}/{project}/.sisyphus/...
+  if (repositoryBasePath) {
+    const repoBase = normalize(repositoryBasePath).replace(/\/+$/, "")
+    if (resolved.startsWith(repoBase + "/")) {
+      const afterBase = resolved.substring(repoBase.length + 1)
+      const slashIdx = afterBase.indexOf("/")
+      if (slashIdx !== -1) {
+        const afterProject = afterBase.substring(slashIdx + 1)
+        if (afterProject.startsWith(`${ALLOWED_PATH_PREFIX.toLowerCase()}/`)) {
+          log("[isAllowedFile] ALLOW: repository base path project .sisyphus match", { resolved, repoBase })
+          return true
+        }
+      }
     }
-    if (resolved.match(/^[a-zA-Z]:/)) {
-      resolved = resolved.charAt(0).toUpperCase() + resolved.slice(1)
-    }
   }
 
-  // 3. Calculate relative path manually to avoid path.relative quirks with drive letters
-  let rel = ""
-  if (resolved.startsWith(root)) {
-    rel = resolved.substring(root.length).replace(/^[/\\]+/, "")
-  } else {
-    // If it doesn't start with root, it might be outside or a different drive
-    return false
-  }
-
-  // 4. Reject if escapes root (should be handled by startsWith above, but for safety:)
-  if (rel.startsWith("..")) {
-    return false
-  }
-
-  // 5. Check if ALLOWED_PATH_PREFIX (.sisyphus) directory exists in the relative path
-  if (!rel.toLowerCase().includes(`${ALLOWED_PATH_PREFIX.toLowerCase()}/`)) {
-    return false
-  }
-
-  // 6. Check extension matches one of ALLOWED_EXTENSIONS (case-insensitive)
-  const hasAllowedExtension = ALLOWED_EXTENSIONS.some(
-    ext => resolved.toLowerCase().endsWith(ext.toLowerCase())
-  )
-  if (!hasAllowedExtension) {
-    return false
-  }
-
-  return true
+  log("[isAllowedFile] FAIL: not under any allowed .sisyphus/ root", { resolved, root, repositoryBasePath })
+  return false
 }

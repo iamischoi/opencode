@@ -8,6 +8,7 @@ import { SessionRevert } from "./revert"
 import * as Session from "./session"
 import { Agent } from "../agent/agent"
 import { Provider } from "../provider"
+import { resolveConfiguredAgentModel } from "../provider/provider"
 import { ModelID, ProviderID } from "../provider/schema"
 import { type Tool as AITool, tool, jsonSchema, type ToolExecutionOptions, asSchema } from "ai"
 import type { JSONSchema7 } from "@ai-sdk/provider"
@@ -730,7 +731,8 @@ NOTE: At any point in time through this workflow you should feel free to ask the
         yield* bus.publish(Session.Event.Error, { sessionID: input.sessionID, error: error.toObject() })
         throw error
       }
-      const model = input.model ?? agent.model ?? (yield* lastModel(input.sessionID))
+      const configuredModel = resolveConfiguredAgentModel(agent.name)
+      const model = input.model ?? configuredModel ?? agent.model ?? (yield* lastModel(input.sessionID))
       const userMsg: MessageV2.User = {
         id: input.messageID ?? MessageID.ascending(),
         sessionID: input.sessionID,
@@ -929,7 +931,8 @@ NOTE: At any point in time through this workflow you should feel free to ask the
         throw error
       }
 
-      const model = input.model ?? ag.model ?? (yield* lastModel(input.sessionID))
+      const configuredModel = resolveConfiguredAgentModel(ag.name)
+      const model = input.model ?? configuredModel ?? ag.model ?? (yield* lastModel(input.sessionID))
       const same = ag.model && model.providerID === ag.model.providerID && model.modelID === ag.model.modelID
       const full =
         !input.variant && ag.variant && same

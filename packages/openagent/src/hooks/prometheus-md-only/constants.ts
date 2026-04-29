@@ -7,9 +7,16 @@ export const PROMETHEUS_AGENT = "prometheus"
 
 export const ALLOWED_EXTENSIONS = [".md"]
 
+// Specific filenames allowed anywhere directly under .sisyphus/ (no subdirectory required)
+export const ALLOWED_EXACT_FILES = ["boulder.json"]
+
 export const ALLOWED_PATH_PREFIX = ".sisyphus"
 
-export const BLOCKED_TOOLS = ["Write", "Edit", "write", "edit"]
+export const BLOCKED_TOOLS = ["Write", "Edit", "write", "edit", "multiedit", "apply_patch", "bash"]
+
+// Tools that must be blocked unconditionally (no filePath exemption).
+// bash can create/delete directories and files without a filePath argument.
+export const UNCONDITIONALLY_BLOCKED_TOOLS = ["bash"]
 
 export const PLANNING_CONSULT_WARNING = `
 

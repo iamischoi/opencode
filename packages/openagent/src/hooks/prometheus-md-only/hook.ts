@@ -1,5 +1,5 @@
 import type { PluginInput } from "@opencode-ai/plugin"
-import { HOOK_NAME, BLOCKED_TOOLS, PLANNING_CONSULT_WARNING, PROMETHEUS_WORKFLOW_REMINDER } from "./constants"
+import { HOOK_NAME, BLOCKED_TOOLS, UNCONDITIONALLY_BLOCKED_TOOLS, PLANNING_CONSULT_WARNING, PROMETHEUS_WORKFLOW_REMINDER } from "./constants"
 import { log } from "../../shared/logger"
 import { SYSTEM_DIRECTIVE_PREFIX } from "../../shared/system-directive"
 import { getAgentDisplayName } from "../../shared/agent-display-names"
@@ -41,23 +41,41 @@ export function createPrometheusMdOnlyHook(ctx: PluginInput) {
         return
       }
 
+      // bash and other shell tools must be blocked unconditionally —
+      // they can create/delete directories and files without a filePath argument.
+      if (UNCONDITIONALLY_BLOCKED_TOOLS.includes(toolName)) {
+        log(`[${HOOK_NAME}] Blocked: Prometheus cannot run shell/bash commands`, {
+          sessionID: input.sessionID,
+          tool: toolName,
+          agent: agentName,
+        })
+        throw new Error(
+          `[${HOOK_NAME}] Prometheus is a planning agent. Shell command execution is not allowed. ` +
+          `Use Write tool to create .sisyphus/plans/*.md plan files only. ` +
+          `APOLOGIZE TO THE USER AND WRITE THE PLAN FILE DIRECTLY.`
+        )
+      }
+
       const filePath = (output.args.filePath ?? output.args.path ?? output.args.file) as string | undefined
       if (!filePath) {
         return
       }
 
-       if (!isAllowedFile(filePath, ctx.directory)) {
+       const repositoryBasePath = process.env.REPOSITORY_BASE_PATH
+       if (!isAllowedFile(filePath, ctx.directory, repositoryBasePath)) {
          log(`[${HOOK_NAME}] Blocked: Prometheus can only write to .sisyphus/*.md`, {
            sessionID: input.sessionID,
            tool: toolName,
            filePath,
+           ctxDirectory: ctx.directory,
            agent: agentName,
          })
-         throw new Error(
-           `[${HOOK_NAME}] Prometheus is a planning agent. File operations restricted to .sisyphus/*.md plan files only. Use task() to delegate implementation. ` +
-           `Attempted to modify: ${filePath}. ` +
-           `APOLOGIZE TO THE USER, REMIND OF YOUR PLAN WRITING PROCESSES, TELL USER WHAT YOU WILL GOING TO DO AS THE PROCESS, WRITE THE PLAN`
-         )
+       throw new Error(
+          `[${HOOK_NAME}] Prometheus is a planning agent. File operations restricted to .sisyphus/*.md plan files only. Use task() to delegate implementation. ` +
+          `Attempted to modify: ${filePath}. ` +
+          `[debug: ctxDirectory=${ctx.directory}, repositoryBasePath=${process.env.REPOSITORY_BASE_PATH ?? "unset"}] ` +
+          `APOLOGIZE TO THE USER, REMIND OF YOUR PLAN WRITING PROCESSES, TELL USER WHAT YOU WILL GOING TO DO AS THE PROCESS, WRITE THE PLAN`
+        )
        }
 
       const normalizedPath = filePath.toLowerCase().replace(/\\/g, "/")

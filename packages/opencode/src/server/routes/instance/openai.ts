@@ -23,8 +23,12 @@ import {
   findPrometheusPlans,
   getPlanName,
   getPlanProgress,
+  archiveAndClearBoulderState,
 } from "../../../../../openagent/src/features/boulder-state/storage"
+import { getAgentRuntimeName } from "../../../../../openagent/src/shared/agent-display-names"
 import { statSync } from "node:fs"
+import path from "path"
+import { Permission } from "@/permission"
 
 const log = Log.create({ service: "server.openai" })
 
@@ -39,6 +43,64 @@ const hasUltraworkHeader = (headers: Record<string, string | undefined>) => {
     if (!value) return false
     return hasUltraworkToken(value)
   })
+}
+
+type LibreChatQuestion = {
+  question: string
+  header?: string
+  options?: ReadonlyArray<{ label: string; description: string }>
+  multiple?: boolean
+}
+
+const isLibreChatRequest = (headers: Record<string, string | undefined>) => {
+  return Object.entries(headers).some(([key, value]) => {
+    if (key.toLowerCase() !== "user-agent") return false
+    return value?.toLowerCase().includes("librechat") ?? false
+  })
+}
+
+const formatLibreChatQuestion = (questions: ReadonlyArray<LibreChatQuestion>) => {
+  if (questions.length === 0) return "질문에 답변해주세요."
+
+  return [
+    questions.length > 1
+      ? "계속 진행하려면 아래 질문들에 답변해주세요."
+      : "계속 진행하려면 아래 질문에 답변해주세요.",
+    ...questions.flatMap((item, index) => {
+      const title = item.header ? `${index + 1}. ${item.header}` : `${index + 1}. 질문`
+      const choiceHint = item.options?.length
+        ? item.options.map((option) => `- ${option.label}: ${option.description}`).join("\n")
+        : ""
+      const multipleHint = item.multiple ? "(복수 선택 가능)" : ""
+      return [
+        title,
+        `${item.question}${multipleHint ? ` ${multipleHint}` : ""}`,
+        choiceHint,
+      ].filter(Boolean)
+    }),
+    "",
+    "자유롭게 답변해주시면 다음 요청에서 이어서 처리하겠습니다.",
+  ].join("\n\n")
+}
+
+const parseAgentModelEntry = (entry: string) => {
+  const trimmed = entry.trim()
+  if (!trimmed) return
+
+  const separatorIdx = trimmed.indexOf("=")
+  if (separatorIdx > 0) {
+    const rawAgent = trimmed.substring(0, separatorIdx).trim()
+    const rawModel = trimmed.substring(separatorIdx + 1).trim()
+    if (rawAgent && rawModel) return { rawAgent, rawModel }
+    return
+  }
+
+  const legacySeparatorIdx = trimmed.indexOf(":")
+  if (legacySeparatorIdx > 0) {
+    const rawAgent = trimmed.substring(0, legacySeparatorIdx).trim()
+    const rawModel = trimmed.substring(legacySeparatorIdx + 1).trim()
+    if (rawAgent && rawModel) return { rawAgent, rawModel }
+  }
 }
 
 const formatOpenAiPart = (part: MessageV2.Part) => {
@@ -207,21 +269,20 @@ export const OpenAiRoutes = () => {
         const agentTypesEnv = Flag.OPENCODE_API_TYPES || ""
         const agentModelsEnv = Flag.OPENCODE_AGENT_MODELS || ""
 
-        // Parse OPENCODE_AGENT_MODELS once up-front (format: agentName:provider/model,...).
+        // Parse OPENCODE_AGENT_MODELS once up-front.
+        // Preferred format: agentName=provider/model,...
+        // Legacy format:    agentName:provider/model,...
         // Previously the map was rebuilt on every resolveAgentModel() call — wasteful when the
         // function is called multiple times (prometheus + sisyphus handover).
         const agentModelMap: Record<string, string> = {}
         for (const s of agentModelsEnv.split(",")) {
-          const trimmed = s.trim()
-          if (!trimmed) continue
-          const [rawAgent, rawModel] = trimmed.split(":")
-          if (rawAgent && rawModel) {
-            agentModelMap[rawAgent.trim().toLowerCase()] = rawModel.trim()
-          }
+          const parsed = parseAgentModelEntry(s)
+          if (!parsed) continue
+          agentModelMap[parsed.rawAgent.toLowerCase()] = parsed.rawModel
         }
 
         const resolveAgentModel = (name: string) => {
-          const modelStr = agentModelMap[name.toLowerCase()]
+          const modelStr = agentModelMap[name.toLowerCase()] ?? agentModelMap["sisyphus"]
           if (!modelStr) return undefined
           const splitIdx = modelStr.indexOf("/")
           if (splitIdx <= 0) return undefined
@@ -272,12 +333,18 @@ export const OpenAiRoutes = () => {
         //    not fail with an unauthenticated provider.
         if (!useCustomProviders) {
           if (isLoggedIn) {
-            const resolved = yield* providerSvc.defaultModel()
-            log.info("Custom providers disabled with active OAuth session. Using resolved default model.", {
-              providerID: resolved.providerID,
-              modelID: resolved.modelID,
-            })
-            promptModelOverride = resolved
+            const defaultModelExit = yield* Effect.exit(providerSvc.defaultModel())
+            if (defaultModelExit._tag === "Success") {
+              promptModelOverride = defaultModelExit.value
+              log.info("Custom providers disabled with active OAuth session. Using resolved default model.", {
+                providerID: defaultModelExit.value.providerID,
+                modelID: defaultModelExit.value.modelID,
+              })
+            } else {
+              log.warn("Custom providers disabled but defaultModel() failed. Leaving promptModelOverride undefined so session picks up last-used model.", {
+                cause: defaultModelExit.cause,
+              })
+            }
           } else {
             log.info("Custom providers disabled and no OAuth session. Falling back to free model.")
             promptModelOverride = {
@@ -288,7 +355,7 @@ export const OpenAiRoutes = () => {
         }
 
         let agent: Agent.Info
-        const result1 = yield* Effect.exit(agentSvc.get(agentName))
+        const result1 = yield* Effect.exit(agentSvc.get(getAgentRuntimeName(agentName)))
         if (result1._tag === "Success" && result1.value) {
           agent = result1.value
         } else {
@@ -296,7 +363,7 @@ export const OpenAiRoutes = () => {
           if (planResult._tag === "Success" && planResult.value) {
             agent = planResult.value
           } else {
-            const result2 = yield* Effect.exit(agentSvc.get("sisyphus"))
+            const result2 = yield* Effect.exit(agentSvc.get(getAgentRuntimeName("sisyphus")))
             if (result2._tag === "Success" && result2.value) {
               agent = result2.value
             } else {
@@ -307,7 +374,7 @@ export const OpenAiRoutes = () => {
 
         let executionAgent: Agent.Info = agent
         if (autoHandover) {
-          const sisyphusResult = yield* Effect.exit(agentSvc.get("sisyphus"))
+          const sisyphusResult = yield* Effect.exit(agentSvc.get(getAgentRuntimeName("sisyphus")))
           if (sisyphusResult._tag === "Success" && sisyphusResult.value) {
             executionAgent = sisyphusResult.value
           } else {
@@ -322,20 +389,65 @@ export const OpenAiRoutes = () => {
         const session = yield* sessionSvc.create({})
         const sessionID = session.id
         const projectDirectory = Instance.directory
+
+        // Inject write permission for plan files into the Prometheus session so the
+        // LLM tool-call is not blocked by the default "ask" gate.
+        // Patterns are anchored to the repo root — sub-package .sisyphus dirs are not allowed.
+        if (agentName === "prometheus") {
+          yield* sessionSvc.setPermission({
+            sessionID,
+            permission: [
+              new Permission.Rule({ permission: "edit", pattern: ".sisyphus/plans/*.md", action: "allow" }),
+              new Permission.Rule({ permission: "edit", pattern: ".sisyphus/drafts/*.md", action: "allow" }),
+            ],
+          })
+        }
+
         const snapshotPrometheusPlans = () => new Map(
           findPrometheusPlans(projectDirectory).map((planPath) => [planPath, statSync(planPath).mtimeMs]),
         )
-        const findRunnablePrometheusPlan = (before: Map<string, number>) => findPrometheusPlans(projectDirectory).find((planPath) => {
-          const previousMtime = before.get(planPath)
-          if (previousMtime === undefined) return false
-          const nextMtime = statSync(planPath).mtimeMs
-          if (nextMtime <= previousMtime) return false
-          return true
-        }) ?? findPrometheusPlans(projectDirectory).find((planPath) => {
-          if (before.has(planPath)) return false
-          return true
-        })
-        const buildStartWorkParts = Effect.fn("OpenAiRoutes.buildStartWorkParts")(function* (planName: string) {
+        const findRunnablePrometheusPlan = (before: Map<string, number>) => {
+          const currentPlans = findPrometheusPlans(projectDirectory)
+          log.info("[autoHandover] plan detection", {
+            currentPlanCount: currentPlans.length,
+            snapshotSize: before.size,
+            snapshotPaths: Array.from(before.keys()),
+            currentPaths: currentPlans,
+          })
+
+          // 1st: file in snapshot whose mtime was updated
+          const updated = currentPlans.find((planPath) => {
+            const previousMtime = before.get(planPath)
+            if (previousMtime === undefined) return false
+            try {
+              return statSync(planPath).mtimeMs > previousMtime
+            } catch { return false }
+          })
+          if (updated) {
+            log.info("[autoHandover] found updated plan", { updated })
+            return updated
+          }
+
+          // 2nd: brand-new file not in snapshot
+          const newFile = currentPlans.find((planPath) => !before.has(planPath))
+          if (newFile) {
+            log.info("[autoHandover] found new plan", { newFile })
+            return newFile
+          }
+
+          // 3rd fallback: snapshot missed everything — use most-recent plan file
+          if (currentPlans.length > 0) {
+            log.warn("[autoHandover] snapshot detection failed, falling back to most recent plan", { plan: currentPlans[0] })
+            return currentPlans[0]
+          }
+
+          log.warn("[autoHandover] no plan found", { snapshotPaths: Array.from(before.keys()), currentPlans })
+          return undefined
+        }
+        const buildStartWorkParts = Effect.fn("OpenAiRoutes.buildStartWorkParts")(function* (planName: string, planContent?: string) {
+          const planContentBlock = planContent
+            ? `\n\n<plan-content>\n${planContent}\n</plan-content>\n\nNOTE: The plan content above has been injected directly. Skip the "Find available plans" file search step and proceed immediately to step 2 (Check for active boulder state).`
+            : ""
           return yield* pluginSvc.trigger(
             "command.execute.before",
             { command: "start-work", sessionID, arguments: planName },
@@ -353,7 +465,7 @@ Timestamp: $TIMESTAMP
 
 <user-request>
 ${planName}
-</user-request>`,
+</user-request>${planContentBlock}`,
               }],
             },
           )
@@ -409,31 +521,17 @@ ${planName}
           return streamSSE(c, async (sseStream) => {
             const created = Math.floor(Date.now() / 1000)
             const modelName = model || "prometheus"
+            const libreChatRequest = isLibreChatRequest(headers)
 
             // helper to format status
-            const formatStatus = (msg: string) => `\n> ${msg}\n`
+            const formatStatus = (msg: string) => `\n[Agent Action]\n${msg.trim()}\n\n`
 
             // Helper to send deduplicated status update
             let lastSentStatus = "" // Move up for sendStatusUpdate
-            const flushTextBuffer = async () => {
-              if (!textBuffer) return
-              await sseStream.writeSSE({
-                data: JSON.stringify({
-                  id: sessionID,
-                  object: "chat.completion.chunk",
-                  created,
-                  model: modelName,
-                  choices: [{
-                    index: 0,
-                    delta: { content: textBuffer },
-                    finish_reason: null,
-                  }],
-                }),
-              })
-              textBuffer = ""
-            }
-            // Clears accumulated text without sending to content.
-            // Used mid-session so the single reasoning/thinking block stays open.
+            // flushTextBuffer is a no-op now — text is streamed immediately.
+            // Kept for call-site compatibility so we don't have to remove every callsite.
+            const flushTextBuffer = async (_final = false) => { textBuffer = "" }
+            // Clears accumulated text flag without any SSE write.
             const clearTextBuffer = () => { textBuffer = "" }
             const sendStatusUpdate = async (msg: string, asContent = false) => {
               if (msg === lastSentStatus) return
@@ -492,8 +590,48 @@ ${planName}
             let lastStepHadTools = false          // true if the previous step had tool calls
             let finalAnswerStarted = false        // true once we inject the separator
             let textBuffer = ""                     // accumulates text during tool-loop phases
+            let terminatedForLibreChatQuestion = false
+            let isReasoningActive = false   // true while reasoning deltas are streaming
 
             const trackedSessions = new Set<string>([sessionID])
+
+            const completeLibreChatQuestion = async (questions: ReadonlyArray<LibreChatQuestion>) => {
+              if (terminatedForLibreChatQuestion || finished) return
+              terminatedForLibreChatQuestion = true
+              clearTextBuffer()
+              await sseStream.writeSSE({
+                data: JSON.stringify({
+                  id: sessionID,
+                  object: "chat.completion.chunk",
+                  created,
+                  model: modelName,
+                  choices: [{
+                    index: 0,
+                    delta: { content: formatLibreChatQuestion(questions) },
+                    finish_reason: null,
+                  }],
+                }),
+              })
+              await sseStream.writeSSE({
+                data: JSON.stringify({
+                  id: sessionID,
+                  object: "chat.completion.chunk",
+                  created,
+                  model: modelName,
+                  choices: [{
+                    index: 0,
+                    delta: {},
+                    finish_reason: "stop",
+                  }],
+                }),
+              })
+              await sseStream.writeSSE({ data: "[DONE]" })
+              finished = true
+              unsub()
+              await AppRuntime.runPromise(promptSvc.cancel(sessionID)).catch((error) => {
+                log.warn("failed to cancel LibreChat question session", { error, sessionID })
+              })
+            }
 
             const unsub = Bus.subscribeAll(async (event) => {
               // 1. Track session hierarchy: if a new session is created as a child of a tracked session, track it too.
@@ -507,6 +645,7 @@ ${planName}
 
               // 2. Filter events by session hierarchy
               if (!event.properties?.sessionID || !trackedSessions.has(event.properties.sessionID)) return
+              if (finished || terminatedForLibreChatQuestion) return
 
               // Detailed logging to help debug event flow
               log.debug("captured bus event", { type: event.type, properties: event.properties })
@@ -516,7 +655,19 @@ ${planName}
                 if (event.type === "session.status") {
                   const { status } = event.properties
                   if (status.type === "retry") {
-                    await sendStatusUpdate(formatStatus(`⚠️ 재시도 중... (시도 ${status.attempt})\n> 사유: ${status.message}`), false)
+                    await sendStatusUpdate(formatStatus(`⚠️ 재시도 중... (시도 ${status.attempt})\n사유: ${status.message}`), false)
+                  }
+                }
+
+                // 1b. Session Error — LLM call failed (halt() in processor.ts publishes this)
+                if (event.type === "session.error") {
+                  const error = event.properties.error
+                  if (error) {
+                    const msg = "message" in error && typeof error.message === "string"
+                      ? error.message
+                      : JSON.stringify(error)
+                    log.error("session error received", { sessionID, errorName: error.name, msg })
+                    textBuffer += `\n\n❌ **오류 발생** (\`${error.name}\`):\n${msg}`
                   }
                 }
 
@@ -530,12 +681,22 @@ ${planName}
                 }
               }
 
-              // 2. Text Deltas - ALL text goes to reasoning during processing
-              // The final answer buffer is flushed to content after prompt completion
+              // 2. Text Deltas — stream immediately so the user sees output as it arrives.
               if (event.type === "message.part.delta" && event.properties.field === "text") {
                 const delta = event.properties.delta
-                textBuffer += delta
-
+                // When switching from reasoning → content, close the current reasoning block
+                // so the next reasoning delta starts a fresh thinking block.
+                if (isReasoningActive) {
+                  isReasoningActive = false
+                  lastSentStatus = "" // reset so next reasoning gets a new block header
+                }
+                // Prefix the very first text chunk with the separator when this is the final answer
+                let content = delta
+                if (!finalAnswerStarted) {
+                  content = `\n\n========== 최종 결과 ==========\n\n${delta}`
+                  finalAnswerStarted = true
+                }
+                textBuffer = "has-content" // flag: there was text this step
                 await sseStream.writeSSE({
                   data: JSON.stringify({
                     id: sessionID,
@@ -544,15 +705,10 @@ ${planName}
                     model: modelName,
                     choices: [{
                       index: 0,
-                      delta: {
-                        reasoning_content: delta,
-                        reasoning: delta,
-                        thinking: delta,
-                        thought: delta
-                      },
-                      finish_reason: null
-                    }]
-                  })
+                      delta: { content },
+                      finish_reason: null,
+                    }],
+                  }),
                 })
               }
 
@@ -560,11 +716,15 @@ ${planName}
               if (event.type === "message.part.delta" && event.properties.field === "reasoning") {
                 const delta = event.properties.delta
 
-                // If this is the start of reasoning and we have context, prepend it
+                // If this is the start of a (new) reasoning block, prepend a header.
+                // This fires on the very first delta AND whenever reasoning resumes after content.
                 let prefix = ""
-                if (!lastSentStatus.includes("생각 중") && currentAgentDisplayName) {
-                  prefix = `[${currentAgentDisplayName}] ${currentTaskSummary || "생각 중..."}\n\n`
-                  lastSentStatus = prefix // Mark as sent to avoid repeated prefixing
+                if (!isReasoningActive) {
+                  isReasoningActive = true
+                  if (currentAgentDisplayName) {
+                    prefix = `[${currentAgentDisplayName}] ${currentTaskSummary || "생각 중..."}\n\n`
+                    lastSentStatus = prefix // Mark as sent to avoid repeated prefixing within same block
+                  }
                 }
 
                 await sseStream.writeSSE({
@@ -595,11 +755,16 @@ ${planName}
                 // Mark that this session and current step use tools
                 hasToolCallsInSession = true
                 currentStepHasTools = true
+                // Close any open reasoning block — tool execution is a hard boundary
+                if (isReasoningActive) {
+                  isReasoningActive = false
+                  lastSentStatus = ""
+                }
                 // Clear text buffer - any text before a tool call is intermediate thinking
                 // (already sent to reasoning stream, not needed for final answer)
                 clearTextBuffer()
 
-                await sendStatusUpdate(formatStatus(`⚙️ **${toolName}** 준비 중...`))
+                await sendStatusUpdate(formatStatus(`⚙️ **${toolName}** 준비 중...`), false)
 
                 // Also send the actual tool call chunk (OpenAI spec)
                 await sseStream.writeSSE({
@@ -657,13 +822,13 @@ ${planName}
               if (event.type === "message.part.created" && event.properties.type === "step-start") {
                 lastActivity = "planning"
                 clearTextBuffer()
-                await sendStatusUpdate(formatStatus(`🔍 다음 단계를 계획하고 있습니다...`))
+                await sendStatusUpdate(formatStatus(`🔍 다음 단계를 계획하고 있습니다...`), false)
               }
 
               // 8. Step Finish / Usage
               if (event.type === "message.part.created" && event.properties.type === "step-finish") {
                 const { reason, cost } = event.properties
-                await sendStatusUpdate(formatStatus(`🏁 단계 완료 (상태: ${reason}, 비용: $${cost.toFixed(4)})`))
+                await sendStatusUpdate(formatStatus(`🏁 단계 완료 (상태: ${reason}, 비용: $${cost.toFixed(4)})`), false)
 
                 // Track step transitions for phase detection
                 lastStepHadTools = currentStepHasTools
@@ -679,13 +844,13 @@ ${planName}
               // 9. File Changes (Patches)
               if (event.type === "message.part.created" && event.properties.type === "patch") {
                 const files = (event.properties.files || []) as string[]
-                await sendStatusUpdate(formatStatus(`📝 코드 변경 사항 반영 중:\n${files.map((f: string) => `  - ${f}`).join("\n")}`))
+                await sendStatusUpdate(formatStatus(`📝 코드 변경 사항 반영 중:\n${files.map((f: string) => `  - ${f}`).join("\n")}`), false)
               }
 
               // 10. Retries
               if (event.type === "message.part.created" && event.properties.type === "retry") {
                 const { attempt, error } = event.properties
-                await sendStatusUpdate(formatStatus(`⚠️ 재시도 진행 중 (시도 ${attempt})...\n> 오류: ${error.message}`))
+                await sendStatusUpdate(formatStatus(`⚠️ 재시도 진행 중 (시도 ${attempt})...\n오류: ${error.message}`), false)
               }
 
               // 11. Agent Transitions
@@ -698,6 +863,19 @@ ${planName}
                 const part = event.properties.part as MessageV2.ToolPart
                 const toolName = part.tool
                 const state = part.state
+
+                if (libreChatRequest && toolName === "question" && state.status === "running") {
+                  const input = state.input
+                  const questions = input && typeof input === "object" && "questions" in input && Array.isArray(input.questions)
+                    ? input.questions.filter((item): item is LibreChatQuestion => {
+                        if (!item || typeof item !== "object") return false
+                        return "question" in item && typeof item.question === "string"
+                      })
+                    : []
+                  await completeLibreChatQuestion(questions)
+                  return
+                }
+
                 let msg = ""
 
                 const toolMap: Record<string, string> = {
@@ -793,16 +971,36 @@ ${planName}
                     // 5. Fallbacks
                     else if (args.filename) argsDesc = `: \`${args.filename}\``
                   } catch (e: unknown) { }
-                  msg = formatStatus(`⏳ ${name} 실행 중${argsDesc}...\n\n${JSON.stringify(state.input, null, 2)}`)
+
+                  // running 상태: prompt 필드는 content(사용자에게 보임)로, 나머지 상태 메시지는 Thinking으로
+                  const promptField = (state.input as Record<string, unknown>)?.prompt
+                  if (typeof promptField === "string" && promptField.trim()) {
+                    await sendStatusUpdate(promptField.trim(), true)
+                  }
+
+                  msg = formatStatus(`⏳ ${name} 실행 중${argsDesc}...`)
+                  // 상태 메시지(argsDesc)는 Thinking으로 전송
+                  await sendStatusUpdate(msg, false)
+                  msg = ""
                 } else if (state.status === "completed") {
                   lastActivity = "tool"
-                  msg = formatStatus(`✅ ${name} 수행 완료\n\n입력:\n${JSON.stringify(state.input, null, 2)}\n\n출력:\n${state.output}`)
+                  // completed: prompt 필드는 running에서 이미 content로 보여줬으므로 재전송 생략
+                  if (toolName === "delegate_task" || toolName === "task") {
+                    const input = state.input as Record<string, unknown>
+                    const target = (input?.subagent_type || input?.category || "알 수 없는 에이전트") as string
+                    msg = formatStatus(`✅ ${name} 수행 완료 - Agent: **${target}**`)
+                  } else {
+                    const outputSummary = state.output
+                      ? `\n\n출력:\n${state.output}`
+                      : ""
+                    msg = formatStatus(`✅ ${name} 수행 완료${outputSummary}`)
+                  }
                 } else if (state.status === "error") {
-                  msg = formatStatus(`❌ ${name} 수행 중 오류 발생: ${state.error}\n\n입력:\n${JSON.stringify(state.input, null, 2)}`)
+                  msg = formatStatus(`❌ ${name} 수행 중 오류 발생: ${state.error}`)
                 }
 
                 if (msg) {
-                  await sendStatusUpdate(msg)
+                    await sendStatusUpdate(msg, false)
                 }
               }
 
@@ -821,7 +1019,7 @@ ${planName}
                 const displayName = agentMap[name.toLowerCase()] || `분야별 에이전트(${name})`
                 currentAgentDisplayName = displayName
                 currentTaskSummary = "작업 계획 수립 및 수행 중"
-                await sendStatusUpdate(formatStatus(`🤖 작업 주체 전환: **${displayName}**`))
+                await sendStatusUpdate(formatStatus(`🤖 작업 주체 전환: **${displayName}**`), false)
               }
             } catch (e) {
               log.error("failed to write SSE", { error: e })
@@ -839,7 +1037,7 @@ ${planName}
             useCustomProviders,
           })
           try {
-            const plansBeforePrompt = autoHandover ? snapshotPrometheusPlans() : undefined
+            const plansBeforePrompt = agentName === "prometheus" ? snapshotPrometheusPlans() : undefined
             const finalParts: any[] = [{ type: "text", text: lastMessage }]
 
             if (autoHandover && agentName === "prometheus") {
@@ -858,11 +1056,41 @@ ${planName}
               })
             )
 
+            if (terminatedForLibreChatQuestion) return
+
+            // Flush Prometheus's final text immediately so user sees it before handover clears the buffer
+            await flushTextBuffer()
+
+            // Resolve plan once — reused for display, download URL, and handover prompt injection
+            const resolvedPlanPath = agentName === "prometheus" && plansBeforePrompt
+              ? findRunnablePrometheusPlan(plansBeforePrompt)
+              : undefined
+            let resolvedPlanContent = ""
+            if (resolvedPlanPath) {
+              try { resolvedPlanContent = await Bun.file(resolvedPlanPath).text() } catch { /* ignore */ }
+            }
+
+            // Show plan content and download URL before any handover
+            if (agentName === "prometheus" && resolvedPlanPath) {
+              const relativePath = path.relative(projectDirectory, resolvedPlanPath)
+              const downloadUrl = `/file/raw?path=${encodeURIComponent(relativePath)}`
+              const planName = getPlanName(resolvedPlanPath)
+              const planBlock = `\n\n---\n📋 **계획: ${planName}**\n\n${resolvedPlanContent || "(계획 파일 읽기 실패)"}\n\n---\n📥 다운로드: [${planName}](${downloadUrl})\n`
+              await sseStream.writeSSE({
+                data: JSON.stringify({
+                  id: sessionID,
+                  object: "chat.completion.chunk",
+                  created,
+                  model: modelName,
+                  choices: [{ index: 0, delta: { content: planBlock }, finish_reason: null }],
+                }),
+              })
+              finalAnswerStarted = true
+            }
+
             // Auto-handover to Sisyphus if Prometheus finished planning
             if (autoHandover && agentName === "prometheus") {
-              const verifiedPlanPath = plansBeforePrompt
-                ? findRunnablePrometheusPlan(plansBeforePrompt)
-                : undefined
+              const verifiedPlanPath = resolvedPlanPath
 
               if (verifiedPlanPath) {
                 log.info("triggering automatic handover to execution agent", {
@@ -870,34 +1098,57 @@ ${planName}
                   executionAgent: executionAgent.name,
                   verifiedPlanPath,
                 })
-                await sendStatusUpdate(formatStatus(`🚀 계획 파일 확인 완료 (${getPlanName(verifiedPlanPath)}). 자동으로 개발 작업을 시작합니다...`))
 
-                await AppRuntime.runPromise(
-                  Effect.gen(function* () {
-                    const startWork = yield* buildStartWorkParts(getPlanName(verifiedPlanPath))
-                    return yield* promptSvc.prompt({
-                      sessionID,
-                      parts: startWork.parts,
-                      agent: executionAgent.name,
-                      model: useCustomProviders ? resolveAgentModel(executionAgent.name) : undefined,
-                    })
-                  })
-                )
-              } else {
-                log.warn("skipping automatic handover because no runnable prometheus plan was verified", { sessionID, projectDirectory })
-                await sendStatusUpdate(formatStatus("⚠️ 실행 가능한 Prometheus plan 파일이 없어도 작업을 멈추지 않고 Sisyphus를 직접 이어서 실행합니다."))
-                await AppRuntime.runPromise(
-                  promptSvc.prompt({
-                    sessionID,
-                    parts: [{ type: "text", text: lastMessage }],
-                    agent: executionAgent.name,
-                    model: useCustomProviders ? resolveAgentModel(executionAgent.name) : undefined,
-                  })
-                )
+                const MAX_HANDOVER_TURNS = 10
+                let handoverTurn = 0
+                let shouldContinue = true
+
+                while (shouldContinue && handoverTurn < MAX_HANDOVER_TURNS) {
+                  handoverTurn++
+                  const toolCallsBefore = toolCallCount
+
+                  if (handoverTurn === 1) {
+                    await sendStatusUpdate(formatStatus(`🚀 계획 파일 확인 완료 (${getPlanName(verifiedPlanPath)}). 자동으로 개발 작업을 시작합니다...`), false)
+                    await AppRuntime.runPromise(
+                      Effect.gen(function* () {
+                        const startWork = yield* buildStartWorkParts(getPlanName(verifiedPlanPath), resolvedPlanContent || undefined)
+                        return yield* promptSvc.prompt({
+                          sessionID,
+                          parts: startWork.parts,
+                          agent: executionAgent.name,
+                          model: useCustomProviders ? resolveAgentModel(executionAgent.name) : undefined,
+                        })
+                      })
+                    )
+                  } else {
+                    await sendStatusUpdate(formatStatus(`🔄 계속 실행 중... (턴 ${handoverTurn}/${MAX_HANDOVER_TURNS})`), false)
+                    await AppRuntime.runPromise(
+                      promptSvc.prompt({
+                        sessionID,
+                        parts: [{ type: "text" as const, text: "이전 작업에서 멈춘 부분부터 계속 진행하세요. 모든 작업이 완료될 때까지 멈추지 마세요." }],
+                        agent: executionAgent.name,
+                        model: useCustomProviders ? resolveAgentModel(executionAgent.name) : undefined,
+                      })
+                    )
+                  }
+
+                  if (terminatedForLibreChatQuestion) return
+
+                  // If no new tool calls were made this turn, the agent has finished
+                  shouldContinue = toolCallCount > toolCallsBefore
+                }
+
+                if (handoverTurn >= MAX_HANDOVER_TURNS) {
+                  await sendStatusUpdate(formatStatus(`⚠️ 최대 실행 턴(${MAX_HANDOVER_TURNS})에 도달했습니다.`), false)
+                  archiveAndClearBoulderState(projectDirectory, "failed")
+                } else {
+                  await sendStatusUpdate(formatStatus(`✅ 작업이 완료되었습니다. (총 ${handoverTurn}턴)`), false)
+                  archiveAndClearBoulderState(projectDirectory, "done")
+                }
               }
             }
 
-            await flushTextBuffer()
+            await flushTextBuffer(true)
 
             await sseStream.writeSSE({
               data: JSON.stringify({
@@ -914,6 +1165,7 @@ ${planName}
             })
             await sseStream.writeSSE({ data: "[DONE]" })
           } catch (err) {
+            if (terminatedForLibreChatQuestion) return
             log.error("prompt failed", { err })
             // Send error chunk + [DONE] so the client doesn't hang waiting
             try {
@@ -942,7 +1194,7 @@ ${planName}
         }
 
         // Non-streaming
-        const plansBeforePrompt = autoHandover ? snapshotPrometheusPlans() : undefined
+        const plansBeforePrompt = agentName === "prometheus" ? snapshotPrometheusPlans() : undefined
   const finalParts: any[] = [{ type: "text", text: lastMessage }]
   if (autoHandover && agentName === "prometheus") {
     finalParts.unshift({
@@ -966,18 +1218,11 @@ ${planName}
       : undefined
 
     if (verifiedPlanPath) {
-      const startWork = yield * buildStartWorkParts(getPlanName(verifiedPlanPath))
+      const verifiedPlanContent = yield * Effect.tryPromise(() => Bun.file(verifiedPlanPath).text()).pipe(Effect.orElseSucceed(() => ""))
+      const startWork = yield * buildStartWorkParts(getPlanName(verifiedPlanPath), verifiedPlanContent || undefined)
       finalMessage = yield * promptSvc.prompt({
         sessionID,
         parts: startWork.parts,
-        agent: executionAgent.name,
-        model: useCustomProviders ? resolveAgentModel(executionAgent.name) : undefined,
-      })
-    } else {
-      log.warn("skipping automatic handover because no runnable prometheus plan was verified", { sessionID, projectDirectory })
-      finalMessage = yield * promptSvc.prompt({
-        sessionID,
-        parts: [{ type: "text", text: lastMessage }],
         agent: executionAgent.name,
         model: useCustomProviders ? resolveAgentModel(executionAgent.name) : undefined,
       })
@@ -985,6 +1230,15 @@ ${planName}
   }
 
   const content = formatOpenAiMessages(yield * collectSessionTreeMessages(sessionID))
+
+  const planDownloadInfo = (() => {
+    if (agentName !== "prometheus" || !plansBeforePrompt) return ""
+    const planPath = findRunnablePrometheusPlan(plansBeforePrompt)
+    if (!planPath) return ""
+    const relativePath = path.relative(projectDirectory, planPath)
+    const downloadUrl = `/file/raw?path=${encodeURIComponent(relativePath)}`
+    return `\n\n📄 **계획 파일이 생성되었습니다: ${getPlanName(planPath)}**\n\n다운로드: [${getPlanName(planPath)}](${downloadUrl})\n`
+  })()
 
   return c.json({
     id: sessionID,
@@ -996,7 +1250,7 @@ ${planName}
       index: 0,
       message: {
         role: "assistant",
-        content: content,
+        content: content + planDownloadInfo,
       },
       finish_reason: "stop"
     }],
@@ -1057,18 +1311,15 @@ routes.post(
       const useCustomProviders = process.env.OPENCODE_USE_CUSTOM_PROVIDERS?.toLowerCase() === "true"
       const agentModelsEnv = Flag.OPENCODE_AGENT_MODELS || ""
 
-      const agentModelMap: Record<string, string> = {}
-      for (const s of agentModelsEnv.split(",")) {
-        const trimmed = s.trim()
-        if (!trimmed) continue
-        const [rawAgent, rawModel] = trimmed.split(":")
-        if (rawAgent && rawModel) {
-          agentModelMap[rawAgent.trim().toLowerCase()] = rawModel.trim()
+        const agentModelMap: Record<string, string> = {}
+        for (const s of agentModelsEnv.split(",")) {
+          const parsed = parseAgentModelEntry(s)
+          if (!parsed) continue
+          agentModelMap[parsed.rawAgent.toLowerCase()] = parsed.rawModel
         }
-      }
 
       const resolveAgentModel = (name: string) => {
-        const modelStr = agentModelMap[name.toLowerCase()]
+        const modelStr = agentModelMap[name.toLowerCase()] ?? agentModelMap["sisyphus"]
         if (!modelStr) return undefined
         const splitIdx = modelStr.indexOf("/")
         if (splitIdx <= 0) return undefined
@@ -1085,12 +1336,18 @@ routes.post(
 
       if (!useCustomProviders) {
         if (isLoggedIn) {
-          const resolved = yield* providerSvc.defaultModel()
-          log.info("Custom providers disabled with active OAuth session. Using resolved default model.", {
-            providerID: resolved.providerID,
-            modelID: resolved.modelID,
-          })
-          promptModelOverride = resolved
+          const defaultModelExit = yield* Effect.exit(providerSvc.defaultModel())
+          if (defaultModelExit._tag === "Success") {
+            promptModelOverride = defaultModelExit.value
+            log.info("Custom providers disabled with active OAuth session. Using resolved default model.", {
+              providerID: defaultModelExit.value.providerID,
+              modelID: defaultModelExit.value.modelID,
+            })
+          } else {
+            log.warn("Custom providers disabled but defaultModel() failed. Leaving promptModelOverride undefined.", {
+              cause: defaultModelExit.cause,
+            })
+          }
         } else {
           log.info("Custom providers disabled and no OAuth session. Falling back to free model.")
           promptModelOverride = {
@@ -1144,7 +1401,10 @@ routes.post(
         if (before.has(planPath)) return false
         return true
       })
-      const buildStartWorkParts = Effect.fn("OpenAiRoutes.general.buildStartWorkParts")(function* (planName: string) {
+      const buildStartWorkParts = Effect.fn("OpenAiRoutes.general.buildStartWorkParts")(function* (planName: string, planContent?: string) {
+        const planContentBlock = planContent
+          ? `\n\n<plan-content>\n${planContent}\n</plan-content>\n\nNOTE: The plan content above has been injected directly. Skip the "Find available plans" file search step and proceed immediately to step 2 (Check for active boulder state).`
+          : ""
         return yield* pluginSvc.trigger(
           "command.execute.before",
           { command: "start-work", sessionID, arguments: planName },
@@ -1162,7 +1422,7 @@ Timestamp: $TIMESTAMP
 
 <user-request>
 ${planName}
-</user-request>`,
+</user-request>${planContentBlock}`,
             }],
           },
         )
@@ -1199,13 +1459,15 @@ ${planName}
           : undefined
 
         if (verifiedPlanPath) {
-          const startWork = yield* buildStartWorkParts(getPlanName(verifiedPlanPath))
+          const verifiedPlanContent = yield* Effect.tryPromise(() => Bun.file(verifiedPlanPath).text()).pipe(Effect.orElseSucceed(() => ""))
+          const startWork = yield* buildStartWorkParts(getPlanName(verifiedPlanPath), verifiedPlanContent || undefined)
           finalMessage = yield* promptSvc.prompt({
             sessionID,
             parts: startWork.parts,
             agent: executionAgent.name,
             model: useCustomProviders ? resolveAgentModel(executionAgent.name) : undefined,
           })
+          archiveAndClearBoulderState(projectDirectory, "done")
         } else {
           log.warn("running direct execution handover because no runnable prometheus plan was verified", { sessionID, projectDirectory })
           finalMessage = yield* promptSvc.prompt({
